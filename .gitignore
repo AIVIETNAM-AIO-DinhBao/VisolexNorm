@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+.venv/
+.tmp/
+
+# Raw and processed datasets can be large or have redistribution restrictions.
+data/raw/
+data/processed/
