@@ -48,9 +48,15 @@ def main() -> None:
     parser.add_argument("--config", type=Path, default=Path("configs/model_a_config.json"))
     parser.add_argument("--work-dir", type=Path, default=Path("."))
     parser.add_argument("--smoke-test", action="store_true", help="Use small subsets for a quick pipeline check")
+    parser.add_argument(
+        "--checkpoint-path",
+        type=Path,
+        help="Existing Trainer checkpoint to evaluate/export without training again",
+    )
     args = parser.parse_args()
 
     try:
+        import numpy as np
         import torch
         import transformers
         from datasets import Dataset
@@ -83,7 +89,12 @@ def main() -> None:
 
     set_seed(config["seed"])
     tokenizer = AutoTokenizer.from_pretrained(config["model_name"])
-    model = AutoModelForSeq2SeqLM.from_pretrained(config["model_name"])
+    if args.checkpoint_path:
+        if not args.checkpoint_path.is_dir():
+            raise FileNotFoundError(f"Checkpoint directory does not exist: {args.checkpoint_path}")
+        model = AutoModelForSeq2SeqLM.from_pretrained(args.checkpoint_path)
+    else:
+        model = AutoModelForSeq2SeqLM.from_pretrained(config["model_name"])
 
     def tokenize(batch: dict[str, list[str]]) -> dict[str, list[list[int]]]:
         encoded = tokenizer(
@@ -143,9 +154,12 @@ def main() -> None:
         processing_class=tokenizer,
         callbacks=callbacks,
     )
-    trainer.train()
+    if not args.checkpoint_path:
+        trainer.train()
     dev_result = trainer.predict(dev_tokenized, metric_key_prefix="dev")
-    prediction_ids = dev_result.predictions
+    # Trainer uses -100 to pad generated predictions in distributed/padded
+    # batches. -100 is a loss ignore index, not a valid BARTpho token ID.
+    prediction_ids = np.where(dev_result.predictions == -100, tokenizer.pad_token_id, dev_result.predictions)
     predictions = tokenizer.batch_decode(prediction_ids, skip_special_tokens=True)
     predictions = [prediction.strip() for prediction in predictions]
     exact_matches = sum(pred == record["target_text"] for pred, record in zip(predictions, dev_records))
@@ -179,8 +193,8 @@ def main() -> None:
         "run_type": "smoke_test" if args.smoke_test else "full",
         "train_examples": len(train_records),
         "dev_examples": len(dev_records),
-        "best_checkpoint": trainer.state.best_model_checkpoint,
-        "best_metric": trainer.state.best_metric,
+        "best_checkpoint": str(args.checkpoint_path) if args.checkpoint_path else trainer.state.best_model_checkpoint,
+        "best_metric": None if args.checkpoint_path else trainer.state.best_metric,
         "device": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "cpu",
         "torch_version": torch.__version__,
         "transformers_version": transformers.__version__,
