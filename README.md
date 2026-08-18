@@ -74,3 +74,12 @@ combined corpus, and remove ViSoLex sentences that exactly overlap ViLexNorm
 Dev/Test. The first configured source is retained for cross-source duplicates;
 the raw files remain available for audit. The scripts do not normalize
 teencode, spelling, case, punctuation, or Vietnamese diacritics.
+
+## Phase 2: Model A on Kaggle
+
+Upload the repository code (or clone this GitHub repository) and the two
+processed gold files to private Kaggle Datasets. Attach both datasets to a GPU
+notebook, set `CODE_DIR` and `DATA_DIR` in
+`notebooks/train_model_a_kaggle.ipynb`, then run all cells. The notebook runs
+only Train/Dev and exports the checkpoint plus Dev artifacts to
+`/kaggle/working`.

@@ -6,3 +6,5 @@ __pycache__/
 # Raw and processed datasets can be large or have redistribution restrictions.
 data/raw/
 data/processed/
+checkpoints/
+outputs/
