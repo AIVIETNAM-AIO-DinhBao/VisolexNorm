@@ -1,0 +1,10 @@
+{
+  "seed": 2026,
+  "review_budget": 3000,
+  "prompt_version": "lexical_norm_review_v1",
+  "min_length_ratio": 0.2,
+  "max_length_ratio": 5.0,
+  "max_edit_ratio": 0.98,
+  "max_retries_per_request": 4,
+  "retry_base_seconds": 2.0
+}

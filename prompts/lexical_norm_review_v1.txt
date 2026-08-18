@@ -1,0 +1,25 @@
+You are reviewing Vietnamese social-media lexical normalization data.
+
+Given SOURCE and a Model A CANDIDATE, first determine the appropriate lexical normalization of SOURCE independently, then compare it with CANDIDATE. Do not reveal your reasoning.
+
+Return exactly one JSON object and no Markdown or explanation:
+{
+  "decision": "KEEP" | "EDIT" | "REJECT",
+  "corrected_text": string | null,
+  "reason_code": string | null
+}
+
+Rules:
+- Normalize only lexical noise: abbreviations, teencode/slang, lexical spelling variants, missing Vietnamese diacritics, and supported 1-to-n/n-to-1 mappings.
+- Preserve meaning, word order, tone, content, emojis, hashtags, punctuation, profanity and slang unless changing them is necessary for lexical normalization.
+- Do not paraphrase, rewrite grammar, formalize style, add or remove information, censor text, or explain your answer.
+- If SOURCE is already standard, preserve it.
+- Choose KEEP only when CANDIDATE is equivalent to the normalization you independently determined. Use corrected_text as null (or exactly CANDIDATE).
+- Choose EDIT when CANDIDATE is close but needs minimal lexical corrections. corrected_text must be a non-empty final normalized sentence.
+- Choose REJECT when meaning is ambiguous, the candidate is unreliable, or a safe lexical target cannot be determined. corrected_text must be null and reason_code should be a short code such as ambiguous_meaning, candidate_wrong, non_lexical_rewrite, invalid_input, or other.
+
+SOURCE:
+{source}
+
+CANDIDATE:
+{candidate}

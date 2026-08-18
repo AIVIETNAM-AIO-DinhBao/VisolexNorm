@@ -83,3 +83,69 @@ notebook, set `CODE_DIR` and `DATA_DIR` in
 `notebooks/train_model_a_kaggle.ipynb`, then run all cells. The notebook runs
 only Train/Dev and exports the checkpoint plus Dev artifacts to
 `/kaggle/working`.
+
+## Phase 3: candidates on Kaggle, Gemini review on local
+
+### 1. Generate candidates on Kaggle T4
+
+Attach private Kaggle datasets containing `visolex_unlabeled.jsonl` and the
+exported `checkpoints/model_a/` directory. Enable a **T4 GPU**, then run
+`notebooks/generate_model_a_candidates_kaggle.ipynb`. It creates:
+
+```text
+data/intermediate/visolex_model_a_candidates.jsonl
+```
+
+Download the resulting artifact to the local laptop. Do **not** put Gemini API
+keys in Kaggle; Gemini is used only for local, offline data preparation.
+
+### 2. Review locally with Gemini round-robin keys
+
+Create `.env` from `.env.example`; it is ignored by Git. Add comma-separated
+keys and choose a model you can access:
+
+```dotenv
+GEMINI_API_KEYS=key_1,key_2,key_3
+GEMINI_MODEL=gemini-2.5-flash
+```
+
+Install only the local reviewer dependencies:
+
+```bash
+pip install -r requirements-local.txt
+```
+
+Select the reproducible source/confidence-stratified review set (default
+budget: 3,000 in `configs/weak_label_config.json`):
+
+```bash
+python scripts/select_review_manifest.py --candidates data/intermediate/visolex_model_a_candidates.jsonl
+```
+
+First run a 200-example pilot and manually inspect its cached output. The
+reviewer uses `KEEP` / `EDIT` / `REJECT`, saves each successful result by ID,
+round-robins the configured API keys for requests/retries, and logs failures
+without exposing keys:
+
+```bash
+python scripts/review_with_gemini.py --candidates data/intermediate/visolex_model_a_candidates.jsonl --manifest data/intermediate/visolex_review_manifest.jsonl --limit 200
+```
+
+After the prompt is accepted, resume the full manifest. `--resume` skips valid
+cached reviews, including the pilot IDs:
+
+```bash
+python scripts/review_with_gemini.py --candidates data/intermediate/visolex_model_a_candidates.jsonl --manifest data/intermediate/visolex_review_manifest.jsonl --resume
+```
+
+Build final weak labels and statistics locally:
+
+```bash
+python scripts/build_weak_labels.py --candidates data/intermediate/visolex_model_a_candidates.jsonl --manifest data/intermediate/visolex_review_manifest.jsonl
+```
+
+This produces `data/processed/visolex_weak_labeled.jsonl` and
+`outputs/weak_label_stats.json`. Upload only these finalized artifacts (plus
+the recorded configs) to a private Kaggle Dataset for Phase 4. Every weak label
+used by Model B has a Gemini review decision and retains its ViSoLex/Model A
+provenance.

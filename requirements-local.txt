@@ -1,0 +1,3 @@
+# Only needed for local Phase 3 Gemini review.
+google-genai>=1.0
+python-dotenv>=1.0
