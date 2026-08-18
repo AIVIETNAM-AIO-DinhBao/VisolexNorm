@@ -12,7 +12,7 @@ Training  = Kaggle GPU
 Inference/Web = Local
 ```
 
-LLM API, nếu dùng, chỉ là một **labeling backend cho ViSoLex**, không thay thế nguồn unlabeled data.
+ViSoLex weak labels được tạo theo pipeline chính: **Model A sinh candidate → LLM review theo KEEP / EDIT / REJECT → validation/filtering**. LLM không thay thế nguồn unlabeled data và không xuất hiện trong final web inference.
 
 Mục tiêu là có baseline end-to-end sớm, sau đó dành phần lớn thời gian cho chất lượng weak labels, Model B và evaluation.
 
@@ -129,119 +129,257 @@ dev metrics
 - Model A generate được output hợp lệ;
 - checkpoint load lại được;
 - có Dev results;
-- có thể dùng checkpoint cho batch pseudo-labeling.
+- có thể dùng checkpoint để batch-generate candidate normalization cho ViSoLex.
 
 ---
 
-# Phase 3 — Xây weak-label pipeline cho ViSoLex
+# Phase 3 — Model A candidates + LLM review cho ViSoLex
 **Ngày 4–7**
 
 ## Kết quả phải đạt
 
-Có một file:
+Có hai artifact chính:
 
 ```text
+visolex_model_a_candidates.jsonl
 visolex_weak_labeled.jsonl
 ```
 
-được tạo từ **visolex_unlabeled.jsonl**, có provenance đầy đủ và đã qua filtering.
+`visolex_weak_labeled.jsonl` phải được tạo từ ViSoLex theo pipeline:
 
-Có hai phương án triển khai; team có thể chọn một làm chính và phương án còn lại làm fallback/experiment phụ.
+```text
+ViSoLex
+  ↓
+Model A candidate + confidence
+  ↓
+LLM Reviewer
+  ↓
+KEEP / EDIT / REJECT
+  ↓
+validation + filtering
+  ↓
+final weak labels
+```
+
+Mọi sample được đưa vào training Model B phải trace được về source ViSoLex, candidate của Model A và quyết định của LLM reviewer.
 
 ---
 
-## 3A. Model A pseudo-labeling
+## 3.1. Chốt subset/pool ViSoLex cần xử lý
 
 ### Bước nhỏ
 
-1. load `visolex_unlabeled.jsonl`;
-2. batch tokenize;
-3. chạy `Model A.generate()` trên Kaggle GPU;
-4. lấy prediction;
-5. tính generation confidence;
-6. cache raw prediction;
-7. filter confidence thấp;
-8. filter output bất thường;
-9. audit random sample;
-10. freeze accepted set.
+1. xác định budget số câu dự kiến dùng cho Experiment 2;
+2. nếu không dùng toàn bộ 121k, chọn subset có rule rõ ràng;
+3. ưu tiên stratify theo 5 `original_source` để không vô tình chỉ lấy một domain;
+4. lưu danh sách ID được chọn;
+5. không dùng ViLexNorm Test để chọn sample.
 
-Record phải chứa:
+Có thể tạo candidate cho toàn bộ pool lớn trước rồi mới chọn sample đưa sang LLM review nếu GPU rẻ hơn API cost.
+
+### Kết quả
+
+Có manifest cố định, ví dụ:
+
+```text
+data/intermediate/visolex_review_manifest.jsonl
+```
+
+---
+
+## 3.2. Sinh candidate bằng Model A
+
+### Bước nhỏ
+
+1. load Model A checkpoint;
+2. batch tokenize ViSoLex trên Kaggle GPU;
+3. chạy `generate()`;
+4. lấy `candidate_text`;
+5. tính/lưu `model_a_confidence`;
+6. cache theo chunk;
+7. hỗ trợ resume nếu session ngắt;
+8. validate ID và số dòng;
+9. export candidate artifact.
+
+Record tối thiểu:
+
 ```text
 id
-dataset=ViSoLex
 original_source
 input_text
-target_text
-label_source=model_a
-confidence
-accepted
+candidate_text
+model_a_confidence
+candidate_checkpoint
 ```
 
 ### Kết quả
-Có thể thống kê:
-- số câu generate;
-- số câu accepted;
-- acceptance rate;
-- phân bố theo 5 source;
-- examples tốt/xấu.
+
+```text
+data/intermediate/visolex_model_a_candidates.jsonl
+```
+
+Model A output lúc này **chưa phải target để train Model B**.
 
 ---
 
-## 3B. LLM API labeling
-
-LLM vẫn nhận **câu từ ViSoLex**.
+## 3.3. Thiết kế LLM Reviewer
 
 ### Bước nhỏ
 
-1. version hóa prompt lexical normalization;
-2. test prompt trên 50–100 câu ViSoLex;
-3. audit paraphrase/over-normalization;
-4. sửa prompt nếu cần;
-5. implement cache + resume;
-6. implement retry/error log;
-7. label theo chunk;
-8. validate output format;
-9. filter output bất thường;
-10. freeze accepted set.
+1. định nghĩa schema `KEEP / EDIT / REJECT`;
+2. viết prompt yêu cầu chỉ lexical normalization;
+3. yêu cầu LLM xác định normalization của source **độc lập trước khi so với candidate** để giảm anchoring;
+4. cấm paraphrase, grammar rewrite, thêm thông tin và làm văn phong trang trọng;
+5. quy định `EDIT` chỉ được sửa tối thiểu;
+6. `REJECT` khi câu mơ hồ hoặc không đủ chắc chắn;
+7. dùng structured JSON output nếu API hỗ trợ;
+8. version hóa prompt, ví dụ `lexical_norm_review_v1`.
 
-Record phải chứa:
+Reviewer input:
+
+```text
+SOURCE
+CANDIDATE
+```
+
+Reviewer output logic:
+
+```text
+KEEP   → candidate đúng
+EDIT   → trả corrected_text
+REJECT → không dùng sample
+```
+
+---
+
+## 3.4. Pilot LLM review trước batch lớn
+
+### Bước nhỏ
+
+1. chọn khoảng 100–300 candidate có diversity tốt;
+2. bao gồm confidence cao/trung bình/thấp;
+3. bao gồm đủ 5 `original_source` nếu có thể;
+4. gọi LLM reviewer;
+5. audit thủ công;
+6. kiểm tra các failure mode:
+   - paraphrase;
+   - over-normalization;
+   - đổi nghĩa;
+   - mất slang/sắc thái;
+   - bỏ emoji/hashtag không cần thiết;
+   - `KEEP` nhầm candidate sai;
+7. sửa prompt/schema nếu cần;
+8. chỉ freeze prompt sau pilot.
+
+### Kết quả
+
+Có prompt version đã freeze và một bảng audit pilot ngắn.
+
+---
+
+## 3.5. Batch LLM review
+
+### Bước nhỏ
+
+1. load candidate artifact/manifest;
+2. gọi API theo chunk;
+3. persistent cache từng result;
+4. implement retry + backoff;
+5. resume được sau interruption;
+6. log API/parse errors;
+7. validate structured response;
+8. lưu `llm_model` + `prompt_version`;
+9. không commit API key;
+10. theo dõi số request/sample để kiểm soát cost.
+
+Record review nên giữ:
+
+```text
+id
+input_text
+candidate_text
+model_a_confidence
+llm_decision
+llm_corrected_text
+llm_model
+prompt_version
+```
+
+---
+
+## 3.6. Xây final target và filtering
+
+Rule:
+
+```text
+KEEP   → target_text = candidate_text
+EDIT   → target_text = llm_corrected_text
+REJECT → drop
+```
+
+Sau đó filter:
+
+1. empty/invalid output;
+2. parse artifacts;
+3. length ratio bất thường;
+4. edit ratio cực đoan;
+5. Unicode lỗi;
+6. overlap với ViLexNorm Dev/Test;
+7. duplicate;
+8. các record không nhất quán với decision.
+
+Final record phải có:
+
 ```text
 id
 dataset=ViSoLex
 original_source
 input_text
+candidate_text
+model_a_confidence
+llm_decision
+llm_corrected_text
 target_text
-label_source=llm_api
-llm_model
-prompt_version
+label_source=model_a+llm_review
 accepted
 ```
 
-Không cần label toàn bộ 121k ngay. Có thể chọn subset hợp lý theo:
-- random stratified by source;
-- top-K;
-- budget cố định.
-
-Selection rule phải được lưu.
-
 ---
 
-## 3.3. Quyết định cuối Phase
+## 3.7. Audit và statistics
 
-Chọn weak-labeled dataset dùng cho Model B dựa trên:
-- manual audit;
-- Dev-side experiment nếu cần;
-- độ ổn định output;
-- số lượng sample;
-- chi phí/tốc độ.
+### Bước nhỏ
 
-Không dùng ViLexNorm Test để chọn backend.
+1. random audit final accepted samples;
+2. stratify theo `KEEP / EDIT / REJECT`;
+3. stratify theo `original_source`;
+4. kiểm tra sample confidence cao/trung bình/thấp;
+5. tính:
+   - Model A candidate count;
+   - LLM reviewed count;
+   - KEEP rate;
+   - EDIT rate;
+   - REJECT rate;
+   - validation-drop rate;
+   - final accepted count;
+6. lưu một số case study Model A sai nhưng LLM sửa đúng để dùng trong report.
+
+### Kết quả cuối Phase
+
+```text
+data/processed/visolex_weak_labeled.jsonl
+outputs/weak_label_stats.json
+```
 
 ## Exit criteria
-- weak-label artifact được freeze;
-- mỗi sample trace được về ViSoLex source;
-- biết rõ label sinh bởi Model A hay LLM;
-- có thống kê before/after filtering.
+
+- Model A candidates đã được lưu và reproduce được;
+- prompt reviewer đã pilot và freeze;
+- mọi training weak label đã qua LLM review;
+- `KEEP/EDIT/REJECT` trace được;
+- weak-label artifact đã validate + audit;
+- có statistics before/after review/filtering;
+- không dùng ViLexNorm Test để quyết định prompt, subset hay filtering.
 
 ---
 
@@ -261,8 +399,8 @@ Filtered ViSoLex Weak-Labeled Data
 ## Các bước
 
 ### 4.1. Build training mixture
-- merge gold + weak data;
-- giữ `label_source`;
+- merge ViLexNorm gold + **LLM-reviewed ViSoLex weak labels**;
+- giữ `label_source`, `llm_decision` và provenance cần thiết;
 - quyết định gold:pseudo ratio;
 - không để pseudo-data áp đảo gold một cách vô thức.
 
@@ -278,12 +416,13 @@ Filtered ViSoLex Weak-Labeled Data
 
 ### 4.4. Nếu Model B kém rõ rệt trên Dev
 Thử theo thứ tự:
-1. giảm pseudo sample;
-2. tăng tỷ lệ gold;
-3. tăng filtering;
-4. đổi weak-label backend nếu backend kia đã sẵn sàng.
+1. kiểm tra lại `KEEP/EDIT/REJECT` samples và weak-label noise;
+2. giảm weak-labeled sample;
+3. tăng tỷ lệ gold;
+4. siết filtering hoặc loại nhóm review/problematic source có chất lượng thấp;
+5. nếu cần, chỉnh prompt reviewer bằng **Dev/manual audit**, sau đó tạo một version mới rõ ràng.
 
-Không mở rộng sang kiến trúc mới.
+Không tune prompt/filter bằng Test và không mở rộng sang kiến trúc mới.
 
 ## Exit criteria
 - Model B checkpoint load được;
@@ -343,7 +482,8 @@ Tập trung:
 - wrong normalization;
 - 1→n / n→1;
 - trường hợp Model B cải thiện;
-- trường hợp Model B bị weak-label noise làm xấu đi.
+- trường hợp Model B bị weak-label noise làm xấu đi;
+- case Model A candidate được LLM `EDIT` hoặc `REJECT`, đặc biệt các case cho thấy review có giá trị.
 
 ## Exit criteria
 - bảng A/B hoàn chỉnh;
@@ -433,7 +573,9 @@ Mô tả đúng thứ tự:
 ```text
 prepare data
 → train A on Kaggle
-→ label ViSoLex
+→ generate Model A candidates for ViSoLex
+→ LLM review KEEP/EDIT/REJECT
+→ build reviewed weak labels
 → train B on Kaggle
 → evaluate
 → download best checkpoint
@@ -458,7 +600,7 @@ Demo tối thiểu:
 3. normalize;
 4. cho thấy output;
 5. trình bày Model A vs B;
-6. giải thích ViSoLex weak-label pipeline.
+6. giải thích pipeline Model A candidate → LLM review → ViSoLex weak labels.
 
 ## Exit criteria
 - clean run path rõ ràng;
@@ -475,10 +617,10 @@ Demo tối thiểu:
 | 1 | ViLexNorm preprocessing + bắt đầu ViSoLex preprocessing |
 | 2 | Freeze processed data + dựng Kaggle Model A |
 | 3 | Train/debug Model A |
-| 4 | Export Model A + bắt đầu label ViSoLex |
-| 5 | Weak-label generation |
-| 6 | Filtering + audit weak labels |
-| 7 | Freeze weak-label dataset + build Model B mixture |
+| 4 | Export Model A + sinh ViSoLex candidates + draft reviewer prompt |
+| 5 | Pilot LLM reviewer + freeze KEEP/EDIT/REJECT schema/prompt |
+| 6 | Batch LLM review + cache/resume + validation |
+| 7 | Audit, freeze reviewed weak-label dataset + build Model B mixture |
 | 8 | Train Model B |
 | 9 | Debug/rerun Model B nếu cần |
 | 10 | Freeze models + final Test evaluation |
@@ -498,7 +640,7 @@ Demo tối thiểu:
 **Baseline milestone:** Model A usable.
 
 ## Cuối ngày 7
-**Augmentation milestone:** ViSoLex weak labels đã freeze.
+**Augmentation milestone:** Model A candidates đã qua LLM review, ViSoLex weak labels và KEEP/EDIT/REJECT statistics đã freeze.
 
 ## Cuối ngày 9
 **Training milestone:** Model B usable.

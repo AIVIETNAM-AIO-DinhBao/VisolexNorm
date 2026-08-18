@@ -44,16 +44,22 @@ Model A
 
 Model A là supervised baseline.
 
-## Experiment 2 — Gold + weak/pseudo-labeled ViSoLex
+## Experiment 2 — Gold + LLM-reviewed pseudo-labeled ViSoLex
 
 ```text
 ViSoLex Unlabeled Corpus
       ↓
-Weak/Pseudo Labeling
+Model A candidate generation
       ↓
-Filtering
+Candidate normalization + confidence
       ↓
-Filtered ViSoLex Weak-Labeled Data
+LLM Reviewer
+      ↓
+KEEP / EDIT / REJECT
+      ↓
+Validation + Filtering
+      ↓
+LLM-reviewed ViSoLex Weak-Labeled Data
       +
 ViLexNorm Gold Train
       ↓
@@ -64,7 +70,9 @@ Model B
 
 Model A và Model B được đánh giá trên cùng **ViLexNorm Test Set**.
 
-Nguồn dữ liệu của Experiment 2 phải là **ViSoLex unlabeled corpus**. Không thay thế bằng một social-media corpus tùy ý khác nếu không thay đổi specification.
+Nguồn dữ liệu của Experiment 2 phải là **ViSoLex unlabeled corpus**. Model A không được xem là ground-truth teacher: nó chỉ sinh **candidate normalization**. LLM đóng vai trò reviewer độc lập để xác nhận, sửa tối thiểu hoặc loại candidate trước khi dữ liệu được dùng để train Model B.
+
+LLM chỉ xuất hiện trong giai đoạn offline data preparation. Final checkpoint và web application vẫn chỉ sử dụng BARTpho do nhóm fine-tune.
 
 ---
 
@@ -170,7 +178,7 @@ data/processed/visolex_unlabeled.jsonl
 
 ## 4.1. Mục đích
 
-Fine-tune **BARTpho-syllable** trên ViLexNorm Gold Train để tạo baseline và checkpoint có thể dùng làm pseudo-label teacher.
+Fine-tune **BARTpho-syllable** trên ViLexNorm Gold Train để tạo supervised baseline. Trong Module 3, checkpoint này đồng thời đóng vai trò **candidate generator** cho ViSoLex; prediction của Model A chưa được xem là nhãn cuối.
 
 ```text
 Input  : ViLexNorm Train
@@ -208,146 +216,254 @@ Checkpoint phải load lại được độc lập sau khi Kaggle session kết 
 
 ---
 
-# 5. Module 3 — Weak/Pseudo Labeling ViSoLex
+# 5. Module 3 — Model A Candidate Generation + LLM Review
 
-## 5.1. Input cố định
+## 5.1. Mục tiêu và input cố định
 
-Mọi backend labeling đều nhận:
+Module này biến ViSoLex unlabeled corpus thành weak-labeled data đủ tin cậy để bổ sung vào training.
+
+Input duy nhất:
 
 ```text
 data/processed/visolex_unlabeled.jsonl
 ```
 
-Backend labeling **không quyết định nguồn corpus**. Nó chỉ quyết định cách sinh `target_text` cho câu ViSoLex.
-
-Pipeline hỗ trợ hai phương án.
-
----
-
-## 5.2. Phương án A — Model A pseudo-labeling
-
-Luồng mặc định bám sát ý tưởng ban đầu:
+Pipeline chính:
 
 ```text
 ViSoLex input_text
       ↓
 Model A.generate()
       ↓
-pseudo target
+candidate_text + model_a_confidence
       ↓
-generation confidence
+LLM review
       ↓
-filter
+KEEP / EDIT / REJECT
+      ↓
+validation + filtering
+      ↓
+visolex_weak_labeled.jsonl
 ```
 
-Record:
+**Nguyên tắc:** Model A đề xuất, LLM kiểm tra. Không đưa trực tiếp prediction của Model A vào Model B mà không qua review trong pipeline chính.
 
-```json
-{
-  "id": "visolex_000001",
-  "dataset": "ViSoLex",
-  "original_source": "UIT-ViSFD",
-  "input_text": "mik thấy sp này cx oke",
-  "target_text": "mình thấy sản phẩm này cũng oke",
-  "label_source": "model_a",
-  "teacher_checkpoint": "model_a",
-  "confidence": -0.42,
-  "accepted": true
-}
-```
-
-Confidence nên dùng score được normalize theo chiều dài sequence hoặc một scoring rule tương đương được ghi rõ trong report.
-
-Threshold chỉ được chọn bằng Dev/manual audit; không dùng Test.
-
-Batch generation có thể chạy trên Kaggle GPU.
+Không bắt buộc xử lý toàn bộ 121.087 câu. Có thể chọn một subset ViSoLex phù hợp với budget/thời gian, nhưng selection rule phải deterministic hoặc được lưu lại và phải giữ provenance theo `original_source`.
 
 ---
 
-## 5.3. Phương án B — LLM API labeling
+## 5.2. Bước 1 — Model A sinh candidate
 
-Có thể dùng LLM API, ví dụ GPT-4o, để tạo weak labels cho **chính ViSoLex corpus**.
+Model A chạy batch inference trên ViSoLex bằng Kaggle GPU.
 
-Luồng:
+Mỗi sample cần tạo:
+
+- `candidate_text`: normalization do Model A đề xuất;
+- `model_a_confidence`: generation score được normalize theo chiều dài hoặc scoring rule tương đương;
+- generation metadata cần thiết để reproduce.
+
+Artifact trung gian:
 
 ```text
-ViSoLex input_text
-      ↓
-LLM API + lexical-normalization prompt
-      ↓
-weak target
-      ↓
-validation / filtering
+data/intermediate/visolex_model_a_candidates.jsonl
 ```
 
-LLM chỉ đóng vai trò **offline labeler**. Final model và web app vẫn dùng BARTpho checkpoint của nhóm.
-
-Prompt phải yêu cầu:
-
-- chỉ lexical normalization;
-- giữ nguyên nghĩa;
-- không paraphrase;
-- không thêm thông tin;
-- không tự làm văn phong trang trọng;
-- giữ nguyên câu nếu đã chuẩn;
-- output đúng format, không giải thích.
-
-Record:
+Ví dụ:
 
 ```json
 {
   "id": "visolex_000001",
   "dataset": "ViSoLex",
   "original_source": "UIT-ViSFD",
-  "input_text": "mik thấy sp này cx oke",
-  "target_text": "mình thấy sản phẩm này cũng oke",
-  "label_source": "llm_api",
+  "input_text": "mik ko bt hnay",
+  "candidate_text": "mình không biết hnay",
+  "model_a_confidence": -0.31,
+  "candidate_checkpoint": "model_a"
+}
+```
+
+Candidate generation phải hỗ trợ:
+
+- batch inference;
+- checkpoint/config cố định;
+- cache kết quả;
+- resume nếu Kaggle session bị ngắt;
+- không thay đổi thứ tự/ID của sample.
+
+`model_a_confidence` dùng để audit, phân tầng sample và có thể ưu tiên thứ tự review. Nó **không đủ để biến candidate thành final target**.
+
+---
+
+## 5.3. Bước 2 — LLM Reviewer
+
+LLM nhận ít nhất hai trường:
+
+```text
+SOURCE    = input_text gốc của ViSoLex
+CANDIDATE = candidate_text của Model A
+```
+
+Reviewer phải đánh giá lexical normalization, không đánh giá văn phong.
+
+### 5.3.1. Reviewer contract
+
+LLM phải chọn đúng một trong ba quyết định:
+
+#### `KEEP`
+
+Candidate đã là lexical normalization phù hợp. Final target giữ nguyên `candidate_text`.
+
+#### `EDIT`
+
+Candidate gần đúng nhưng còn lỗi. LLM trả về một `corrected_text` với **mức chỉnh sửa tối thiểu cần thiết**.
+
+#### `REJECT`
+
+Sample quá mơ hồ, candidate không đáng tin, hoặc không thể tạo target lexical normalization đủ chắc chắn. Sample không được đưa vào Model B.
+
+### 5.3.2. Giảm anchoring vào Model A
+
+Prompt phải yêu cầu reviewer:
+
+1. trước tiên xác định độc lập normalization phù hợp của `SOURCE`;
+2. sau đó mới so sánh với `CANDIDATE`;
+3. chỉ `KEEP` nếu candidate tương đương với normalization mà reviewer xác định;
+4. nếu khác, dùng `EDIT` và sửa tối thiểu;
+5. nếu nghĩa không rõ hoặc có nhiều cách hiểu đáng kể, dùng `REJECT`.
+
+Prompt phải nhấn mạnh:
+
+- chỉ lexical normalization;
+- giữ nguyên nghĩa và sắc thái;
+- không paraphrase;
+- không sửa toàn bộ ngữ pháp;
+- không làm văn phong trang trọng hơn;
+- không thêm/xóa thông tin;
+- không tự censor profanity/slang nếu không cần để normalize;
+- giữ emoji/hashtag/punctuation trừ khi có lý do lexical rõ ràng;
+- nếu source đã chuẩn thì giữ nguyên;
+- output đúng schema, không kèm giải thích tự do.
+
+### 5.3.3. Structured output
+
+Reviewer nên trả structured output, ví dụ:
+
+```json
+{
+  "decision": "EDIT",
+  "corrected_text": "mình không biết hôm nay"
+}
+```
+
+Với `KEEP`, `corrected_text` có thể bằng candidate hoặc `null` theo implementation đã chốt. Với `REJECT`, sample phải có reason code ngắn nếu API/schema cho phép để phục vụ audit, nhưng reason không được dùng làm target.
+
+### 5.3.4. API requirements
+
+LLM review pipeline phải hỗ trợ:
+
+- API key qua secret/environment variable;
+- model name configurable;
+- `prompt_version` cố định;
+- chunk/batch processing khi API cho phép;
+- persistent cache;
+- resume;
+- retry với backoff;
+- error log;
+- validation JSON/schema;
+- lưu raw response tối thiểu cần thiết để audit nhưng không commit secret.
+
+Trước batch lớn phải pilot trên một sample nhỏ và audit các lỗi như paraphrase, over-normalization, mất slang/sắc thái hoặc thay đổi nghĩa.
+
+---
+
+## 5.4. Bước 3 — Xây final weak label
+
+Rule tạo target cuối:
+
+```text
+KEEP   → target_text = candidate_text
+EDIT   → target_text = corrected_text
+REJECT → drop sample
+```
+
+Record cuối nên giữ toàn bộ provenance:
+
+```json
+{
+  "id": "visolex_000001",
+  "dataset": "ViSoLex",
+  "original_source": "UIT-ViSFD",
+  "input_text": "mik ko bt hnay",
+  "candidate_text": "mình không biết hnay",
+  "model_a_confidence": -0.31,
+  "llm_decision": "EDIT",
+  "llm_corrected_text": "mình không biết hôm nay",
+  "target_text": "mình không biết hôm nay",
+  "label_source": "model_a+llm_review",
   "llm_model": "configured_model",
-  "prompt_version": "lexical_norm_v1",
+  "prompt_version": "lexical_norm_review_v1",
   "accepted": true
 }
 ```
 
-API pipeline phải hỗ trợ:
-
-- API key qua secret/environment;
-- batch/chunk;
-- persistent cache;
-- resume;
-- retry;
-- error log;
-- prompt version;
-- giới hạn số sample để kiểm soát chi phí.
-
-Không bắt buộc label toàn bộ 121.087 câu. Có thể chọn subset, nhưng subset phải xuất phát từ `visolex_unlabeled.jsonl` và selection rule phải được ghi lại.
-
----
-
-## 5.4. Filtering
-
-Dù label bằng Model A hay LLM API, weak-labeled data phải qua validation/filtering.
-
-Kiểm tra tối thiểu:
-
-- output không rỗng;
-- output không chứa giải thích/metadata ngoài text;
-- output/input length ratio không bất thường;
-- edit ratio không cực đoan;
-- không trùng Dev/Test;
-- deduplicate;
-- Unicode hợp lệ.
-
-Nên audit thủ công một random sample trước khi freeze dataset.
-
-Output cuối:
+Output chính:
 
 ```text
 data/processed/visolex_weak_labeled.jsonl
 ```
 
-Mỗi record phải giữ `label_source` để biết target được sinh bằng Model A hay LLM.
+---
 
-Nếu dùng cả hai backend trong một experiment, phải định nghĩa rõ rule merge/conflict; không silently trộn hai nguồn nhãn.
+## 5.5. Validation và Filtering
+
+Sau review vẫn phải chạy automatic validation:
+
+- output không rỗng;
+- `KEEP` phải có candidate hợp lệ;
+- `EDIT` phải có `corrected_text` hợp lệ;
+- `REJECT` không được lọt vào training set;
+- output/input length ratio không bất thường;
+- edit ratio không cực đoan;
+- Unicode hợp lệ;
+- không chứa explanation/JSON artifact trong `target_text`;
+- không overlap ViLexNorm Dev/Test;
+- deduplicate theo rule đã định nghĩa.
+
+Sau filtering phải audit thủ công một random sample, ưu tiên stratify theo:
+
+- `KEEP` / `EDIT` / `REJECT`;
+- 5 `original_source` của ViSoLex;
+- vùng confidence cao/trung bình/thấp của Model A.
+
+Module phải xuất statistics tối thiểu:
+
+```text
+number of Model A candidates
+number sent to LLM review
+KEEP count / rate
+EDIT count / rate
+REJECT count / rate
+validation-drop count / rate
+final accepted count
+counts by original_source
+```
+
+Các tỷ lệ `KEEP/EDIT/REJECT` là một phần của analysis: nếu `EDIT` hoặc `REJECT` cao, đó là bằng chứng trực tiếp rằng Model A pseudo-labeling thuần túy chứa noise đáng kể.
+
+---
+
+## 5.6. Cost-control strategy
+
+Nếu không muốn review toàn bộ 121k câu, pipeline được phép chọn subset trước khi gọi LLM.
+
+Khuyến nghị:
+
+1. tạo candidate cho toàn bộ hoặc một pool lớn bằng Model A;
+2. chọn subset ViSoLex theo rule được lưu lại, có thể stratify theo `original_source` và confidence;
+3. **mọi sample được chọn để đưa vào weak-labeled training set đều phải qua LLM review**;
+4. không auto-accept chỉ vì confidence cao trong experiment chính.
+
+Confidence cao có thể dùng để ưu tiên sampling hoặc làm ablation sau này, nhưng không thay thế LLM review trong pipeline chính đã chốt.
 
 ---
 
@@ -367,8 +483,8 @@ Phải ghi lại:
 
 - số gold samples;
 - số ViSoLex weak-labeled samples;
-- backend tạo label;
-- số sample trước/sau filtering;
+- số candidate Model A và LLM review configuration;
+- KEEP/EDIT/REJECT statistics và số sample trước/sau filtering;
 - gold:pseudo sampling ratio;
 - initialization checkpoint;
 - hyperparameters.
@@ -409,10 +525,10 @@ Nếu có official evaluation implementation của ViLexNorm, ưu tiên dùng c�
 
 Kết quả phải cho phép so sánh trực tiếp:
 
-| Model | Training Data | Weak-label Backend | ERR | Precision | Recall | F1 |
+| Model | Training Data | Weak-label Method | ERR | Precision | Recall | F1 |
 |---|---|---|---:|---:|---:|---:|
 | A | ViLexNorm | — | TBD | TBD | TBD | TBD |
-| B | ViLexNorm + ViSoLex | Model A / LLM | TBD | TBD | TBD | TBD |
+| B | ViLexNorm + ViSoLex | Model A candidates + LLM review | TBD | TBD | TBD | TBD |
 
 Ngoài metric phải có error analysis tối thiểu cho:
 
@@ -488,37 +604,44 @@ Web app **không gọi LLM API**. Nếu LLM được dùng, nó chỉ xuất hi�
              │                   │
              │                   ▼
              │          ViSoLex Unlabeled
-             │           121,087 sentences
-             │                   │
-             │          ┌────────┴────────┐
-             │          │                 │
-             │     Model A label      LLM API label
-             │          │                 │
-             │          └────────┬────────┘
-             │                   ▼
-             │              Filtering
+             │           ~121,087 sentences
              │                   │
              │                   ▼
-             │        ViSoLex Weak-Labeled
+             │           Model A candidates
+             │          + generation confidence
              │                   │
+             │                   ▼
+             │              LLM Reviewer
+             │                   │
+             │        ┌──────────┼──────────┐
+             │        ▼          ▼          ▼
+             │      KEEP        EDIT      REJECT
+             │        │          │
+             │        └────┬─────┘
+             │             ▼
+             │       Validation / Filter
+             │             │
+             │             ▼
+             │   LLM-reviewed ViSoLex Weak Labels
+             │             │
              │     ViLexNorm Gold Train
-             │              +    │
-             │                   ▼
-             │             Train Model B
-             │              [Kaggle GPU]
-             │                   │
-             └──────────┬────────┘
-                        ▼
-                 ViLexNorm Test
-                        │
-                        ▼
-              A vs B Evaluation
-                        │
-                        ▼
-                Best Checkpoint
-                        │
-                        ▼
-             Local Inference / Web
+             │          +  │
+             │             ▼
+             │        Train Model B
+             │         [Kaggle GPU]
+             │             │
+             └───────┬─────┘
+                     ▼
+              ViLexNorm Test
+                     │
+                     ▼
+             A vs B Evaluation
+                     │
+                     ▼
+              Best Checkpoint
+                     │
+                     ▼
+          Local Inference / Web App
 ```
 
 ---
@@ -530,11 +653,9 @@ Project đạt implementation scope khi:
 1. ViLexNorm Train/Dev/Test được preprocess đúng và tách biệt;
 2. ViSoLex unlabeled corpus được preprocess thành artifact riêng;
 3. Model A fine-tune được trên Kaggle GPU;
-4. có ít nhất một pipeline tạo weak labels cho ViSoLex:
-   - Model A pseudo-labeling; hoặc
-   - LLM API labeling;
-5. weak labels được filter và audit;
-6. Model B được train bằng ViLexNorm + ViSoLex weak-labeled data;
+4. Model A sinh được candidate + confidence cho ViSoLex subset/pool đã chọn;
+5. LLM reviewer xử lý candidate theo `KEEP / EDIT / REJECT`, sau đó weak labels được validate, filter và audit;
+6. Model B được train bằng ViLexNorm + **LLM-reviewed ViSoLex weak-labeled data**;
 7. Model A và B được đánh giá trên cùng ViLexNorm Test;
 8. có error analysis;
 9. best checkpoint chạy inference local;
