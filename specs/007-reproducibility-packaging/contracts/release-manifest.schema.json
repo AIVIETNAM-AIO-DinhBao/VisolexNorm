@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ReleaseManifest",
+  "type": "object",
+  "required": ["project", "version", "created_at", "artifacts"],
+  "properties": {
+    "project": {"const": "ViSoLexNorm"},
+    "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "phase", "artifact_type", "sha256", "size_bytes", "required", "contains_sensitive_data"],
+        "properties": {
+          "path": {"type": "string"},
+          "phase": {"type": "integer", "minimum": 1, "maximum": 7},
+          "artifact_type": {"enum": ["code", "config", "prompt", "data", "checkpoint", "metrics", "predictions", "docs"]},
+          "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+          "size_bytes": {"type": "integer", "minimum": 0},
+          "required": {"type": "boolean"},
+          "distribution_url": {"type": ["string", "null"]},
+          "contains_sensitive_data": {"const": false}
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ModelBTrainConfig",
+  "type": "object",
+  "required": ["initial_checkpoint", "seed", "gold_count", "pseudo_per_epoch", "gold_pseudo_ratio", "weak_label_checksum", "hyperparameters"],
+  "properties": {
+    "initial_checkpoint": {"type": "string", "minLength": 1},
+    "seed": {"const": 2026},
+    "gold_count": {"const": 8372},
+    "pseudo_per_epoch": {"const": 8372},
+    "gold_pseudo_ratio": {"const": "1:1"},
+    "weak_label_checksum": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "hyperparameters": {"type": "object"}
+  }
+}
