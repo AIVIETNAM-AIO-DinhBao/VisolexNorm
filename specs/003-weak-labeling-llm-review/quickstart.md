@@ -15,14 +15,19 @@ chunk đã hoàn thành. Sau đó tắt smoke test để sinh đủ 68.411 candi
 ## 3. Tạo manifest và pilot local
 
 ```bash
-python scripts/select_review_manifest.py --config configs/llm_review_config.json
+python scripts/select_review_manifest.py --candidates data/intermediate/visolex_model_a_candidates.jsonl --config configs/llm_review_config.json
 python scripts/review_candidates.py --mode pilot --config configs/llm_review_config.json
-python scripts/audit_weak_labels.py --mode pilot
 ```
 
 Kỳ vọng: manifest 20.000 dòng, pilot 240 dòng và 16 request Gemini nếu không retry.
-Người thực nghiệm audit toàn bộ; khi đạt, sao chép draft thành v1, ghi prompt hash và đặt
-`prompt_frozen=true`. Batch chính phải từ chối chạy nếu v1/hash chưa được freeze.
+Người thực nghiệm audit toàn bộ và tạo `outputs/pilot_review_report.json` chứa
+`approved=true`, SHA-256 của draft và đúng 240 `audited_ids`. Sau đó chạy:
+
+```bash
+python scripts/freeze_review_prompt.py --pilot-report outputs/pilot_review_report.json --approved
+```
+
+Batch chính từ chối chạy nếu v1/hash chưa được freeze.
 
 ## 4. Review chính và resume
 
@@ -36,8 +41,9 @@ gọi lại; tiến trình tiếp tục từ sample chưa hoàn thành.
 ## 5. Xây weak labels
 
 ```bash
-python scripts/build_weak_labels.py --config configs/llm_review_config.json
-python scripts/audit_weak_labels.py --mode final
+python scripts/export_protected_hashes.py
+python scripts/build_weak_labels.py --protected-hashes data/processed/vilexnorm_protected_input_hashes.txt --model "$GEMINI_MODEL" --config configs/llm_review_config.json
+python scripts/audit_weak_labels.py --weak-labels data/processed/visolex_weak_labeled.jsonl --stats outputs/weak_label_stats.json
 ```
 
 Kỳ vọng:

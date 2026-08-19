@@ -1,0 +1,29 @@
+{
+  "seed": 2026,
+  "review_budget": 20000,
+  "pilot_per_stratum": 20,
+  "batch_size": 15,
+  "source_order": [
+    "ViHSD",
+    "UIT-VSMEC",
+    "ViHOS",
+    "ViSpamReviews",
+    "UIT-ViSFD"
+  ],
+  "confidence_bands": ["low", "medium", "high"],
+  "draft_prompt_path": "prompts/lexical_norm_review_draft.txt",
+  "frozen_prompt_path": "prompts/lexical_norm_review_v1.txt",
+  "draft_prompt_version": "lexical_norm_review_draft",
+  "frozen_prompt_version": "lexical_norm_review_v1",
+  "prompt_frozen": false,
+  "frozen_prompt_sha256": null,
+  "cache_path": "data/intermediate/visolex_review_cache.sqlite3",
+  "max_retries": 5,
+  "retry_backoff_seconds": [2, 4, 8, 16, 32],
+  "retry_jitter_max_seconds": 1.0,
+  "quota_cooldown_seconds": 60,
+  "min_length_ratio": 0.5,
+  "max_length_ratio": 2.0,
+  "max_edit_ratio": 0.8,
+  "audit_samples_per_stratum": 30
+}

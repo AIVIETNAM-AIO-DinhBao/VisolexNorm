@@ -24,5 +24,25 @@
     "llm_model": {"type": "string", "minLength": 1},
     "prompt_version": {"const": "lexical_norm_review_v1"},
     "accepted": {"const": true}
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"llm_decision": {"const": "KEEP"}},
+        "required": ["llm_decision"]
+      },
+      "then": {
+        "properties": {"llm_corrected_text": {"type": "null"}}
+      }
+    },
+    {
+      "if": {
+        "properties": {"llm_decision": {"const": "EDIT"}},
+        "required": ["llm_decision"]
+      },
+      "then": {
+        "properties": {"llm_corrected_text": {"type": "string", "minLength": 1}}
+      }
+    }
+  ]
 }

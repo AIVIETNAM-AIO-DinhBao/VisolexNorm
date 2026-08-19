@@ -1,0 +1,6 @@
+-r requirements-local.txt
+
+# Phase 3 validation and tests.
+jsonschema>=4.23
+tenacity>=9.0
+pytest>=8.3

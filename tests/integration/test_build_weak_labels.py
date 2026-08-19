@@ -1,0 +1,34 @@
+from __future__ import annotations
+
+from scripts.build_weak_labels import build_records, normalized_input_hash
+
+
+def item(sample_id, decision="KEEP"):
+    return {
+        "id": sample_id, "original_source": "ViHSD", "input_text": f"source {sample_id}",
+        "candidate_text": f"candidate {sample_id}", "model_a_confidence": -0.1,
+        "confidence_band": "medium",
+    }
+
+
+def review(decision, corrected=None):
+    return {"decision": decision, "corrected_text": corrected}
+
+
+def config():
+    return {"min_length_ratio": 0.1, "max_length_ratio": 10, "max_edit_ratio": 1.0}
+
+
+def test_decision_mapping_reject_and_protected_hash_filtering() -> None:
+    manifest = [item("keep"), item("edit"), item("reject"), item("protected")]
+    reviews = {
+        "keep": review("KEEP"), "edit": review("EDIT", "edited target"),
+        "reject": review("REJECT"), "protected": review("KEEP"),
+    }
+    protected = {normalized_input_hash("source protected")}
+    accepted, stats = build_records(manifest, reviews, protected, config(), "model", "lexical_norm_review_v1")
+    assert [row["id"] for row in accepted] == ["keep", "edit"]
+    assert accepted[0]["target_text"] == "candidate keep"
+    assert accepted[1]["target_text"] == "edited target"
+    assert stats["reject_count"] == 1
+    assert stats["drop_counts"]["protected_overlap"] == 1

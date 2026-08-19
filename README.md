@@ -90,7 +90,7 @@ only Train/Dev and exports the checkpoint plus Dev artifacts to
 
 Attach private Kaggle datasets containing `visolex_unlabeled.jsonl` and the
 exported `checkpoints/model_a/` directory. Enable a **T4 GPU**, then run
-`notebooks/generate_model_a_candidates_kaggle.ipynb`. It creates:
+`notebooks/generate_visolex_candidates_kaggle.ipynb`. It creates:
 
 ```text
 data/intermediate/visolex_model_a_candidates.jsonl
@@ -115,33 +115,37 @@ Install only the local reviewer dependencies:
 pip install -r requirements-local.txt
 ```
 
-Select the reproducible source/confidence-stratified review set (default
-budget: 3,000 in `configs/weak_label_config.json`):
+Select the reproducible source/confidence-stratified review set (strict budget:
+20,000; pilot: 240 in `configs/llm_review_config.json`):
 
 ```bash
-python scripts/select_review_manifest.py --candidates data/intermediate/visolex_model_a_candidates.jsonl
+python scripts/select_review_manifest.py --candidates data/intermediate/visolex_model_a_candidates.jsonl --config configs/llm_review_config.json
 ```
 
-First run a 200-example pilot and manually inspect its cached output. The
+First run the 240-example pilot and manually inspect every result. The
 reviewer uses `KEEP` / `EDIT` / `REJECT`, saves each successful result by ID,
 round-robins the configured API keys for requests/retries, and logs failures
 without exposing keys:
 
 ```bash
-python scripts/review_with_gemini.py --candidates data/intermediate/visolex_model_a_candidates.jsonl --manifest data/intermediate/visolex_review_manifest.jsonl --limit 200
+python scripts/review_candidates.py --mode pilot --config configs/llm_review_config.json
 ```
 
-After the prompt is accepted, resume the full manifest. `--resume` skips valid
-cached reviews, including the pilot IDs:
+After audit, freeze the prompt using a report bound to the current prompt hash and
+all 240 pilot IDs; then run the full manifest. SQLite automatically resumes the
+frozen-v1 namespace:
 
 ```bash
-python scripts/review_with_gemini.py --candidates data/intermediate/visolex_model_a_candidates.jsonl --manifest data/intermediate/visolex_review_manifest.jsonl --resume
+python scripts/freeze_review_prompt.py --pilot-report outputs/pilot_review_report.json --approved
+python scripts/review_candidates.py --mode full --config configs/llm_review_config.json
 ```
 
 Build final weak labels and statistics locally:
 
 ```bash
-python scripts/build_weak_labels.py --candidates data/intermediate/visolex_model_a_candidates.jsonl --manifest data/intermediate/visolex_review_manifest.jsonl
+python scripts/export_protected_hashes.py
+python scripts/build_weak_labels.py --protected-hashes data/processed/vilexnorm_protected_input_hashes.txt --model gemini-2.5-flash
+python scripts/audit_weak_labels.py --weak-labels data/processed/visolex_weak_labeled.jsonl --stats outputs/weak_label_stats.json
 ```
 
 This produces `data/processed/visolex_weak_labeled.jsonl` and
