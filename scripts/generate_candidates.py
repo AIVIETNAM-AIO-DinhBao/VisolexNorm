@@ -17,8 +17,10 @@ REQUIRED_INPUT = {"id", "dataset", "original_source", "input_text"}
 REQUIRED_CANDIDATE = {
     "id", "dataset", "original_source", "input_text", "candidate_text",
     "model_a_confidence", "candidate_checkpoint", "generation_config_hash",
-    "sequence_token_count",
+    "sequence_token_count", "generation_status",
 }
+
+GENERATION_STATUSES = {"generated_text", "empty_after_special_token_decode"}
 
 
 def validate_inputs(records: list[dict[str, Any]]) -> None:
@@ -40,8 +42,12 @@ def validate_candidate(record: dict[str, Any], expected: dict[str, Any], config_
     for field in ("id", "dataset", "original_source", "input_text"):
         if record[field] != expected[field]:
             raise ValueError(f"Candidate {expected['id']} changed field {field}")
-    if not isinstance(record["candidate_text"], str) or not record["candidate_text"]:
-        raise ValueError(f"Candidate text is empty for {expected['id']}")
+    if not isinstance(record["candidate_text"], str):
+        raise ValueError(f"Candidate text is not a string for {expected['id']}")
+    if record.get("generation_status") not in GENERATION_STATUSES:
+        raise ValueError(f"Invalid generation_status for {expected['id']}")
+    if bool(record["candidate_text"]) != (record["generation_status"] == "generated_text"):
+        raise ValueError(f"Candidate text/status mismatch for {expected['id']}")
     ensure_finite_number(record["model_a_confidence"], "model_a_confidence")
     if record["generation_config_hash"] != config_hash:
         raise ValueError(f"Candidate config hash mismatch for {expected['id']}")
@@ -112,14 +118,15 @@ def generate_chunk(records, tokenizer, model, device, config, config_hash, check
             batch, decoded, confidences, token_counts.detach().cpu().tolist()
         ):
             candidate = candidate.strip()
-            if not candidate or not math.isfinite(float(confidence)) or int(token_count) < 1:
+            if not math.isfinite(float(confidence)) or int(token_count) < 1:
                 raise RuntimeError(f"Invalid generation output for {source['id']}")
+            generation_status = "generated_text" if candidate else "empty_after_special_token_decode"
             results.append({
                 "id": source["id"], "dataset": "ViSoLex",
                 "original_source": source["original_source"], "input_text": source["input_text"],
                 "candidate_text": candidate, "model_a_confidence": float(confidence),
                 "candidate_checkpoint": checkpoint_id, "generation_config_hash": config_hash,
-                "sequence_token_count": int(token_count),
+                "sequence_token_count": int(token_count), "generation_status": generation_status,
             })
     return results
 

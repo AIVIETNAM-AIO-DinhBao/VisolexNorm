@@ -40,3 +40,22 @@ def test_keep_requires_null_corrected_text() -> None:
     record["llm_decision"] = "KEEP"
     with pytest.raises(ValidationError):
         Draft202012Validator(load(CONTRACTS / "weak-label.schema.json")).validate(record)
+
+
+def test_empty_candidate_requires_explicit_empty_generation_status() -> None:
+    record = load(FIXTURES / "candidate.json")
+    record["candidate_text"] = ""
+    with pytest.raises(ValidationError):
+        Draft202012Validator(load(CONTRACTS / "candidate.schema.json")).validate(record)
+    record["generation_status"] = "empty_after_special_token_decode"
+    Draft202012Validator(load(CONTRACTS / "candidate.schema.json")).validate(record)
+
+
+def test_weak_label_allows_audited_empty_model_candidate_but_not_empty_target() -> None:
+    record = load(FIXTURES / "weak-label.json")
+    record["candidate_text"] = ""
+    record["generation_status"] = "empty_after_special_token_decode"
+    Draft202012Validator(load(CONTRACTS / "weak-label.schema.json")).validate(record)
+    record["target_text"] = ""
+    with pytest.raises(ValidationError):
+        Draft202012Validator(load(CONTRACTS / "weak-label.schema.json")).validate(record)

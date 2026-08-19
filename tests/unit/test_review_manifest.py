@@ -14,6 +14,7 @@ def candidate(index: int, source: str) -> dict:
         "input_text": f"source {index}", "candidate_text": f"candidate {index}",
         "model_a_confidence": -float(index), "candidate_checkpoint": "model_a",
         "generation_config_hash": "a" * 64, "sequence_token_count": 2,
+        "generation_status": "generated_text",
     }
 
 

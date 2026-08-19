@@ -40,6 +40,7 @@ def normalized_input_hash(text: str) -> str:
 def build_records(manifest, reviews, protected_hashes, config, model, prompt_version):
     decisions = Counter()
     drops = Counter()
+    generation_statuses = Counter()
     by_source = defaultdict(Counter)
     by_confidence = defaultdict(Counter)
     accepted = []
@@ -50,6 +51,7 @@ def build_records(manifest, reviews, protected_hashes, config, model, prompt_ver
             drops["missing_valid_review"] += 1
             continue
         decision = review["decision"]
+        generation_statuses[item["generation_status"]] += 1
         decisions[decision] += 1
         by_source[item["original_source"]][decision] += 1
         by_confidence[item["confidence_band"]][decision] += 1
@@ -81,6 +83,7 @@ def build_records(manifest, reviews, protected_hashes, config, model, prompt_ver
             "id": item["id"], "dataset": "ViSoLex", "original_source": item["original_source"],
             "input_text": item["input_text"], "candidate_text": item["candidate_text"],
             "model_a_confidence": item["model_a_confidence"], "confidence_band": item["confidence_band"],
+            "generation_status": item["generation_status"],
             "llm_decision": decision, "llm_corrected_text": review["corrected_text"],
             "target_text": target, "label_source": "model_a+llm_review", "llm_model": model,
             "prompt_version": prompt_version, "accepted": True,
@@ -99,6 +102,7 @@ def build_records(manifest, reviews, protected_hashes, config, model, prompt_ver
         "reject_rate": decisions["REJECT"] / len(reviews) if reviews else 0.0,
         "validation_drop_count": sum(value for key, value in drops.items() if key != "llm_reject"),
         "drop_counts": dict(sorted(drops.items())), "final_accepted_count": len(accepted),
+        "counts_by_generation_status": dict(sorted(generation_statuses.items())),
         "counts_by_original_source": {key: dict(value) for key, value in sorted(by_source.items())},
         "counts_by_confidence_band": {key: dict(value) for key, value in sorted(by_confidence.items())},
         "prompt_version": prompt_version, "llm_model": model,

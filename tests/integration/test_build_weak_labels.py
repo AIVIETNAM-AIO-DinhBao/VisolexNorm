@@ -7,7 +7,7 @@ def item(sample_id, decision="KEEP"):
     return {
         "id": sample_id, "original_source": "ViHSD", "input_text": f"source {sample_id}",
         "candidate_text": f"candidate {sample_id}", "model_a_confidence": -0.1,
-        "confidence_band": "medium",
+        "confidence_band": "medium", "generation_status": "generated_text",
     }
 
 
@@ -32,3 +32,16 @@ def test_decision_mapping_reject_and_protected_hash_filtering() -> None:
     assert accepted[1]["target_text"] == "edited target"
     assert stats["reject_count"] == 1
     assert stats["drop_counts"]["protected_overlap"] == 1
+
+
+def test_empty_model_candidate_is_not_accepted_through_keep() -> None:
+    empty = item("icon")
+    empty["input_text"] = "🥰🥰🥰"
+    empty["candidate_text"] = ""
+    empty["generation_status"] = "empty_after_special_token_decode"
+    accepted, stats = build_records(
+        [empty], {"icon": review("KEEP")}, set(), config(), "model", "lexical_norm_review_v1"
+    )
+    assert accepted == []
+    assert stats["drop_counts"]["empty_target"] == 1
+    assert stats["counts_by_generation_status"]["empty_after_special_token_decode"] == 1

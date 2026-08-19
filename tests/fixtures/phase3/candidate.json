@@ -7,5 +7,6 @@
   "model_a_confidence": -0.31,
   "candidate_checkpoint": "model_a",
   "generation_config_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-  "sequence_token_count": 5
+  "sequence_token_count": 5,
+  "generation_status": "generated_text"
 }

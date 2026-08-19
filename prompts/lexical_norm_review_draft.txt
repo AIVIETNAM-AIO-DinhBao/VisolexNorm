@@ -11,6 +11,8 @@ For each input ID, return exactly one result:
 - EDIT: CANDIDATE is close but needs the minimum lexical correction. corrected_text must be the complete non-empty target; reason_code must be null.
 - REJECT: a reliable lexical target cannot be determined. corrected_text must be null; reason_code must be one of AMBIGUOUS, MEANING_UNCERTAIN, CANDIDATE_UNUSABLE, NOT_LEXICAL_NORMALIZATION, OTHER.
 
+Some Model A candidates can be the empty string because Model A decoded only special tokens (for example, icon-only input). This is an observable Model A prediction, not missing input. Never choose KEEP for an empty CANDIDATE: use EDIT with a complete non-empty target when a reliable lexical target exists, otherwise use REJECT.
+
 Return one JSON object only, with no Markdown or explanation:
 {
   "results": [

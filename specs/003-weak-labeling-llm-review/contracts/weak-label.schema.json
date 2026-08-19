@@ -5,7 +5,7 @@
   "additionalProperties": false,
   "required": [
     "id", "dataset", "original_source", "input_text", "candidate_text",
-    "model_a_confidence", "confidence_band", "llm_decision",
+    "model_a_confidence", "confidence_band", "generation_status", "llm_decision",
     "llm_corrected_text", "target_text", "label_source", "llm_model",
     "prompt_version", "accepted"
   ],
@@ -14,9 +14,10 @@
     "dataset": {"const": "ViSoLex"},
     "original_source": {"type": "string", "minLength": 1},
     "input_text": {"type": "string", "minLength": 1},
-    "candidate_text": {"type": "string", "minLength": 1},
+    "candidate_text": {"type": "string"},
     "model_a_confidence": {"type": "number"},
     "confidence_band": {"enum": ["low", "medium", "high"]},
+    "generation_status": {"enum": ["generated_text", "empty_after_special_token_decode"]},
     "llm_decision": {"enum": ["KEEP", "EDIT"]},
     "llm_corrected_text": {"type": ["string", "null"]},
     "target_text": {"type": "string", "minLength": 1},
