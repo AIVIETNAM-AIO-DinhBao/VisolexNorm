@@ -1,5 +1,0 @@
-# Runtime dependencies for local Phase 3 review and weak-label preparation.
-google-genai>=1.0
-python-dotenv>=1.0
-jsonschema>=4.23
-tenacity>=9.0

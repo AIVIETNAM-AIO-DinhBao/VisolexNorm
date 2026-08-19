@@ -1,6 +1,8 @@
--r requirements-local.txt
-
-# Phase 3 validation and tests.
+# Runtime dependencies for local Phase 3 review and weak-label preparation.
+google-genai>=1.0
+python-dotenv>=1.0
 jsonschema>=4.23
 tenacity>=9.0
+
+# Phase 3 validation and tests.
 pytest>=8.3
