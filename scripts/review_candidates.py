@@ -54,6 +54,51 @@ def validate_frozen_prompt(config: dict[str, Any], prompt_path: Path) -> str:
     return digest
 
 
+def safe_error_detail(error: Exception) -> str:
+    """Return an actionable terminal code without exposing API/request content."""
+    text = str(error).lower()
+    if "client has been closed" in text:
+        return "client_closed"
+    if "not found" in text or "404" in text:
+        return "model_or_endpoint_not_found"
+    if "invalid argument" in text or "400" in text:
+        return "invalid_request"
+    if "response is not valid json" in text:
+        return "invalid_json_response"
+    if "does not exactly match" in text:
+        return "response_id_mismatch"
+    if "validationerror" in type(error).__name__.lower():
+        return "response_schema_invalid"
+    return "api_or_transport_error"
+
+
+class GeminiRequester:
+    """Keep each synchronous SDK client alive for the complete review run."""
+
+    def __init__(self) -> None:
+        self.clients: dict[str, Any] = {}
+
+    def __call__(self, key: str, model: str, prompt: str) -> str:
+        from google import genai
+        from google.genai import types
+
+        # Do not create the Client in a temporary expression: its finalizer can
+        # close the underlying HTTP client while a request is still in flight.
+        client = self.clients.setdefault(key, genai.Client(api_key=key))
+        response = client.models.generate_content(
+            model=model,
+            contents=prompt,
+            config=types.GenerateContentConfig(response_mime_type="application/json", temperature=0),
+        )
+        return response.text or ""
+
+    def close(self) -> None:
+        for client in self.clients.values():
+            close = getattr(client, "close", None)
+            if callable(close):
+                close()
+
+
 def run_batches(
     rows: list[dict[str, Any]], template: str, prompt_hash: str, prompt_version: str,
     model: str, config: dict[str, Any], cache: ReviewCache, key_pool: GeminiKeyPool,
@@ -107,24 +152,12 @@ def run_batches(
                     wait = float(waits[min(attempt, len(waits) - 1)]) + random.uniform(
                         0, float(config["retry_jitter_max_seconds"])
                     )
-                    log_event("RETRY", f"Gemini batch {batch_number}/{batch_total}: attempt={attempt + 1}/{max_retries} category={category} action={action} wait={wait:.1f}s error={type(error).__name__}", quiet=quiet)
+                    log_event("RETRY", f"Gemini batch {batch_number}/{batch_total}: attempt={attempt + 1}/{max_retries} category={category} action={action} wait={wait:.1f}s error={safe_error_detail(error)}", quiet=quiet)
                     sleep(wait)
         if last_error:
             cache.mark_failed(batch_id, prompt_version, prompt_hash, model, last_error)
-            log_event("WARNING", f"Gemini batch {batch_number}/{batch_total}: failed after {max_retries} attempts; rerun resumes it. error_type={last_error.split(':', 1)[0]}", quiet=quiet)
+            log_event("WARNING", f"Gemini batch {batch_number}/{batch_total}: failed after {max_retries} attempts; rerun resumes it. error={safe_error_detail(RuntimeError(last_error))}", quiet=quiet)
     reporter.done(f"pending_batches={batch_total}")
-
-
-def gemini_request(key: str, model: str, prompt: str) -> str:
-    from google import genai
-    from google.genai import types
-
-    response = genai.Client(api_key=key).models.generate_content(
-        model=model,
-        contents=prompt,
-        config=types.GenerateContentConfig(response_mime_type="application/json", temperature=0),
-    )
-    return response.text or ""
 
 
 ROOT = Path(__file__).parents[1]
@@ -165,16 +198,18 @@ def main() -> None:
         prompt_hash = validate_frozen_prompt(config, prompt_path)
     template = prompt_path.read_text(encoding="utf-8")
     cache = ReviewCache(args.cache or Path(config["cache_path"]))
+    requester = GeminiRequester()
     try:
         run_batches(
             rows, template, prompt_hash, version, model, config, cache,
-            GeminiKeyPool(keys, float(config["quota_cooldown_seconds"])), gemini_request, quiet=args.quiet,
+            GeminiKeyPool(keys, float(config["quota_cooldown_seconds"])), requester, quiet=args.quiet,
         )
         missing = {row["id"] for row in rows} - cache.completed_ids(version, prompt_hash, model)
         if missing:
             raise SystemExit(f"Review incomplete: {len(missing)} IDs missing; rerun to resume")
         log_event("DONE", f"Gemini {args.mode} review completed: {len(rows)} IDs committed in cache={cache.path}", quiet=args.quiet)
     finally:
+        requester.close()
         cache.close()
 
 

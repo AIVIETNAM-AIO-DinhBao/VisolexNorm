@@ -7,7 +7,7 @@ import pytest
 
 from scripts.gemini_key_pool import GeminiKeyPool
 from scripts.review_cache import ReviewCache
-from scripts.review_candidates import parse_response, run_batches, validate_frozen_prompt, RESPONSE_VALIDATOR
+from scripts.review_candidates import parse_response, run_batches, safe_error_detail, validate_frozen_prompt, RESPONSE_VALIDATOR
 
 
 def row(index: int) -> dict:
@@ -63,6 +63,12 @@ def test_progress_logs_are_secret_safe_and_show_resume(tmp_path: Path, capsys) -
     assert "[START]" in output and "[PROGRESS]" in output and "[RESUME]" in output
     assert "super-secret-key" not in output and "source 0" not in output
     cache.close()
+
+
+def test_safe_error_detail_is_actionable_without_request_content() -> None:
+    assert safe_error_detail(RuntimeError("Cannot send a request, as the client has been closed.")) == "client_closed"
+    assert safe_error_detail(RuntimeError("404 model not found")) == "model_or_endpoint_not_found"
+    assert safe_error_detail(ValueError("source text must not leak")) == "api_or_transport_error"
 
 
 def test_response_rejects_missing_or_duplicate_ids() -> None:
