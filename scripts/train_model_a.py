@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING, Any
 
 sys.path.insert(0, str(Path(__file__).parent))
 from data_utils import read_jsonl, write_jsonl  # noqa: E402
+from phase3_utils import log_event  # noqa: E402
 
 if TYPE_CHECKING:
     from datasets import Dataset
@@ -53,6 +54,7 @@ def main() -> None:
         type=Path,
         help="Existing Trainer checkpoint to evaluate/export without training again",
     )
+    parser.add_argument("--quiet", action="store_true", help="Suppress operational artifact logs")
     args = parser.parse_args()
 
     try:
@@ -86,6 +88,7 @@ def main() -> None:
     require_gold_records(dev_records, "dev")
     if args.smoke_test:
         train_records, dev_records = train_records[:200], dev_records[:50]
+    log_event("START", f"Model A training: train={len(train_records)} dev={len(dev_records)} smoke_test={args.smoke_test} checkpoint_path={args.checkpoint_path or 'base model'}", quiet=args.quiet)
 
     set_seed(config["seed"])
     tokenizer = AutoTokenizer.from_pretrained(config["model_name"])
@@ -155,7 +158,9 @@ def main() -> None:
         callbacks=callbacks,
     )
     if not args.checkpoint_path:
+        log_event("PROGRESS", "Model A training: Trainer started; see Transformers training logs for epoch/step progress", quiet=args.quiet)
         trainer.train()
+    log_event("PROGRESS", "Model A training: generating Dev predictions", quiet=args.quiet)
     dev_result = trainer.predict(dev_tokenized, metric_key_prefix="dev")
     # Trainer uses -100 to pad generated predictions in distributed/padded
     # batches. -100 is a loss ignore index, not a valid BARTpho token ID.
@@ -203,9 +208,7 @@ def main() -> None:
     }
     with (output_dir / "train_config.json").open("w", encoding="utf-8") as handle:
         json.dump(run_config, handle, ensure_ascii=False, indent=2)
-    print(f"Saved checkpoint: {checkpoint_dir}")
-    print(f"Saved outputs: {output_dir}")
-    print(json.dumps(metrics, ensure_ascii=False, indent=2))
+    log_event("DONE", f"Model A training: checkpoint={checkpoint_dir} outputs={output_dir} dev_loss={metrics.get('dev_loss')} exact_sentence_match={metrics['exact_sentence_match']:.4f}", quiet=args.quiet)
 
 
 if __name__ == "__main__":

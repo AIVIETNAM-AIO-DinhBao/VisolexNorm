@@ -8,6 +8,7 @@ import random
 from pathlib import Path
 
 from data_utils import clean_text, read_jsonl
+from phase3_utils import log_event
 
 
 ALLOWED_SOURCES = {"ViHSD", "UIT-VSMEC", "ViHOS", "ViSpamReviews", "UIT-ViSFD"}
@@ -22,10 +23,12 @@ def main() -> None:
     parser.add_argument("--data-dir", type=Path, default=Path("data/processed"))
     parser.add_argument("--samples", type=int, default=3, help="Samples to print per file")
     parser.add_argument("--seed", type=int, default=2026)
+    parser.add_argument("--quiet", action="store_true", help="Suppress operational validation logs")
     args = parser.parse_args()
 
     all_ids: set[str] = set()
     splits: dict[str, list[dict[str, str]]] = {}
+    log_event("START", f"Phase 1 validation: data_dir={args.data_dir}", quiet=args.quiet)
     for split in ("train", "dev", "test"):
         path = args.data_dir / f"vilexnorm_{split}.jsonl"
         if not path.is_file():
@@ -43,7 +46,7 @@ def main() -> None:
                 fail(f"Duplicate id: {record['id']}")
             all_ids.add(record["id"])
         splits[split] = records
-        print(f"OK {path}: {len(records)} records")
+        log_event("PROGRESS", f"Phase 1 validation: split={split} records={len(records)}", quiet=args.quiet)
 
     visolex_path = args.data_dir / "visolex_unlabeled.jsonl"
     if not visolex_path.is_file():
@@ -72,8 +75,7 @@ def main() -> None:
     overlaps = inputs & protected
     if overlaps:
         fail(f"ViSoLex still overlaps ViLexNorm Dev/Test ({len(overlaps)} exact input matches).")
-    print(f"OK {visolex_path}: {len(visolex)} records")
-    print("ViSoLex by source:", source_counts)
+    log_event("PROGRESS", f"Phase 1 validation: visolex_records={len(visolex)} source_counts={source_counts}", quiet=args.quiet)
 
     rng = random.Random(args.seed)
     print("\nRandom samples:")
@@ -84,7 +86,7 @@ def main() -> None:
             # ASCII output prevents Windows cmd code-page errors while
             # preserving all Unicode in the actual JSONL artifact.
             print(json.dumps(record, ensure_ascii=True))
-    print("\nValidation passed.")
+    log_event("DONE", f"Phase 1 validation: total_ids={len(all_ids)} status=passed", quiet=args.quiet)
 
 
 if __name__ == "__main__":

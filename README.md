@@ -109,10 +109,10 @@ GEMINI_API_KEYS=key_1,key_2,key_3
 GEMINI_MODEL=gemini-2.5-flash
 ```
 
-Install only the local reviewer dependencies:
+Install the local reviewer dependencies:
 
 ```bash
-pip install -r requirements-local.txt
+pip install -r requirements.txt
 ```
 
 Select the reproducible source/confidence-stratified review set (strict budget:
@@ -130,6 +130,26 @@ without exposing keys:
 ```bash
 python scripts/review_candidates.py --mode pilot --config configs/llm_review_config.json
 ```
+
+### Operational progress and resume
+
+Long-running scripts emit flushed, durable terminal lines rather than an
+interactive progress bar, so progress remains visible in PowerShell, Kaggle,
+and saved logs:
+
+```text
+[START] Gemini review: total=240 cached=0 pending=240 batches=16 ...
+[REQUEST] Gemini batch 1/16: samples=15 attempt=1/5
+[PROGRESS] Gemini review: 15/240 (6.2%) elapsed=0:08 eta=2:02 ...
+[RETRY] Gemini batch 4/16: ... category=quota ... wait=4.2s ...
+[DONE] Gemini pilot review completed: 240 IDs committed in cache=...
+```
+
+`[RESUME]` means already committed IDs were recovered from SQLite and are not
+charged again. `Ctrl+C` is safe between requests: rerun the same command to
+continue. `[WARNING]` identifies an exhausted batch; the terminal never prints
+API keys, prompts, raw API responses, or sample text. Pass `--quiet` only for
+CI/noninteractive runs.
 
 After audit, freeze the prompt using a report bound to the current prompt hash and
 all 240 pilot IDs; then run the full manifest. SQLite automatically resumes the

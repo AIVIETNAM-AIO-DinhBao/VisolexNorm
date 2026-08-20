@@ -6,23 +6,27 @@ import argparse
 from pathlib import Path
 
 from data_utils import read_jsonl
-from phase3_utils import sha256_text
+from phase3_utils import log_event, sha256_text
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Export sorted protected input SHA-256 fingerprints.")
     parser.add_argument("--data-dir", type=Path, default=Path("data/processed"))
     parser.add_argument("--output", type=Path, default=Path("data/processed/vilexnorm_protected_input_hashes.txt"))
+    parser.add_argument("--quiet", action="store_true", help="Suppress operational progress logs")
     args = parser.parse_args()
     hashes = set()
+    log_event("START", f"Protected-hash export: data_dir={args.data_dir}", quiet=args.quiet)
     for split in ("dev", "test"):
         path = args.data_dir / f"vilexnorm_{split}.jsonl"
         if not path.is_file():
             raise FileNotFoundError(path)
-        hashes.update(sha256_text(row["input_text"]) for row in read_jsonl(path))
+        rows = read_jsonl(path)
+        hashes.update(sha256_text(row["input_text"]) for row in rows)
+        log_event("PROGRESS", f"Protected-hash export: split={split} records={len(rows)} unique_hashes={len(hashes)}", quiet=args.quiet)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text("\n".join(sorted(hashes)) + "\n", encoding="utf-8")
-    print(f"Saved {len(hashes)} protected fingerprints -> {args.output}")
+    log_event("DONE", f"Protected-hash export: fingerprints={len(hashes)} output={args.output}", quiet=args.quiet)
 
 
 if __name__ == "__main__":

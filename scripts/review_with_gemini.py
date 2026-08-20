@@ -14,6 +14,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).parent))
 from data_utils import clean_text, read_jsonl  # noqa: E402
+from phase3_utils import ProgressReporter, log_event  # noqa: E402
 
 
 DECISIONS = {"KEEP", "EDIT", "REJECT"}
@@ -71,6 +72,7 @@ def main() -> None:
     parser.add_argument("--errors", type=Path, default=Path("data/intermediate/gemini_review_errors.jsonl"))
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--limit", type=int, help="Process only a deterministic prefix for pilot/smoke runs")
+    parser.add_argument("--quiet", action="store_true", help="Suppress operational progress logs")
     args = parser.parse_args()
 
     try:
@@ -78,7 +80,7 @@ def main() -> None:
         from google import genai
         from google.genai import types
     except ImportError as error:
-        raise SystemExit("Run `pip install -r requirements-local.txt` before local Gemini review.") from error
+        raise SystemExit("Run `pip install -r requirements.txt` before local Gemini review.") from error
 
     load_dotenv()
     keys = [key.strip() for key in os.getenv("GEMINI_API_KEYS", "").split(",") if key.strip()]
@@ -98,6 +100,10 @@ def main() -> None:
     pending = [row for row in manifest if row["id"] not in done]
     if args.limit is not None:
         pending = pending[: args.limit]
+    reporter = ProgressReporter("Legacy Gemini review", len(manifest), len(done), quiet=args.quiet)
+    log_event("START", f"Legacy Gemini review: total={len(manifest)} cached={len(done)} pending={len(pending)} model={model_name}", quiet=args.quiet)
+    if done:
+        log_event("RESUME", f"Reusing {len(done)} IDs from JSONL cache", quiet=args.quiet)
 
     key_index = 0
     attempts = int(config["max_retries_per_request"])
@@ -138,7 +144,9 @@ def main() -> None:
             except Exception as error:  # API/network/structured-output failures are retried and audited.
                 last_error = f"{type(error).__name__}: {error}"[:500]
                 if attempt + 1 < attempts:
-                    time.sleep(base_wait * (2**attempt) + random.uniform(0, 0.5))
+                    wait = base_wait * (2**attempt) + random.uniform(0, 0.5)
+                    log_event("RETRY", f"Legacy Gemini review: item={number}/{len(pending)} attempt={attempt + 1}/{attempts} wait={wait:.1f}s error={type(error).__name__}", quiet=args.quiet)
+                    time.sleep(wait)
         if last_error:
             append_jsonl(
                 args.errors,
@@ -151,7 +159,8 @@ def main() -> None:
                     "logged_at_utc": datetime.now(timezone.utc).isoformat(),
                 },
             )
-        print(f"Reviewed {number}/{len(pending)}; cache={'ok' if not last_error else 'error'}")
+        reporter.advance(1, f"pending_item={number}/{len(pending)} cache={'ok' if not last_error else 'error'}")
+    reporter.done(f"cache={args.cache} errors={args.errors}")
 
 
 if __name__ == "__main__":

@@ -48,6 +48,23 @@ def test_batch_size_resume_and_atomic_sqlite(tmp_path: Path) -> None:
     cache.close()
 
 
+def test_progress_logs_are_secret_safe_and_show_resume(tmp_path: Path, capsys) -> None:
+    cache = ReviewCache(tmp_path / "cache.sqlite3")
+    rows = [row(index) for index in range(2)]
+
+    def request(key, model, prompt):
+        assert key == "super-secret-key"
+        return successful_response(prompt)
+
+    pool = GeminiKeyPool(["super-secret-key"], cooldown_seconds=0)
+    run_batches(rows, "SAMPLES:\n{samples_json}", "a" * 64, "draft", "model", config(), cache, pool, request, lambda _: None)
+    run_batches(rows, "SAMPLES:\n{samples_json}", "a" * 64, "draft", "model", config(), cache, pool, request, lambda _: None)
+    output = capsys.readouterr().out
+    assert "[START]" in output and "[PROGRESS]" in output and "[RESUME]" in output
+    assert "super-secret-key" not in output and "source 0" not in output
+    cache.close()
+
+
 def test_response_rejects_missing_or_duplicate_ids() -> None:
     payload = {"results": [{"id": "a", "decision": "KEEP", "corrected_text": None, "reason_code": None}]}
     with pytest.raises(ValueError):

@@ -10,7 +10,7 @@ from typing import Any, Iterable
 
 sys.path.insert(0, str(Path(__file__).parent))
 from data_utils import read_jsonl  # noqa: E402
-from phase3_utils import atomic_write_jsonl, ensure_finite_number, load_json, sha256_json  # noqa: E402
+from phase3_utils import ProgressReporter, atomic_write_jsonl, ensure_finite_number, load_json, log_event, sha256_json  # noqa: E402
 
 
 REQUIRED_INPUT = {"id", "dataset", "original_source", "input_text"}
@@ -153,6 +153,7 @@ def main() -> None:
     parser.add_argument("--config", type=Path, default=Path("configs/candidate_generation_config.json"))
     parser.add_argument("--limit", type=int)
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--quiet", action="store_true", help="Suppress operational progress logs")
     args = parser.parse_args()
 
     try:
@@ -178,20 +179,28 @@ def main() -> None:
     tokenizer = AutoTokenizer.from_pretrained(args.checkpoint)
     model = AutoModelForSeq2SeqLM.from_pretrained(args.checkpoint).to(device)
     model.eval()
+    total_chunks = math.ceil(len(records) / chunk_size)
+    reporter = ProgressReporter("Model A candidate generation", len(records), quiet=args.quiet)
+    log_event("START", f"Model A candidates: total={len(records)} chunks={total_chunks} chunk_size={chunk_size} batch_size={config['batch_size']} device={device} resume={args.resume}", quiet=args.quiet)
+    skipped_chunks = 0
+    empty_count = 0
 
     for chunk_index, start in enumerate(range(0, len(records), chunk_size)):
         expected = records[start : start + chunk_size]
         path = chunk_path(chunk_dir, chunk_index)
         existing = load_completed_chunk(path, expected, config_hash) if args.resume else None
         if existing is not None:
-            print(f"Skipping valid chunk {chunk_index}: {len(existing)} records")
+            skipped_chunks += 1
+            empty_count += sum(row["generation_status"] == "empty_after_special_token_decode" for row in existing)
+            reporter.advance(len(existing), f"chunk={chunk_index + 1}/{total_chunks} resumed")
             continue
         rows = generate_chunk(expected, tokenizer, model, device, config, config_hash, args.checkpoint.name)
         atomic_write_jsonl(rows, path)
-        print(f"Committed chunk {chunk_index}: {len(rows)} records")
+        empty_count += sum(row["generation_status"] == "empty_after_special_token_decode" for row in rows)
+        reporter.advance(len(rows), f"chunk={chunk_index + 1}/{total_chunks} committed")
 
     merge_chunks(records, chunk_dir, args.output, chunk_size, config_hash)
-    print(f"Saved {len(records)} ordered candidates -> {args.output} ({device})")
+    reporter.done(f"resumed_chunks={skipped_chunks} empty_predictions={empty_count} output={args.output}")
 
 
 if __name__ == "__main__":

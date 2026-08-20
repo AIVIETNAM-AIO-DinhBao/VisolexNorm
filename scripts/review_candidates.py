@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import random
 import sys
@@ -16,7 +17,7 @@ from jsonschema import Draft202012Validator
 sys.path.insert(0, str(Path(__file__).parent))
 from data_utils import read_jsonl  # noqa: E402
 from gemini_key_pool import GeminiKeyPool, classify_error  # noqa: E402
-from phase3_utils import load_json, sha256_json, sha256_text  # noqa: E402
+from phase3_utils import ProgressReporter, load_json, log_event, sha256_json, sha256_text  # noqa: E402
 from review_cache import ReviewCache  # noqa: E402
 
 
@@ -57,13 +58,20 @@ def run_batches(
     rows: list[dict[str, Any]], template: str, prompt_hash: str, prompt_version: str,
     model: str, config: dict[str, Any], cache: ReviewCache, key_pool: GeminiKeyPool,
     request: Callable[[str, str, str], str], sleep: Callable[[float], None] = time.sleep,
+    quiet: bool = False,
 ) -> None:
     completed = cache.completed_ids(prompt_version, prompt_hash, model)
+    completed &= {row["id"] for row in rows}
     pending = [row for row in rows if row["id"] not in completed]
     size = int(config["batch_size"])
     waits = list(config["retry_backoff_seconds"])
     max_retries = int(config["max_retries"])
-    for batch in chunks(pending, size):
+    batch_total = math.ceil(len(pending) / size) if pending else 0
+    reporter = ProgressReporter("Gemini review", len(rows), len(completed), quiet=quiet)
+    log_event("START", f"Gemini review: total={len(rows)} cached={len(completed)} pending={len(pending)} batches={batch_total} batch_size={size} model={model} prompt={prompt_version}@{prompt_hash[:12]}", quiet=quiet)
+    if completed:
+        log_event("RESUME", f"Reusing {len(completed)} committed reviews from SQLite cache", quiet=quiet)
+    for batch_number, batch in enumerate(chunks(pending, size), start=1):
         ids = [row["id"] for row in batch]
         batch_id = sha256_json({"prompt_hash": prompt_hash, "ids": ids})[:24]
         rendered = render_prompt(template, batch)
@@ -72,29 +80,39 @@ def run_batches(
             try:
                 key = key_pool.acquire()
             except RuntimeError:
+                log_event("WAIT", f"Gemini batch {batch_number}/{batch_total}: all keys cooling down; waiting {config['quota_cooldown_seconds']}s", quiet=quiet)
                 sleep(float(config["quota_cooldown_seconds"]))
                 key = key_pool.acquire()
             cache.mark_attempt(batch_id, prompt_hash, prompt_version, model, ids)
             try:
+                log_event("REQUEST", f"Gemini batch {batch_number}/{batch_total}: samples={len(ids)} attempt={attempt + 1}/{max_retries}", quiet=quiet)
                 raw = request(key, model, rendered)
                 results = parse_response(raw, ids, RESPONSE_VALIDATOR)
                 cache.commit_success(batch_id, prompt_hash, prompt_version, model, results, raw)
                 last_error = ""
+                reporter.advance(len(batch), f"batch={batch_number}/{batch_total} committed")
                 break
             except Exception as error:
                 last_error = f"{type(error).__name__}: {error}"
                 category = classify_error(error)
                 if category == "quota":
                     key_pool.cooldown(key)
+                    action = "key cooled down"
                 elif category == "auth":
                     key_pool.disable(key)
+                    action = "key disabled"
+                else:
+                    action = "will retry"
                 if attempt + 1 < max_retries:
                     wait = float(waits[min(attempt, len(waits) - 1)]) + random.uniform(
                         0, float(config["retry_jitter_max_seconds"])
                     )
+                    log_event("RETRY", f"Gemini batch {batch_number}/{batch_total}: attempt={attempt + 1}/{max_retries} category={category} action={action} wait={wait:.1f}s error={type(error).__name__}", quiet=quiet)
                     sleep(wait)
         if last_error:
             cache.mark_failed(batch_id, prompt_version, prompt_hash, model, last_error)
+            log_event("WARNING", f"Gemini batch {batch_number}/{batch_total}: failed after {max_retries} attempts; rerun resumes it. error_type={last_error.split(':', 1)[0]}", quiet=quiet)
+    reporter.done(f"pending_batches={batch_total}")
 
 
 def gemini_request(key: str, model: str, prompt: str) -> str:
@@ -120,13 +138,14 @@ def main() -> None:
     parser.add_argument("--manifest", type=Path, default=Path("data/intermediate/visolex_review_manifest.jsonl"))
     parser.add_argument("--config", type=Path, default=Path("configs/llm_review_config.json"))
     parser.add_argument("--cache", type=Path)
+    parser.add_argument("--quiet", action="store_true", help="Suppress operational progress logs")
     args = parser.parse_args()
 
     try:
         from dotenv import load_dotenv
         import google.genai  # noqa: F401
     except ImportError as error:
-        raise SystemExit("Install requirements-local.txt before Gemini review.") from error
+        raise SystemExit("Install requirements.txt before Gemini review.") from error
     load_dotenv()
     keys = [key.strip() for key in os.getenv("GEMINI_API_KEYS", "").split(",") if key.strip()]
     model = os.getenv("GEMINI_MODEL", "").strip()
@@ -149,11 +168,12 @@ def main() -> None:
     try:
         run_batches(
             rows, template, prompt_hash, version, model, config, cache,
-            GeminiKeyPool(keys, float(config["quota_cooldown_seconds"])), gemini_request,
+            GeminiKeyPool(keys, float(config["quota_cooldown_seconds"])), gemini_request, quiet=args.quiet,
         )
         missing = {row["id"] for row in rows} - cache.completed_ids(version, prompt_hash, model)
         if missing:
             raise SystemExit(f"Review incomplete: {len(missing)} IDs missing; rerun to resume")
+        log_event("DONE", f"Gemini {args.mode} review completed: {len(rows)} IDs committed in cache={cache.path}", quiet=args.quiet)
     finally:
         cache.close()
 

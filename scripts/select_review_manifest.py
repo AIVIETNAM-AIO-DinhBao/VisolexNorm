@@ -14,7 +14,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent))
 from data_utils import read_jsonl  # noqa: E402
 from generate_candidates import REQUIRED_CANDIDATE  # noqa: E402
-from phase3_utils import atomic_write_jsonl, ensure_finite_number, load_json  # noqa: E402
+from phase3_utils import atomic_write_jsonl, ensure_finite_number, load_json, log_event  # noqa: E402
 
 
 def validate_candidates(rows: list[dict[str, Any]]) -> None:
@@ -115,10 +115,13 @@ def main() -> None:
     parser.add_argument("--output", type=Path, default=Path("data/intermediate/visolex_review_manifest.jsonl"))
     parser.add_argument("--pilot-output", type=Path, default=Path("data/intermediate/visolex_pilot_manifest.jsonl"))
     parser.add_argument("--config", type=Path, default=Path("configs/llm_review_config.json"))
+    parser.add_argument("--quiet", action="store_true", help="Suppress operational progress logs")
     args = parser.parse_args()
 
     config = load_json(args.config)
-    manifest = create_manifest(read_jsonl(args.candidates), config)
+    candidates = read_jsonl(args.candidates)
+    log_event("START", f"Review-manifest selection: candidates={len(candidates)} budget={config['review_budget']} seed={config['seed']}", quiet=args.quiet)
+    manifest = create_manifest(candidates, config)
     pilot = [row for row in manifest if row["is_pilot"]]
     active_sources = {row["original_source"] for row in manifest}
     expected_pilot = int(config["pilot_per_stratum"]) * len(active_sources) * len(config["confidence_bands"])
@@ -126,8 +129,8 @@ def main() -> None:
         raise RuntimeError(f"Pilot count mismatch: expected {expected_pilot}, found {len(pilot)}")
     atomic_write_jsonl(manifest, args.output)
     atomic_write_jsonl(pilot, args.pilot_output)
-    print("Source quotas:", dict(Counter(row["original_source"] for row in manifest)))
-    print(f"Saved manifest={len(manifest)}, pilot={len(pilot)}")
+    log_event("PROGRESS", f"Review-manifest quotas: {dict(Counter(row['original_source'] for row in manifest))}", quiet=args.quiet)
+    log_event("DONE", f"Review-manifest selection: manifest={len(manifest)} pilot={len(pilot)} output={args.output} pilot_output={args.pilot_output}", quiet=args.quiet)
 
 
 if __name__ == "__main__":

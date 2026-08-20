@@ -6,8 +6,56 @@ import hashlib
 import json
 import math
 import os
+import time
 from pathlib import Path
 from typing import Any, Iterable
+
+
+def format_duration(seconds: float) -> str:
+    """Format an elapsed/estimated duration for durable terminal logs."""
+    seconds = max(0, int(seconds))
+    minutes, seconds = divmod(seconds, 60)
+    hours, minutes = divmod(minutes, 60)
+    return f"{hours:d}:{minutes:02d}:{seconds:02d}" if hours else f"{minutes:d}:{seconds:02d}"
+
+
+def log_event(event: str, message: str, *, quiet: bool = False) -> None:
+    """Emit one flushed, secret-safe operational log line."""
+    if not quiet:
+        print(f"[{event}] {message}", flush=True)
+
+
+class ProgressReporter:
+    """Small dependency-free progress reporter suitable for terminal/Kaggle logs."""
+
+    def __init__(self, label: str, total: int, completed: int = 0, *, quiet: bool = False, clock=time.monotonic):
+        if total < 0 or not 0 <= completed <= total:
+            raise ValueError("Progress bounds are invalid")
+        self.label, self.total, self.completed = label, total, completed
+        self.initial_completed = completed
+        self.quiet, self.clock, self.started_at = quiet, clock, clock()
+
+    def advance(self, count: int, detail: str = "") -> None:
+        self.completed = min(self.total, self.completed + count)
+        elapsed = self.clock() - self.started_at
+        newly_completed = self.completed - self.initial_completed
+        rate = (newly_completed / elapsed) if elapsed and newly_completed else 0.0
+        remaining = self.total - self.completed
+        eta = format_duration(remaining / rate) if rate else "unknown"
+        suffix = f" | {detail}" if detail else ""
+        log_event(
+            "PROGRESS",
+            f"{self.label}: {self.completed}/{self.total} ({self.completed / self.total * 100 if self.total else 100:.1f}%) "
+            f"elapsed={format_duration(elapsed)} eta={eta}{suffix}",
+            quiet=self.quiet,
+        )
+
+    def done(self, detail: str = "") -> None:
+        suffix = f" | {detail}" if detail else ""
+        log_event(
+            "DONE", f"{self.label}: {self.completed}/{self.total} elapsed={format_duration(self.clock() - self.started_at)}{suffix}",
+            quiet=self.quiet,
+        )
 
 
 def load_json(path: Path) -> dict[str, Any]:

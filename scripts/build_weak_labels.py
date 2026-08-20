@@ -14,7 +14,7 @@ from jsonschema import Draft202012Validator
 
 sys.path.insert(0, str(Path(__file__).parent))
 from data_utils import clean_text, read_jsonl  # noqa: E402
-from phase3_utils import atomic_write_jsonl, load_json, sha256_text  # noqa: E402
+from phase3_utils import ProgressReporter, atomic_write_jsonl, load_json, log_event, sha256_text  # noqa: E402
 from review_cache import ReviewCache  # noqa: E402
 from review_candidates import validate_frozen_prompt  # noqa: E402
 
@@ -37,7 +37,7 @@ def normalized_input_hash(text: str) -> str:
     return sha256_text(cleaned)
 
 
-def build_records(manifest, reviews, protected_hashes, config, model, prompt_version):
+def build_records(manifest, reviews, protected_hashes, config, model, prompt_version, quiet=False):
     decisions = Counter()
     drops = Counter()
     generation_statuses = Counter()
@@ -45,10 +45,13 @@ def build_records(manifest, reviews, protected_hashes, config, model, prompt_ver
     by_confidence = defaultdict(Counter)
     accepted = []
     seen_inputs = set()
-    for item in manifest:
+    reporter = ProgressReporter("Weak-label validation", len(manifest), quiet=quiet)
+    for index, item in enumerate(manifest, start=1):
         review = reviews.get(item["id"])
         if review is None:
             drops["missing_valid_review"] += 1
+            if index % 1000 == 0 or index == len(manifest):
+                reporter.advance(1000 if index % 1000 == 0 else index % 1000)
             continue
         decision = review["decision"]
         generation_statuses[item["generation_status"]] += 1
@@ -57,6 +60,8 @@ def build_records(manifest, reviews, protected_hashes, config, model, prompt_ver
         by_confidence[item["confidence_band"]][decision] += 1
         if decision == "REJECT":
             drops["llm_reject"] += 1
+            if index % 1000 == 0 or index == len(manifest):
+                reporter.advance(1000 if index % 1000 == 0 else index % 1000)
             continue
         target = item["candidate_text"] if decision == "KEEP" else review["corrected_text"]
         target = clean_text(target)
@@ -78,6 +83,8 @@ def build_records(manifest, reviews, protected_hashes, config, model, prompt_ver
                 reason = "edit_ratio"
         if reason:
             drops[reason] += 1
+            if index % 1000 == 0 or index == len(manifest):
+                reporter.advance(1000 if index % 1000 == 0 else index % 1000)
             continue
         record = {
             "id": item["id"], "dataset": "ViSoLex", "original_source": item["original_source"],
@@ -93,6 +100,8 @@ def build_records(manifest, reviews, protected_hashes, config, model, prompt_ver
         seen_inputs.add(item["input_text"])
         by_source[item["original_source"]]["accepted"] += 1
         by_confidence[item["confidence_band"]]["accepted"] += 1
+        if index % 1000 == 0 or index == len(manifest):
+            reporter.advance(1000 if index % 1000 == 0 else index % 1000)
     stats = {
         "manifest_review_count": len(manifest), "valid_llm_review_count": len(reviews),
         "keep_count": decisions["KEEP"], "edit_count": decisions["EDIT"],
@@ -119,10 +128,12 @@ def main() -> None:
     parser.add_argument("--config", type=Path, default=Path("configs/llm_review_config.json"))
     parser.add_argument("--output", type=Path, default=Path("data/processed/visolex_weak_labeled.jsonl"))
     parser.add_argument("--stats", type=Path, default=Path("outputs/weak_label_stats.json"))
+    parser.add_argument("--quiet", action="store_true", help="Suppress operational progress logs")
     args = parser.parse_args()
     config = load_json(args.config)
     prompt_hash = validate_frozen_prompt(config, Path(config["frozen_prompt_path"]))
     manifest = read_jsonl(args.manifest)
+    log_event("START", f"Weak-label build: manifest={len(manifest)} model={args.model} prompt={config['frozen_prompt_version']}", quiet=args.quiet)
     protected_hashes = {line.strip() for line in args.protected_hashes.read_text(encoding="utf-8").splitlines() if line.strip()}
     cache = ReviewCache(args.cache or Path(config["cache_path"]))
     try:
@@ -134,12 +145,12 @@ def main() -> None:
     finally:
         cache.close()
     accepted, stats = build_records(
-        manifest, reviews, protected_hashes, config, args.model, version
+        manifest, reviews, protected_hashes, config, args.model, version, args.quiet
     )
     atomic_write_jsonl(accepted, args.output)
     args.stats.parent.mkdir(parents=True, exist_ok=True)
     args.stats.write_text(json.dumps(stats, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"Saved {len(accepted)} weak labels -> {args.output}")
+    log_event("DONE", f"Weak-label build: accepted={len(accepted)} validation_drops={stats['validation_drop_count']} output={args.output} stats={args.stats}", quiet=args.quiet)
 
 
 if __name__ == "__main__":
