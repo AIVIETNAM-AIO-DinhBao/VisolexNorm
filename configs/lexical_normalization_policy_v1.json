@@ -1,0 +1,35 @@
+{
+  "version": "lexical_policy_v1",
+  "canonical_replacements": {
+    "sài": "xài",
+    "Sài": "Xài",
+    "androi": "Android",
+    "pug": "PUBG",
+    "remi 7": "Redmi 7",
+    "Remi 7": "Redmi 7",
+    "củng": "cũng",
+    "xầm xí": "xàm xí",
+    "nhoè": "nhòe",
+    "rôi": "rồi",
+    "su dung": "sử dụng",
+    "lau hoi": "lâu hơi",
+    "í thức": "ý thức",
+    "không lồ": "khổng lồ",
+    "Giao hành": "Giao hàng",
+    "dam khủng": "RAM khủng"
+  },
+  "unambiguous_abbreviations": {
+    "sp": "sản phẩm",
+    "mn": "mọi người",
+    "ko": "không",
+    "nhma": "nhưng mà",
+    "ntn": "như thế này",
+    "đt": "điện thoại",
+    "đc": "được"
+  },
+  "ambiguous_source_phrases": [
+    "mưa rồi"
+  ],
+  "opaque_token_min_length": 16,
+  "repeated_character_min_length": 5
+}

@@ -4,7 +4,32 @@ For every sample, first determine the appropriate lexical normalization of SOURC
 
 Review only lexical normalization: abbreviations, teencode/slang, lexical spelling variants, missing Vietnamese diacritics, and justified 1-to-n or n-to-1 mappings.
 
-Preserve meaning, word order, tone, content, emojis, hashtags, punctuation, profanity, and slang unless a change is required for lexical normalization. Do not paraphrase, rewrite grammar, formalize style, add or remove information, censor content, or include explanations.
+Preserve meaning, word order, tone, every content-bearing word, numbers, dates, measurements, ratings, emojis, hashtags, punctuation, profanity, and slang unless a change is required for lexical normalization. Do not paraphrase, rewrite grammar, formalize style, add or remove information, censor content, or include explanations.
+
+Before choosing a decision, make these mandatory checks:
+- Check SOURCE for every clear abbreviation, teencode form, misspelling, and missing diacritic. A candidate is not KEEP if it leaves any clear lexical noise from SOURCE unnormalized.
+- Check the candidate against SOURCE for every content word and clause. Never accept or introduce a deletion, invented word, unsupported abbreviation expansion, or semantic substitution. A candidate that drops or changes meaning must be EDIT only when SOURCE supports a reliable complete minimal target; otherwise REJECT.
+- EDIT must be exhaustive for clear lexical noise, but minimal: correct all and only unambiguous lexical issues. Do not return an EDIT target that is identical to its candidate when a clear issue remains.
+- If a word has more than one plausible expansion or correction that would change meaning, do not guess. Use REJECT with AMBIGUOUS or MEANING_UNCERTAIN.
+- Do not treat capitalization, punctuation, spacing, sentence fluency, or grammar as a reason to edit by itself.
+
+Apply this decision procedure literally for EACH supplied ID before emitting JSON:
+1. Read SOURCE and identify its content units. A content unit includes every clause, rating, product attribute, emoji, hashtag, repeated character sequence, and opaque token. The target must retain the meaning and presence of all units, while spelling and abbreviations inside a unit MUST still be normalized when unambiguous.
+2. Classify the source. If the complete source is meaningless/gibberish, or a required correction is ambiguous, choose REJECT. If only one portion is opaque but the remaining content is usable, preserve that opaque portion exactly; do not delete, shorten, or invent a replacement.
+3. Compare CANDIDATE with SOURCE. If CANDIDATE loses, substitutes, expands, or changes any unit, do NOT KEEP. Produce EDIT only when you can restore every changed unit and normalize every clear lexical error; otherwise choose REJECT.
+4. Build an EDIT target from SOURCE, not by copying CANDIDATE. Preserve all source-unit meanings, then correct every unmistakable lexical error (for example: `sp` -> `sản phẩm`, `mn` -> `mọi người`, `ko/k` -> `không`, and recoverable missing Vietnamese diacritics). Do not restore an error from SOURCE merely because it appears there.
+5. Recheck the proposed EDIT target. It must contain no clear residual abbreviation, typo, missing diacritic, source-content deletion, unsupported semantic expansion, or needless paraphrase. If this cannot be satisfied with confidence, return REJECT.
+
+Important counterexamples:
+- A candidate that changes `sp` to `cuộc sống`, changes `dẻo` to `rất`, or changes a word to a different meaning is not a valid normalization; restore the supported source meaning with EDIT or use REJECT.
+- A target which restores `ko`, `nhma`, `mn`, `ntn`, or another clear source abbreviation is invalid. Normalize it instead.
+- Do not KEEP opaque character noise or a candidate containing obvious gibberish as a valid clean normalization. Use REJECT when the whole sample is not reliably normalizable.
+- Never remove a rating, an emoji, a repeated-character style marker, an incomplete-looking phrase, or a clause simply to make text shorter or cleaner.
+
+Final-output precedence rule:
+- If CANDIDATE already expands an unambiguous abbreviation or fixes an obvious typo correctly, an EDIT target MUST keep that improvement. Never revert a correct candidate form back to raw SOURCE noise. For example, keep `nhưng mà` rather than reverting to `nhma`; keep `mọi người` rather than `mn`; keep `điện thoại` rather than `đt`; keep `rồi` rather than `rôi`; and keep corrected Vietnamese diacritics.
+- For KEEP, inspect the final candidate token by token. KEEP is forbidden if it contains a clear error such as `í thức`, `không lồ`, `dam` in a phone RAM context, `su dung lau hoi`, `Giao hành`, or an uncorrected common abbreviation.
+- Do not invent a contextual expansion. If a one-letter form such as `c` could mean different people/words and the source context does not make the expansion reliable, use REJECT instead of choosing a different meaning.
 
 For each input ID, return exactly one result:
 - KEEP: CANDIDATE is equivalent to the independent normalization. corrected_text and reason_code must be null.

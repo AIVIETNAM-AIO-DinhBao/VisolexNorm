@@ -8,7 +8,7 @@
 | `dataset` | string | Có | Luôn là `ViSoLex` |
 | `original_source` | enum | Có | Một trong 5 tên nguồn chuẩn; ViHOS không có record thực tế |
 | `input_text` | string | Có | Không rỗng, không sửa từ Phase 1 |
-| `candidate_text` | string | Có | Không rỗng |
+| `candidate_text` | string | Có | Không rỗng khi `generated_text`; rỗng khi `empty_after_special_token_decode` |
 | `model_a_confidence` | number | Có | Hữu hạn |
 | `candidate_checkpoint` | string | Có | Tên/checksum checkpoint |
 | `generation_config_hash` | string | Có | SHA-256 config generation |
@@ -33,10 +33,10 @@ Kế thừa toàn bộ CandidateRecord và thêm:
 | `batch_id` | string | SHA-256 rút gọn từ prompt version và danh sách ID |
 | `sample_ids` | array[string] | 15 ID; batch cuối được 1–14 |
 | `prompt_version` | string | `lexical_norm_review_draft` khi pilot; `lexical_norm_review_v1` sau freeze |
-| `prompt_hash` | string | SHA-256 nội dung prompt; là một phần khóa cache |
+| `prompt_hash` | string | Review identity SHA-256 của nội dung prompt + lexical policy; là một phần khóa cache |
 | `llm_model` | string | Giá trị `GEMINI_MODEL` |
 | `attempt_count` | integer | 0–5 |
-| `status` | enum | pending, in_flight, succeeded, retry_wait, failed |
+| `status` | enum | pending, in_flight, succeeded, retry_wait, failed, superseded |
 | `created_at` | datetime | UTC ISO-8601 |
 | `completed_at` | datetime/null | UTC ISO-8601 |
 

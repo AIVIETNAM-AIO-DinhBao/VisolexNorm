@@ -128,3 +128,27 @@ class ReviewCache:
                AND prompt_hash=? AND llm_model=? AND status='failed'""",
             (version, prompt_hash, model),
         ).fetchone()[0])
+
+    def reconcile_superseded_failures(
+        self, version: str, prompt_hash: str, model: str, resolved_without_review: set[str] | None = None,
+    ) -> int:
+        """Mark failed attempts superseded once every referenced sample has a committed result."""
+        resolved = self.completed_ids(version, prompt_hash, model) | (resolved_without_review or set())
+        rows = self.connection.execute(
+            """SELECT batch_id, sample_ids_json FROM review_batches WHERE prompt_version=?
+               AND prompt_hash=? AND llm_model=? AND status='failed'""",
+            (version, prompt_hash, model),
+        ).fetchall()
+        superseded = [row["batch_id"] for row in rows if set(json.loads(row["sample_ids_json"])) <= resolved]
+        if not superseded:
+            return 0
+        now = utc_now()
+        with self.connection:
+            for batch_id in superseded:
+                self.connection.execute(
+                    """UPDATE review_batches SET status='superseded', completed_at=?
+                       WHERE batch_id=? AND prompt_version=? AND prompt_hash=? AND llm_model=?
+                       AND status='failed'""",
+                    (now, batch_id, version, prompt_hash, model),
+                )
+        return len(superseded)

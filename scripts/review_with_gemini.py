@@ -46,6 +46,10 @@ def parse_response(text: str, candidate: str) -> dict[str, Any]:
         payload = json.loads(text)
     except json.JSONDecodeError as error:
         raise ValueError("invalid_json") from error
+    # The frozen contract returns {"results": [{...}]} while an earlier
+    # single-record pilot contract returned the object directly.
+    if isinstance(payload, dict) and isinstance(payload.get("results"), list) and len(payload["results"]) == 1:
+        payload = payload["results"][0]
     if not isinstance(payload, dict) or payload.get("decision") not in DECISIONS:
         raise ValueError("invalid_decision")
     decision = payload["decision"]
@@ -73,6 +77,7 @@ def main() -> None:
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--limit", type=int, help="Process only a deterministic prefix for pilot/smoke runs")
     parser.add_argument("--quiet", action="store_true", help="Suppress operational progress logs")
+    parser.add_argument("--max-items", type=int, help="Hard cap on records processed this invocation; useful with --resume")
     args = parser.parse_args()
 
     try:
@@ -100,6 +105,8 @@ def main() -> None:
     pending = [row for row in manifest if row["id"] not in done]
     if args.limit is not None:
         pending = pending[: args.limit]
+    if args.max_items is not None:
+        pending = pending[: args.max_items]
     reporter = ProgressReporter("Legacy Gemini review", len(manifest), len(done), quiet=args.quiet)
     log_event("START", f"Legacy Gemini review: total={len(manifest)} cached={len(done)} pending={len(pending)} model={model_name}", quiet=args.quiet)
     if done:
@@ -110,10 +117,16 @@ def main() -> None:
     base_wait = float(config["retry_base_seconds"])
     for number, manifest_row in enumerate(pending, 1):
         candidate = candidates[manifest_row["id"]]
-        # Deliberately avoid str.format because the JSON example in the prompt
-        # contains literal braces.
-        request_prompt = prompt.replace("{source}", candidate["input_text"]).replace(
-            "{candidate}", candidate["candidate_text"]
+        samples_payload = json.dumps(
+            [{"id": candidate["id"], "source": candidate["input_text"], "candidate": candidate["candidate_text"]}],
+            ensure_ascii=False,
+        )
+        # The current reviewer contract is batch-shaped (`{samples_json}`); retain
+        # compatibility with the original single-record placeholders for old prompts.
+        request_prompt = (
+            prompt.replace("{samples_json}", samples_payload)
+            .replace("{source}", candidate["input_text"])
+            .replace("{candidate}", candidate["candidate_text"])
         )
         last_error = "unknown"
         for attempt in range(attempts):

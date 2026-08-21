@@ -1,6 +1,6 @@
 # Đặc tả giai đoạn 4: Huấn luyện Model B
 
-**Trạng thái**: Chờ weak labels Phase 3
+**Trạng thái**: Sẵn sàng triển khai — Phase 3 đã đóng
 **Phụ thuộc**: `specs/003-weak-labeling-llm-review/`
 **Môi trường**: Kaggle Notebook có GPU
 
@@ -9,6 +9,10 @@
 Fine-tune Model B từ checkpoint Model A bằng ViLexNorm Gold Train và toàn bộ ViSoLex weak
 labels đã được chấp nhận. Mỗi epoch dùng tỷ lệ lấy mẫu gold:pseudo đúng 1:1 để pseudo-data
 không áp đảo gold; checkpoint được chọn duy nhất bằng ViLexNorm Dev.
+
+Input pseudo được đóng băng ở 18.970 record trong
+`data/processed/visolex_weak_labeled.jsonl`. Trước khi train, notebook PHẢI xác minh checksum
+theo `outputs/phase3_manifest.json`; không được tự build lại weak labels trong Phase 4.
 
 ## Kịch bản và nghiệm thu
 
@@ -44,6 +48,8 @@ Checkpoint, config, Dev predictions/metrics và data manifest được tải đ�
 - **FR-007**: Dev không được trộn vào train; Test không được load trong notebook.
 - **FR-008**: Export số gold/pseudo, decision/source distribution, prompt version và checksum
   weak-label artifact trong `train_config.json`.
+- **FR-009**: Data manifest phải ghi checksum Phase 3 manifest, checksum weak-label artifact,
+  18.970 accepted records và completion status `completed_with_approved_provider_exclusions`.
 
 ## Tiêu chí thành công
 

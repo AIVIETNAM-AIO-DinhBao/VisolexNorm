@@ -6,7 +6,7 @@ Kế hoạch này bám theo kiến trúc dữ liệu cố định:
 
 ```text
 Gold      = ViLexNorm
-Unlabeled = ViSoLex corpus (~121,087 câu)
+Unlabeled = ViSoLex corpus canonical (68.411 câu sau preprocessing/deduplicate)
 Model     = BARTpho-syllable
 Training  = Kaggle GPU
 Inference/Web = Local
@@ -32,7 +32,8 @@ vilexnorm_test.jsonl
 visolex_unlabeled.jsonl
 ```
 
-`visolex_unlabeled.jsonl` phải chứa corpus ViSoLex khoảng 121k câu và giữ `original_source` thuộc 5 nguồn:
+`visolex_unlabeled.jsonl` chứa 68.411 câu canonical và giữ `original_source`. Bốn nguồn còn
+record sau preprocessing/deduplicate; ViHOS được ghi nhận quota 0:
 
 ```text
 ViHSD
@@ -170,7 +171,7 @@ Mọi sample được đưa vào training Model B phải trace được về sou
 ### Bước nhỏ
 
 1. xác định budget số câu dự kiến dùng cho Experiment 2;
-2. nếu không dùng toàn bộ 121k, chọn subset có rule rõ ràng;
+2. sinh candidate cho toàn bộ 68.411 câu canonical và chọn manifest review 20.000 bằng rule cố định;
 3. ưu tiên stratify theo 5 `original_source` để không vô tình chỉ lấy một domain;
 4. lưu danh sách ID được chọn;
 5. không dùng ViLexNorm Test để chọn sample.
@@ -270,6 +271,10 @@ REJECT → không dùng sample
    - `KEEP` nhầm candidate sai;
 7. sửa prompt/schema nếu cần;
 8. chỉ freeze prompt sau pilot.
+
+**Cổng duyệt hiện hành:** audit toàn bộ 240 mẫu và chỉ freeze khi tỷ lệ lỗi major không vượt
+3,0%. Pilot v6 đạt 7/240 = 2,9167% theo quyết định chủ dự án ngày 2026-08-21. Hash freeze
+bao gồm cả nội dung prompt và lexical policy versioned, để full review dùng đúng policy đã audit.
 
 ### Kết quả
 
@@ -376,10 +381,15 @@ outputs/weak_label_stats.json
 - Model A candidates đã được lưu và reproduce được;
 - prompt reviewer đã pilot và freeze;
 - mọi training weak label đã qua LLM review;
+- manifest 20.000 được reconcile thành 19.997 review hợp lệ và 3 approved provider exclusions;
 - `KEEP/EDIT/REJECT` trace được;
 - weak-label artifact đã validate + audit;
 - có statistics before/after review/filtering;
 - không dùng ViLexNorm Test để quyết định prompt, subset hay filtering.
+
+**Kết quả đóng Phase 3 (2026-08-22):** 18.970 weak labels accepted, 0 schema error,
+0 duplicate, 0 Dev/Test overlap. Bằng chứng và checksum nằm tại
+`specs/003-weak-labeling-llm-review/phase3-exit-report.md`; binary/data artifacts lưu ngoài Git.
 
 ---
 

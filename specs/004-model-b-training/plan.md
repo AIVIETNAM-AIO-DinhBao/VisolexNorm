@@ -3,7 +3,8 @@
 ## Bối cảnh
 
 - Python 3.11, Transformers/PyTorch; chạy Kaggle GPU.
-- Input: ViLexNorm Train/Dev, accepted weak labels, checkpoint Model A.
+- Input frozen: ViLexNorm Train/Dev, 18.970 accepted weak labels, checkpoint Model A và
+  `outputs/phase3_manifest.json` đã verify đủ checksum.
 - Notebook: `notebooks/train_model_b_kaggle.ipynb`.
 - Config: `configs/model_b_config.json`.
 
@@ -14,7 +15,8 @@ không gọi LLM; tỷ lệ và siêu tham số đã chốt.
 
 ## Thực hiện
 
-1. `scripts/build_model_b_mixture.py` validate weak labels, tạo manifest 3 epoch tỷ lệ 1:1.
+1. `scripts/build_model_b_mixture.py` verify Phase 3 manifest/checksum, validate weak labels,
+   tạo manifest 3 epoch tỷ lệ 1:1.
 2. `scripts/train_model_b.py` dùng chung pipeline seq2seq của Model A nhưng load checkpoint A.
 3. Notebook chạy smoke test 400 mẫu, kiểm tra loss/generation/save-load.
 4. Notebook chạy full train, evaluate Dev mỗi epoch, lưu best checkpoint theo Dev loss.

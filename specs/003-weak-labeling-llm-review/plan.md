@@ -15,9 +15,9 @@ và export weak labels. Pilot 240 mẫu phải hoàn thành và prompt phải fr
 - **Dependency Kaggle**: PyTorch, Transformers, Datasets, Accelerate, SentencePiece.
 - **Dependency local**: Gemini Python SDK, python-dotenv, jsonschema, tenacity, pytest.
 - **Lưu trữ**: JSONL cho artifact, SQLite WAL cho cache review, JSON cho config/stats.
-- **Kiểm thử**: pytest local; smoke test notebook trên Kaggle.
+- **Kiểm thử**: pytest local; full-run integrity audit cho artifact Kaggle đã hoàn thành.
 - **Nền tảng**: Kaggle Linux GPU cho BARTpho; Windows 11 local cho API và xử lý dữ liệu.
-- **Quy mô**: 68.411 candidate; 20.000 review; 15 mẫu/request; khoảng 1.334 request.
+- **Quy mô**: 68.411 candidate; manifest 20.000 gồm 19.997 review hợp lệ và 3 approved exclusions; 15 mẫu/request ở batch chính.
 - **Ràng buộc**: không dùng Test; không lộ secret; resume; giữ ID/provenance.
 
 ## Kiểm tra hiến chương
@@ -61,6 +61,9 @@ Notebook nhận checkpoint Model A, config và `visolex_unlabeled.jsonl`; gọi 
 theo chunk 1.000, beam 4, max length 128. Confidence được tính từ transition scores đã
 normalize, không dùng trực tiếp sequence score. Mỗi chunk ghi tệp tạm rồi rename atomically.
 Cuối notebook ghép chunk theo index, validate 68.411 ID và export candidate JSONL cùng config.
+Các output chỉ còn special token được giữ với trạng thái audit riêng; nếu được chọn review thì
+chỉ EDIT/REJECT mới hợp lệ. Full-run integrity audit được chủ dự án duyệt làm bằng chứng mạnh
+hơn smoke test sau khi artifact Kaggle smoke riêng bị mất.
 
 ### 2. Manifest local
 
@@ -82,8 +85,14 @@ mỗi tổ hợp bốn source × ba band, tổng 240 mẫu.
 
 Prompt draft gồm quy tắc lexical normalization, SOURCE/CANDIDATE và JSON schema. Script gom
 15 mẫu/request, tức 16 request cho pilot. Toàn bộ 240 kết quả được export thành bảng audit.
-Khi đạt, nội dung draft được sao chép nguyên văn và freeze thành v1 bằng SHA-256. Nếu không
-đạt, sửa draft và pilot lại toàn bộ trong cache namespace mới; batch chính chỉ chấp nhận v1.
+Cổng duyệt là tỷ lệ lỗi major không vượt quá 3,0%. Pilot v6 ghi 7/240 lỗi major (2,9167%) và
+được chủ dự án duyệt ngày 2026-08-21. Khi đạt, nội dung draft được sao chép nguyên văn và
+freeze thành v1 bằng review identity SHA-256 của prompt cộng lexical policy versioned. Nếu
+không đạt, sửa draft/policy và pilot lại toàn bộ trong cache namespace mới; batch chính chỉ
+chấp nhận v1.
+
+Trong metadata, `prompt_content_sha256` chỉ băm file prompt, `policy_sha256` băm file policy,
+còn `review_identity_sha256` băm chung nội dung của cả hai và là khóa namespace cache.
 
 ### 4. Batch review local
 
@@ -91,6 +100,10 @@ Sau freeze, xử lý đủ manifest 20.000. API keys được parse từ `GEMINI
 round-robin chỉ chọn key không cooldown và chưa có request in-flight. SQLite WAL commit cả
 batch sau khi response đủ đúng 15 ID. Retry tối đa 5 lần; lỗi cuối được ghi `failed` để chạy
 resume sau, không tạo nhãn thiếu.
+
+Ba input cuối bị provider trả `PROHIBITED_CONTENT` trước inference dù đã retry từng mẫu và
+thử JSON schema transport. Theo phê duyệt chủ dự án ngày 2026-08-22, completion được reconcile
+thành 19.997 review hợp lệ + 3 exclusion có audit; không tạo review giả cho các input này.
 
 ### 5. Validation, filtering và audit
 
@@ -112,5 +125,6 @@ outputs/pilot_review_audit.jsonl
 
 ## Cổng hoàn thành
 
-Chỉ kết thúc Phase 3 khi candidate đủ 68.411, manifest đúng 20.000, không còn review failed,
+Chỉ kết thúc Phase 3 khi candidate đủ 68.411, manifest đúng 20.000, mọi item có review hợp lệ
+hoặc approved provider exclusion, không còn failed batch chưa được giải trình,
 weak labels qua schema/validation, stats đầy đủ và audit thủ công đã được ghi nhận.

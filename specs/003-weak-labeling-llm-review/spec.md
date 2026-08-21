@@ -1,6 +1,6 @@
 # Đặc tả giai đoạn 3: Tạo nhãn yếu bằng Model A và LLM reviewer
 
-**Trạng thái**: Sẵn sàng triển khai
+**Trạng thái**: Hoàn thành với 3 approved provider exclusions
 **Ưu tiên**: P1
 **Phụ thuộc**: Phase 1 và Phase 2 đã hoàn thành
 **Đầu vào**: `data/processed/visolex_unlabeled.jsonl`, `checkpoints/model_a/`
@@ -20,6 +20,8 @@ Tạo tập ViSoLex weak-labeled có chất lượng và truy vết được b�
 ```
 
 Model A chỉ đề xuất. Mọi mẫu xuất hiện trong tập train Model B phải có review hợp lệ từ LLM.
+Ba mẫu bị Gemini chặn ở lớp provider trước inference sau mọi recovery attempt được phép loại
+theo phê duyệt rõ ràng của chủ dự án; chúng không được giả lập review hoặc đưa vào weak labels.
 
 ## Kịch bản sử dụng và kiểm thử
 
@@ -80,12 +82,16 @@ chỉ KEEP/EDIT hợp lệ xuất hiện trong artifact cuối.
 ## Trường hợp biên
 
 - `.env` không có khóa hợp lệ: dừng trước request đầu tiên, không tạo review giả.
-- Candidate rỗng hoặc chứa Unicode lỗi: không đưa vào manifest review.
-- Response Gemini bị bọc trong markdown: parser chỉ chấp nhận JSON parse được sau khi loại
-  đúng một code fence; mọi văn bản giải thích khác làm batch không hợp lệ.
+- Candidate có `generation_status=empty_after_special_token_decode` được giữ để audit và có
+  thể vào manifest; reviewer phải EDIT hoặc REJECT, không được KEEP candidate rỗng.
+- Response Gemini bị bọc trong đúng một code fence được chấp nhận. Parser cũng cho phép một
+  phần dẫn ngắn nếu response vẫn chứa đúng một JSON object cân bằng; schema và tập ID vẫn phải
+  khớp tuyệt đối, nếu không toàn batch bị retry.
 - Batch cuối có 1–14 mẫu: được phép gửi đúng số mẫu còn lại.
 - Tất cả khóa đang cooldown: chờ đến thời điểm cooldown gần nhất, không busy-loop.
 - Một sample quá mơ hồ: reviewer phải REJECT, không cố tạo target.
+- Provider trả `PROHIBITED_CONTENT` trước inference (không candidate/text) sau retry riêng:
+  ghi approved exclusion audit và loại sample; không quy đổi thành REJECT giả.
 - SOURCE đã chuẩn: KEEP chỉ khi candidate giữ nguyên hoặc là normalization tương đương tối thiểu.
 
 ## Yêu cầu chức năng
@@ -93,7 +99,7 @@ chỉ KEEP/EDIT hợp lệ xuất hiện trong artifact cuối.
 - **FR-001**: Sinh candidate cho đúng 68.411 record bằng Model A trên Kaggle GPU.
 - **FR-002**: Confidence là trung bình log-xác suất token sinh, được tính bằng
   `compute_transition_scores(..., normalize_logits=true)` trên các token sau decoder start,
-  bỏ padding/EOS; không dùng trực tiếp `sequences_scores`. Công thức và phiên bản Transformers
+  bỏ padding nhưng giữ EOS; không dùng trực tiếp `sequences_scores`. Công thức và phiên bản Transformers
   phải được lưu trong config.
 - **FR-003**: Candidate generation chia chunk 1.000 mẫu, ghi atomically và resume theo chunk.
 - **FR-004**: Manifest có đúng 20.000 mẫu, seed 2026, phân tầng source × confidence tercile.
@@ -105,15 +111,20 @@ chỉ KEEP/EDIT hợp lệ xuất hiện trong artifact cuối.
 - **FR-010**: Request được điều phối round-robin; mỗi khóa tối đa một request đang chạy.
 - **FR-011**: Retry tối đa 5 lần với backoff 2, 4, 8, 16, 32 giây và jitter 0–1 giây.
 - **FR-012**: Khóa gặp 429/quota cooldown 60 giây; lỗi xác thực loại khóa đến hết lần chạy.
-- **FR-013**: Cache SQLite lưu theo sample ID và phiên bản prompt; không lưu API key.
+- **FR-013**: Cache SQLite lưu theo sample ID và review identity; không lưu API key. Review
+  identity là SHA-256 chung của nội dung prompt và toàn bộ lexical policy có phiên bản.
 - **FR-014**: Pilot dùng `lexical_norm_review_draft`; sau khi audit đạt, nội dung prompt được
   sao chép nguyên văn, ghi SHA-256 và freeze thành `lexical_norm_review_v1` trước batch chính.
   Nếu pilot không đạt, sửa draft, đổi prompt hash và chạy lại toàn bộ pilot; không ghi đè cache cũ.
+- **FR-014a**: Cổng pilot đạt khi tỷ lệ lỗi major sau audit toàn bộ 240 mẫu không vượt quá 3,0%.
+  Review identity/cache key PHẢI băm chung nội dung prompt và versioned lexical policy đã audit.
 - **FR-015**: Validation áp dụng length ratio trong [0,5; 2,0] và normalized edit ratio ≤ 0,8;
   ngoài ngưỡng bị drop với reason code, không auto-correct.
 - **FR-016**: Xuất thống kê candidate, reviewed, KEEP/EDIT/REJECT, retry, API error,
   validation drop, accepted và số lượng theo source/confidence.
 - **FR-017**: Raw response tối thiểu được giữ trong SQLite để audit, không đưa vào target.
+- **FR-018**: Completion review gồm đúng 20.000 manifest item được reconcile thành review hợp
+  lệ hoặc approved provider exclusion. Ngoại lệ phải lưu ID/lý do/phê duyệt; không vào target.
 
 ## Thực thể chính
 
@@ -130,9 +141,13 @@ chỉ KEEP/EDIT hợp lệ xuất hiện trong artifact cuối.
 - **SC-002**: Manifest có 20.000 ID duy nhất và tái tạo giống hệt với seed 2026.
 - **SC-003**: 100% request không phải cuối có đúng 15 mẫu; không có API key trong log/cache.
 - **SC-004**: 100% review hợp lệ ánh xạ đủ và chỉ đủ các ID của batch.
+- **SC-004a**: 20.000 manifest item được giải trình đầy đủ: 19.997 review hợp lệ và 3 approved
+  provider exclusions; không có item thiếu trạng thái.
 - **SC-005**: 100% weak label cuối là KEEP/EDIT hợp lệ và truy được về candidate/review.
 - **SC-006**: Pipeline resume sau gián đoạn mà không tạo review trùng hoặc mất record đã commit.
 - **SC-007**: Báo cáo có đầy đủ tỷ lệ quyết định, drop và phân bố theo bốn nguồn thực tế.
+- **SC-008**: Báo cáo pilot lưu số lỗi major, ngưỡng 3,0%, quyết định duyệt của chủ dự án và
+  240 audited IDs gắn với review identity đã freeze.
 
 ## Ngoài phạm vi
 

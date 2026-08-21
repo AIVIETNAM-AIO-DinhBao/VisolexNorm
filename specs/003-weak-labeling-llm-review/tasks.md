@@ -13,13 +13,13 @@
 - [x] T006 [US1] Viết module batch generation, sequence confidence và chunk resume trong `scripts/generate_candidates.py`
 - [x] T007 [US1] Tạo notebook điều phối GPU tại `notebooks/generate_visolex_candidates_kaggle.ipynb`
 - [x] T008 [US1] Thêm contract/unit tests cho candidate và ghép chunk tại `tests/contract/test_phase3_schemas.py` và `tests/unit/test_candidate_chunks.py`
-- [ ] T009 [US1] Chạy smoke test 100 mẫu trên Kaggle và ghi kết quả vào `outputs/model_a/candidate_smoke_test.json`
+- [x] T009 [US1] Nghiệm thu full run 68.411 mẫu thay smoke artifact đã mất bằng `scripts/audit_candidate_full_run.py` và `outputs/model_a/candidate_full_run_integrity.json` theo phê duyệt chủ dự án
 
 ## Nhóm 3 — US2 Manifest và pilot
 
 - [x] T010 [US2] Cài đặt phần dư lớn nhất, confidence tercile và chọn mẫu seed 2026 trong `scripts/select_review_manifest.py`
 - [x] T011 [US2] Thêm test quota 20.000 và pilot 240 mẫu tại `tests/unit/test_review_manifest.py`
-- [ ] T012 [US2] Sinh và kiểm tra `data/intermediate/visolex_review_manifest.jsonl`
+- [x] T012 [US2] Sinh và kiểm tra `data/intermediate/visolex_review_manifest.jsonl`
 
 ## Nhóm 4 — US3 Gemini reviewer
 
@@ -27,17 +27,17 @@
 - [x] T014 [US3] Cài đặt round-robin key pool, cooldown và retry trong `scripts/gemini_key_pool.py`
 - [x] T015 [US3] Cài đặt batch 15, prompt rendering và response validation trong `scripts/review_candidates.py`
 - [x] T016 [US3] Hoàn thiện test API giả lập cho round-robin, quota, auth, retry và resume tại `tests/integration/test_llm_review_pipeline.py`
-- [ ] T017 [US3] Chạy pilot 240 mẫu và xuất `outputs/pilot_review_audit.jsonl`
-- [ ] T018 [US3] Audit 100% pilot, sao chép draft đạt yêu cầu thành `prompts/lexical_norm_review_v1.txt`, freeze hash trong config và ghi `outputs/pilot_review_report.md`
-- [ ] T019 [US3] Chạy review đủ 20.000 mẫu local và xác nhận không còn batch failed trong `data/intermediate/visolex_review_cache.sqlite3`
+- [x] T017 [US3] Chạy pilot 240 mẫu và xuất `outputs/pilot_review_audit_v6.csv`
+- [x] T018 [US3] Audit 100% pilot, đạt gate 3,0%, sao chép draft thành `prompts/lexical_norm_review_v1.txt`, freeze prompt+policy identity trong config và ghi `outputs/pilot_review_report_v6.json`
+- [x] T019 [US3] Reconcile đủ 20.000 manifest item thành 19.997 review hợp lệ + 3 provider-blocked exclusions được chủ dự án phê duyệt trong `outputs/phase3_provider_exclusions.json`
 
 ## Nhóm 5 — US4 Weak labels và kiểm định
 
 - [x] T020 [US4] Cài đặt decision mapping, validation, leakage và deduplicate trong `scripts/build_weak_labels.py`
 - [x] T021 [US4] Cài đặt stats và stratified audit trong `scripts/audit_weak_labels.py`
 - [x] T022 [US4] Thêm contract/integration tests tại `tests/contract/test_phase3_schemas.py` và `tests/integration/test_build_weak_labels.py`
-- [ ] T023 [US4] Xuất `data/processed/visolex_weak_labeled.jsonl`, `outputs/weak_label_stats.json` và `outputs/weak_label_audit.jsonl`
-- [ ] T024 [US4] Chạy toàn bộ quickstart và ghi checksum artifact Phase 3 vào `outputs/phase3_manifest.json`
+- [x] T023 [US4] Xuất `data/processed/visolex_weak_labeled.jsonl`, `outputs/weak_label_stats.json` và `outputs/weak_label_audit.jsonl`
+- [x] T024 [US4] Chạy toàn bộ quickstart và ghi checksum artifact Phase 3 vào `outputs/phase3_manifest.json`
 
 ## Phụ thuộc và thứ tự
 
@@ -57,4 +57,4 @@ T002–T005 chạy song song. T013 và T014 có thể triển khai song song sau
 
 - Tất cả nhiệm vụ được đánh dấu hoàn thành và test pass.
 - Candidate 68.411; manifest 20.000; pilot 240; batch size 15.
-- Không có review failed, API key bị lộ, REJECT trong weak labels hoặc overlap Test.
+- Không có review failed chưa được reconcile, API key bị lộ, REJECT trong weak labels hoặc overlap Test.

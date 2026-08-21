@@ -6,11 +6,18 @@
 - Có checkpoint Model A load được.
 - Tạo `.env` từ `.env.example`; không commit `.env`.
 
-## 2. Candidate smoke test trên Kaggle
+## 2. Nghiệm thu candidate full run
 
-Mở `notebooks/generate_visolex_candidates_kaggle.ipynb`, đặt chế độ smoke test 100 mẫu và
-chạy toàn bộ notebook. Kỳ vọng: 100 candidate đúng ID, confidence hữu hạn, chạy lại bỏ qua
-chunk đã hoàn thành. Sau đó tắt smoke test để sinh đủ 68.411 candidate và tải artifact về.
+Khi cần sinh mới, mở `notebooks/generate_visolex_candidates_kaggle.ipynb`, chạy từ smoke test
+đến full run và tải artifact về. Với full run hiện đã hoàn thành, chạy bằng chứng thay thế đã
+được chủ dự án duyệt:
+
+```bash
+python scripts/audit_candidate_full_run.py
+```
+
+Kỳ vọng: `outputs/model_a/candidate_full_run_integrity.json` có `passed=true`, đủ 68.411
+candidate, 69 chunk liên tục, schema/confidence/config/provenance và ZIP checksum đều hợp lệ.
 
 ## 3. Tạo manifest và pilot local
 
@@ -20,11 +27,12 @@ python scripts/review_candidates.py --mode pilot --config configs/llm_review_con
 ```
 
 Kỳ vọng: manifest 20.000 dòng, pilot 240 dòng và 16 request Gemini nếu không retry.
-Người thực nghiệm audit toàn bộ và tạo `outputs/pilot_review_report.json` chứa
-`approved=true`, SHA-256 của draft và đúng 240 `audited_ids`. Sau đó chạy:
+Người thực nghiệm audit toàn bộ; chỉ duyệt khi tỷ lệ lỗi major không vượt 3,0%. Báo cáo phải
+chứa `approved=true`, review identity SHA-256 (prompt + lexical policy) và đúng 240
+`audited_ids`. Sau đó chạy:
 
 ```bash
-python scripts/freeze_review_prompt.py --pilot-report outputs/pilot_review_report.json --approved
+python scripts/freeze_review_prompt.py --pilot-report outputs/pilot_review_report_v6.json --approved --replace-existing
 ```
 
 Batch chính từ chối chạy nếu v1/hash chưa được freeze.
@@ -42,8 +50,8 @@ gọi lại; tiến trình tiếp tục từ sample chưa hoàn thành.
 
 ```bash
 python scripts/export_protected_hashes.py
-python scripts/build_weak_labels.py --protected-hashes data/processed/vilexnorm_protected_input_hashes.txt --model "$GEMINI_MODEL" --config configs/llm_review_config.json
-python scripts/audit_weak_labels.py --weak-labels data/processed/visolex_weak_labeled.jsonl --stats outputs/weak_label_stats.json
+python scripts/build_weak_labels.py --protected-hashes data/processed/vilexnorm_protected_input_hashes.txt --model "$GEMINI_MODEL" --config configs/llm_review_config.json --excluded-ids-file outputs/phase3_provider_exclusions.json
+python scripts/audit_weak_labels.py --weak-labels data/processed/visolex_weak_labeled.jsonl --stats outputs/weak_label_stats.json --approved-exclusions outputs/phase3_provider_exclusions.json
 ```
 
 Kỳ vọng:

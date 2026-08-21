@@ -17,6 +17,7 @@ from jsonschema import Draft202012Validator
 sys.path.insert(0, str(Path(__file__).parent))
 from data_utils import read_jsonl  # noqa: E402
 from gemini_key_pool import GeminiKeyPool, classify_error  # noqa: E402
+from lexical_policy import apply_policy, load_policy, review_identity_hash  # noqa: E402
 from phase3_utils import ProgressReporter, load_json, log_event, sha256_json, sha256_text  # noqa: E402
 from review_cache import ReviewCache  # noqa: E402
 
@@ -32,10 +33,28 @@ def render_prompt(template: str, rows: list[dict[str, Any]]) -> str:
 
 
 def parse_response(text: str, expected_ids: list[str], validator: Draft202012Validator) -> list[dict[str, Any]]:
+    text = text.strip()
+    if text.startswith("```") and text.endswith("```"):
+        lines = text.splitlines()
+        if len(lines) >= 3 and lines[0].strip().lower() in {"```", "```json"} and lines[-1].strip() == "```":
+            text = "\n".join(lines[1:-1]).strip()
+    # Gemini may prepend a short sentence despite response_mime_type. Accept
+    # exactly one balanced top-level object, then retain schema/ID validation.
+    if not text.startswith("{"):
+        start = text.find("{")
+        end = text.rfind("}")
+        if start >= 0 and end > start:
+            text = text[start : end + 1]
     try:
         payload = json.loads(text)
     except json.JSONDecodeError as error:
         raise ValueError("Gemini response is not valid JSON") from error
+    for result in payload.get("results", []):
+        # A few Gemini responses serialize a JSON null as the literal string
+        # "null". Coerce only this exact, schema-equivalent representation.
+        for field in ("corrected_text", "reason_code"):
+            if result.get(field) == "null":
+                result[field] = None
     validator.validate(payload)
     results = payload["results"]
     actual = [result["id"] for result in results]
@@ -48,7 +67,8 @@ def parse_response(text: str, expected_ids: list[str], validator: Draft202012Val
 def validate_frozen_prompt(config: dict[str, Any], prompt_path: Path) -> str:
     if not config.get("prompt_frozen"):
         raise ValueError("Full review is blocked until prompt_frozen=true")
-    digest = sha256_text(prompt_path.read_text(encoding="utf-8"))
+    policy = load_policy(Path(config["lexical_policy_path"]))
+    digest = review_identity_hash(prompt_path.read_text(encoding="utf-8"), policy)
     if digest != config.get("frozen_prompt_sha256"):
         raise ValueError("Frozen prompt SHA-256 does not match the config")
     return digest
@@ -103,7 +123,7 @@ def run_batches(
     rows: list[dict[str, Any]], template: str, prompt_hash: str, prompt_version: str,
     model: str, config: dict[str, Any], cache: ReviewCache, key_pool: GeminiKeyPool,
     request: Callable[[str, str, str], str], sleep: Callable[[float], None] = time.sleep,
-    quiet: bool = False,
+    quiet: bool = False, policy: dict[str, Any] | None = None,
 ) -> None:
     completed = cache.completed_ids(prompt_version, prompt_hash, model)
     completed &= {row["id"] for row in rows}
@@ -133,6 +153,8 @@ def run_batches(
                 log_event("REQUEST", f"Gemini batch {batch_number}/{batch_total}: samples={len(ids)} attempt={attempt + 1}/{max_retries}", quiet=quiet)
                 raw = request(key, model, rendered)
                 results = parse_response(raw, ids, RESPONSE_VALIDATOR)
+                if policy is not None:
+                    results = apply_policy(batch, results, policy)
                 cache.commit_success(batch_id, prompt_hash, prompt_version, model, results, raw)
                 last_error = ""
                 reporter.advance(len(batch), f"batch={batch_number}/{batch_total} committed")
@@ -171,6 +193,7 @@ def main() -> None:
     parser.add_argument("--manifest", type=Path, default=Path("data/intermediate/visolex_review_manifest.jsonl"))
     parser.add_argument("--config", type=Path, default=Path("configs/llm_review_config.json"))
     parser.add_argument("--cache", type=Path)
+    parser.add_argument("--batch-size", type=int, help="Override request batch size for a resume/recovery run")
     parser.add_argument("--quiet", action="store_true", help="Suppress operational progress logs")
     args = parser.parse_args()
 
@@ -186,12 +209,17 @@ def main() -> None:
         raise SystemExit("Set GEMINI_API_KEYS and GEMINI_MODEL in .env")
 
     config = load_json(args.config)
+    if args.batch_size is not None:
+        if args.batch_size < 1:
+            raise SystemExit("--batch-size must be at least 1")
+        config["batch_size"] = args.batch_size
+    policy = load_policy(Path(config["lexical_policy_path"]))
     rows = read_jsonl(args.manifest)
     if args.mode == "pilot":
         rows = [row for row in rows if row.get("is_pilot")]
         prompt_path = Path(config["draft_prompt_path"])
         version = config["draft_prompt_version"]
-        prompt_hash = sha256_text(prompt_path.read_text(encoding="utf-8"))
+        prompt_hash = review_identity_hash(prompt_path.read_text(encoding="utf-8"), policy)
     else:
         prompt_path = Path(config["frozen_prompt_path"])
         version = config["frozen_prompt_version"]
@@ -202,11 +230,14 @@ def main() -> None:
     try:
         run_batches(
             rows, template, prompt_hash, version, model, config, cache,
-            GeminiKeyPool(keys, float(config["quota_cooldown_seconds"])), requester, quiet=args.quiet,
+            GeminiKeyPool(keys, float(config["quota_cooldown_seconds"])), requester, quiet=args.quiet, policy=policy,
         )
         missing = {row["id"] for row in rows} - cache.completed_ids(version, prompt_hash, model)
         if missing:
             raise SystemExit(f"Review incomplete: {len(missing)} IDs missing; rerun to resume")
+        superseded = cache.reconcile_superseded_failures(version, prompt_hash, model)
+        if superseded:
+            log_event("RECONCILE", f"Marked {superseded} failed batch attempts as superseded by committed reviews", quiet=args.quiet)
         log_event("DONE", f"Gemini {args.mode} review completed: {len(rows)} IDs committed in cache={cache.path}", quiet=args.quiet)
     finally:
         requester.close()

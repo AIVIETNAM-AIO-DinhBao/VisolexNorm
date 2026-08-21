@@ -37,7 +37,8 @@ def normalized_input_hash(text: str) -> str:
     return sha256_text(cleaned)
 
 
-def build_records(manifest, reviews, protected_hashes, config, model, prompt_version, quiet=False):
+def build_records(manifest, reviews, protected_hashes, config, model, prompt_version, quiet=False, excluded_ids=None):
+    excluded_ids = excluded_ids or set()
     decisions = Counter()
     drops = Counter()
     generation_statuses = Counter()
@@ -49,7 +50,7 @@ def build_records(manifest, reviews, protected_hashes, config, model, prompt_ver
     for index, item in enumerate(manifest, start=1):
         review = reviews.get(item["id"])
         if review is None:
-            drops["missing_valid_review"] += 1
+            drops["llm_unreviewable_invalid_json" if item["id"] in excluded_ids else "missing_valid_review"] += 1
             if index % 1000 == 0 or index == len(manifest):
                 reporter.advance(1000 if index % 1000 == 0 else index % 1000)
             continue
@@ -128,11 +129,18 @@ def main() -> None:
     parser.add_argument("--config", type=Path, default=Path("configs/llm_review_config.json"))
     parser.add_argument("--output", type=Path, default=Path("data/processed/visolex_weak_labeled.jsonl"))
     parser.add_argument("--stats", type=Path, default=Path("outputs/weak_label_stats.json"))
+    parser.add_argument("--excluded-ids-file", type=Path, help="Approved JSON array of IDs excluded after unrecoverable LLM responses")
     parser.add_argument("--quiet", action="store_true", help="Suppress operational progress logs")
     args = parser.parse_args()
     config = load_json(args.config)
     prompt_hash = validate_frozen_prompt(config, Path(config["frozen_prompt_path"]))
     manifest = read_jsonl(args.manifest)
+    excluded_ids: set[str] = set()
+    if args.excluded_ids_file:
+        payload = json.loads(args.excluded_ids_file.read_text(encoding="utf-8"))
+        if not isinstance(payload, list) or not all(isinstance(row, dict) and isinstance(row.get("id"), str) for row in payload):
+            raise ValueError("--excluded-ids-file must be a JSON array of objects containing id")
+        excluded_ids = {row["id"] for row in payload}
     log_event("START", f"Weak-label build: manifest={len(manifest)} model={args.model} prompt={config['frozen_prompt_version']}", quiet=args.quiet)
     protected_hashes = {line.strip() for line in args.protected_hashes.read_text(encoding="utf-8").splitlines() if line.strip()}
     cache = ReviewCache(args.cache or Path(config["cache_path"]))
@@ -140,12 +148,16 @@ def main() -> None:
         ids = [row["id"] for row in manifest]
         version = config["frozen_prompt_version"]
         reviews = cache.results_for_ids(ids, version, prompt_hash, args.model)
+        missing_ids = set(ids) - set(reviews)
+        if missing_ids != excluded_ids:
+            raise RuntimeError(f"Missing reviews must exactly match approved exclusions; missing={len(missing_ids)} exclusions={len(excluded_ids)}")
+        cache.reconcile_superseded_failures(version, prompt_hash, args.model, excluded_ids)
         if cache.failed_count(version, prompt_hash, args.model):
-            raise RuntimeError("Review cache still contains failed batches")
+            raise RuntimeError("Review cache still contains unresolved failed batches")
     finally:
         cache.close()
     accepted, stats = build_records(
-        manifest, reviews, protected_hashes, config, args.model, version, args.quiet
+        manifest, reviews, protected_hashes, config, args.model, version, args.quiet, excluded_ids
     )
     atomic_write_jsonl(accepted, args.output)
     args.stats.parent.mkdir(parents=True, exist_ok=True)
