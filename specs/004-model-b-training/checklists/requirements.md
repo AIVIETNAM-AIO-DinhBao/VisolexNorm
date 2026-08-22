@@ -6,4 +6,6 @@
 - [x] Siêu tham số khởi đầu và môi trường Kaggle GPU rõ ràng.
 - [x] Dev/Test có ranh giới không rò rỉ.
 - [x] Artifact và tiêu chí nghiệm thu đo được.
+- [x] Pool 18.970, membership 8.372/epoch và coverage ba epoch được phân biệt rõ.
+- [x] Runtime, checkpoint identity và vòng lặp per-epoch đã được chốt.
 - [x] Không còn điểm cần làm rõ.

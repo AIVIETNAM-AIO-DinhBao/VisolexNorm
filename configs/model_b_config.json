@@ -1,0 +1,22 @@
+{
+  "seed": 2026,
+  "max_source_length": 128,
+  "max_target_length": 128,
+  "learning_rate": 2e-05,
+  "num_train_epochs": 3,
+  "per_device_train_batch_size": 8,
+  "per_device_eval_batch_size": 8,
+  "gradient_accumulation_steps": 2,
+  "weight_decay": 0.01,
+  "warmup_ratio": 0.1,
+  "generation_num_beams": 4,
+  "generation_max_length": 128,
+  "early_stopping_patience": 2,
+  "gold_per_epoch": 8372,
+  "pseudo_per_epoch": 8372,
+  "expected_gold_count": 8372,
+  "expected_dev_count": 1050,
+  "expected_weak_label_count": 18970,
+  "expected_phase3_completion_status": "completed_with_approved_provider_exclusions",
+  "prompt_version": "lexical_norm_review_v1"
+}
