@@ -1,6 +1,6 @@
 # Đặc tả giai đoạn 7: Tái lập và đóng gói
 
-**Trạng thái**: Chờ Phase 3–6 hoàn thành
+**Trạng thái**: Chờ Phase 6 và Phase 8 hoàn thành
 **Môi trường**: Local; notebook GPU chỉ được xác minh từ artifact đã chạy
 
 ## Mục tiêu
@@ -21,7 +21,8 @@ Demo web bằng checkpoint local, trình bày A/B metrics và pipeline weak-labe
 
 ## Yêu cầu
 
-- **FR-001**: README chính được viết lại bằng tiếng Việt và phản ánh đúng 68.411 ViSoLex.
+- **FR-001**: README chính được viết lại bằng tiếng Việt và phản ánh đúng 68.411 ViSoLex,
+  20.000 review Phase 3, 48.411 review mở rộng Phase 8 và trạng thái Model B/Model C.
 - **FR-002**: Có lệnh duy nhất `python scripts/verify_release.py` kiểm tra release manifest.
 - **FR-003**: Manifest ghi path, loại artifact, Phase, SHA-256, kích thước và required/optional.
 - **FR-004**: Notebook không chứa output secret, đường dẫn cá nhân hoặc biến trạng thái ẩn.
@@ -29,6 +30,8 @@ Demo web bằng checkpoint local, trình bày A/B metrics và pipeline weak-labe
 - **FR-006**: `.env.example` chỉ chứa placeholder và mô tả nhiều key phân tách bằng dấu phẩy.
 - **FR-007**: Checkpoint lớn không commit Git; README chỉ rõ nơi tải và checksum.
 - **FR-008**: Kịch bản demo cố định gồm input, output, bảng A/B và giải thích KEEP/EDIT/REJECT.
+- **FR-009**: Release phân biệt rõ Model B là checkpoint dùng app đã chọn ở Phase 5 với Model C
+  là checkpoint Dev-only hậu kiểm, trừ khi có một cổng đánh giá độc lập đã được freeze.
 
 ## Thành công
 

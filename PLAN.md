@@ -513,7 +513,8 @@ Best checkpoint chạy hoàn toàn local và có web app demo.
 ## Các bước
 
 ### 6.1. Chọn best checkpoint
-Chọn A hoặc B theo kết quả final experiment/reporting rule.
+Khóa Model B đã được chọn trong `outputs/evaluation/best_model.json` Phase 5. Phase 6 không
+chờ checkpoint nghiên cứu mới và không tự động thay đổi checkpoint sau khi app đã nghiệm thu.
 
 ### 6.2. Local inference module
 Implement:
@@ -553,6 +554,41 @@ Test:
 
 ---
 
+# Phase 8 — Mở rộng LLM review và huấn luyện Model C
+**Chạy song song Phase 6, sau Phase 5**
+
+## Phạm vi
+
+68.411 candidate của Model A đã có sẵn. Phase 3 đã review 20.000 ID và tạo 18.970 weak label
+hợp lệ. Phase 8 chỉ review **48.411 ID còn lại**, hợp nhất KEEP/EDIT mới với artifact cũ rồi
+huấn luyện Model C từ Model A. Không review lại ID cũ và không ghi đè Model B.
+
+## Ràng buộc hậu kiểm
+
+ViLexNorm Test đã được mở ở Phase 5. Vì vậy Model C chỉ được chọn bằng Dev; không load Test cũ,
+không dùng kết quả Test để đổi prompt/filter/siêu tham số và không tuyên bố Model C tốt hơn Model
+B trên Test cũ. Phase 6 tiếp tục dùng Model B. Promotion Model C cần một holdout độc lập, được
+freeze trước khi mở.
+
+## Các bước
+
+1. Verify candidate/manifest Phase 3 và tạo hiệu tập 48.411 ID theo thứ tự candidate gốc.
+2. Reuse prompt/policy/model identity đã freeze, review local theo batch 15 với cache/resume,
+   round-robin key, cooldown và retry như Phase 3.
+3. Reconcile toàn bộ ID còn lại; chỉ KEEP/EDIT hợp lệ được union với 18.970 weak label cũ.
+4. Train Model C trên Kaggle từ checkpoint Model A. Mỗi epoch dùng 8.372 gold + 8.372 pseudo,
+   ưu tiên pseudo chưa dùng đến khi toàn bộ pool mở rộng được cover.
+5. Export checkpoint, provenance và Dev-only metrics/report trong namespace `model_c`.
+
+## Exit criteria
+
+- 68.411 candidate có trạng thái review cuối hoặc provider exclusion được phê duyệt.
+- Pool mở rộng không trùng, không chứa REJECT và không overlap Dev/Test.
+- Model C có full pseudo coverage, checkpoint load lại được và có Dev artifact.
+- Không có ảnh hưởng lên checkpoint/app Phase 6 hoặc artifact Test đã freeze ở Phase 5.
+
+---
+
 # Phase 7 — Reproducibility và đóng gói
 **Ngày 12–14**
 
@@ -575,6 +611,7 @@ Lưu config cuối:
 Model A
 weak-label generation
 Model B
+Model C và review mở rộng (nếu Phase 8 hoàn thành)
 evaluation
 ```
 
@@ -588,6 +625,8 @@ prepare data
 → build reviewed weak labels
 → train B on Kaggle
 → evaluate
+→ review ViSoLex còn lại
+→ train Model C trên Kaggle (Dev-only)
 → download best checkpoint
 → run local app
 ```
@@ -620,24 +659,15 @@ Demo tối thiểu:
 
 ---
 
-# Lịch 14 ngày gợi ý
+# Lịch sau Phase 5
 
 | Ngày | Mục tiêu chính |
 |---|---|
-| 1 | ViLexNorm preprocessing + bắt đầu ViSoLex preprocessing |
-| 2 | Freeze processed data + dựng Kaggle Model A |
-| 3 | Train/debug Model A |
-| 4 | Export Model A + sinh ViSoLex candidates + draft reviewer prompt |
-| 5 | Pilot LLM reviewer + freeze KEEP/EDIT/REJECT schema/prompt |
-| 6 | Batch LLM review + cache/resume + validation |
-| 7 | Audit, freeze reviewed weak-label dataset + build Model B mixture |
-| 8 | Train Model B |
-| 9 | Debug/rerun Model B nếu cần |
-| 10 | Freeze models + final Test evaluation |
-| 11 | Error analysis + chọn best checkpoint |
-| 12 | Local inference + web app |
-| 13 | Reproducibility + report artifacts |
-| 14 | Packaging + demo rehearsal + buffer |
+| P5 hoàn thành | Giữ frozen A/B Test evaluation; Model B là checkpoint app |
+| Song song 1 | Phase 6: local inference và Gradio với Model B; Phase 8A: review 48.411 candidate còn lại |
+| Song song 2 | Phase 6: smoke/offline acceptance; Phase 8A: reconcile, build/audit weak-label pool mở rộng |
+| Sau 8A | Phase 8B: Kaggle train Model C và đánh giá Dev-only |
+| Sau 6 + 8 | Phase 7: reproducibility, packaging và phân biệt rõ Model B/Model C |
 
 ---
 
@@ -658,8 +688,13 @@ Demo tối thiểu:
 ## Cuối ngày 11
 **Research milestone:** Có kết quả A vs B và error analysis.
 
-## Cuối ngày 12
-**Application milestone:** Best checkpoint chạy local/web.
+## Sau Phase 6
+**Application milestone:** Model B chạy local/web, độc lập với Phase 8.
 
-## Ngày 13–14
-Chỉ còn reproducibility, packaging, report và buffer; không nên bắt đầu experiment lớn mới.
+## Sau Phase 8
+**Expanded-data milestone:** 68.411 candidate được reconcile; Model C có Dev-only report và
+không làm thay đổi kết quả Test Phase 5.
+
+## Đóng gói
+Chỉ bắt đầu Phase 7 sau khi Phase 6 và Phase 8 có exit report; checkpoint dùng demo mặc định vẫn
+là Model B nếu chưa có cổng đánh giá độc lập cho Model C.

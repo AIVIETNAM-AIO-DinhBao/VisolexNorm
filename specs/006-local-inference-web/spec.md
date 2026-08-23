@@ -1,12 +1,13 @@
 # Đặc tả giai đoạn 6: Suy luận local và web app
 
-**Trạng thái**: Chờ best checkpoint Phase 5
+**Trạng thái**: Sẵn sàng triển khai với Model B đã chọn ở Phase 5
 **Môi trường**: Laptop local, không yêu cầu GPU và không gọi LLM API
 
 ## Mục tiêu
 
-Cung cấp một module `normalize(text)` và giao diện Gradio chạy local bằng checkpoint được
-chọn trong `outputs/evaluation/best_model.json`.
+Cung cấp một module `normalize(text)` và giao diện Gradio chạy local bằng checkpoint Model B
+được chọn trong `outputs/evaluation/best_model.json`. Phase 6 chạy độc lập và song song với
+Phase 8; không chờ Model C hoặc dùng bất kỳ dependency/artifact review LLM nào.
 
 ## Kịch bản
 
@@ -29,6 +30,8 @@ Sau khi checkpoint/tokenizer đã có local, app chạy không cần Kaggle, dat
 - **FR-006**: Gradio bind mặc định `127.0.0.1`, không bật share public.
 - **FR-007**: Không import Gemini SDK hoặc đọc `GEMINI_API_KEYS` trong inference/app.
 - **FR-008**: App xử lý exception bằng thông báo an toàn, không hiển thị stack trace cho UI.
+- **FR-009**: Chỉ Model B được chọn trong `best_model.json` Phase 5 được dùng cho Phase 6.
+  Model C của Phase 8 không được tự động thay thế checkpoint này.
 
 ## Thành công
 
