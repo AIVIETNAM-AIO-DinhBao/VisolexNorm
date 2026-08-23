@@ -16,10 +16,19 @@ except ImportError:
     from phase3_utils import canonical_json, sha256_file
 
 
-def inventory(path: Path) -> dict[str, Any]:
+def inventory(path: Path, *, normalize_text: bool = False) -> dict[str, Any]:
+    """Fingerprint an artifact, optionally normalizing UTF-8 line endings.
+
+    Checkpoints and datasets remain byte-for-byte frozen. Source/config text is
+    normalized only to make a Windows-created freeze manifest verifiable from
+    the same Git revision on Kaggle's Linux filesystem.
+    """
     if not path.exists():
         raise FileNotFoundError(path)
     if path.is_file():
+        if normalize_text:
+            content = path.read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+            return {"kind": "file", "bytes": len(content), "sha256": hashlib.sha256(content).hexdigest(), "line_endings_normalized": "LF"}
         return {"kind": "file", "bytes": path.stat().st_size, "sha256": sha256_file(path)}
     files = [{"path": item.relative_to(path).as_posix(), "bytes": item.stat().st_size, "sha256": sha256_file(item)} for item in sorted(path.rglob("*")) if item.is_file()]
     if not files:
@@ -57,8 +66,9 @@ def build_manifest(args: argparse.Namespace) -> dict[str, Any]:
         "phase3_manifest": args.phase3_manifest,
         "phase4_exit_report": args.phase4_exit_report,
     }
+    text_artifacts = {"generation_config", "metric_code"}
     inputs = {
-        name: {"declared_path": path.as_posix(), "inventory": inventory(path)}
+        name: {"declared_path": path.as_posix(), "inventory": inventory(path, normalize_text=name in text_artifacts)}
         for name, path in paths.items()
     }
     tokenizer_a, tokenizer_b = tokenizer_inventory(args.model_a_checkpoint), tokenizer_inventory(args.model_b_checkpoint)
@@ -82,9 +92,10 @@ def build_manifest(args: argparse.Namespace) -> dict[str, Any]:
 def verify_manifest(manifest: dict[str, Any], paths: dict[str, Path]) -> None:
     if manifest.get("status") != "frozen" or manifest.get("phase") != 5:
         raise ValueError("Manifest is not a frozen Phase 5 manifest")
+    text_artifacts = {"generation_config", "metric_code"}
     for name, path in paths.items():
         expected = manifest.get("inputs", {}).get(name, {}).get("inventory")
-        if inventory(path) != expected:
+        if inventory(path, normalize_text=name in text_artifacts) != expected:
             raise ValueError(f"Frozen artifact mismatch: {name}")
     tokenizer_a, tokenizer_b = tokenizer_inventory(paths["model_a_checkpoint"]), tokenizer_inventory(paths["model_b_checkpoint"])
     if tokenizer_a["sha256"] != tokenizer_b["sha256"] or tokenizer_a != manifest.get("tokenizer_contract"):

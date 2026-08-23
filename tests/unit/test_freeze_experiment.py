@@ -43,3 +43,14 @@ def test_manifest_rejects_different_tokenizers(tmp_path: Path) -> None:
     (args.model_b_checkpoint / "sentencepiece.bpe.model").write_bytes(b"different tokenizer")
     with pytest.raises(ValueError, match="tokenizer"):
         build_manifest(args)
+
+
+def test_manifest_normalizes_text_line_endings_only(tmp_path: Path) -> None:
+    args = _args(tmp_path)
+    args.generation_config.write_bytes(b'{\r\n  "seed": 2026\r\n}\r\n')
+    args.metric_code.write_bytes(b"def metric():\r\n    return 1\r\n")
+    manifest = build_manifest(args)
+    paths = {"model_a_checkpoint": args.model_a_checkpoint, "model_b_checkpoint": args.model_b_checkpoint, "test": args.test, "generation_config": args.generation_config, "metric_code": args.metric_code, "phase3_manifest": args.phase3_manifest, "phase4_exit_report": args.phase4_exit_report}
+    args.generation_config.write_bytes(b'{\n  "seed": 2026\n}\n')
+    args.metric_code.write_bytes(b"def metric():\n    return 1\n")
+    verify_manifest(manifest, paths)

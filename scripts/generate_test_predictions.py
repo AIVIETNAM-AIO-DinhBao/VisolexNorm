@@ -11,11 +11,11 @@ from pathlib import Path
 
 try:
     from .data_utils import read_jsonl
-    from .freeze_experiment import verify_manifest
+    from .freeze_experiment import inventory, verify_manifest
     from .phase3_utils import sha256_file, sha256_json
 except ImportError:
     from data_utils import read_jsonl
-    from freeze_experiment import verify_manifest
+    from freeze_experiment import inventory, verify_manifest
     from phase3_utils import sha256_file, sha256_json
 
 
@@ -67,7 +67,7 @@ def main() -> None:
     config = json.loads(args.generation_config.read_text(encoding="utf-8"))
     config_sha = sha256_json(config)
     checkpoint_sha = manifest["inputs"][f"{args.model}_checkpoint"]["inventory"]["sha256"]
-    if sha256_file(args.generation_config) != manifest["inputs"]["generation_config"]["inventory"]["sha256"]:
+    if inventory(args.generation_config, normalize_text=True) != manifest["inputs"]["generation_config"]["inventory"]:
         raise ValueError("Frozen generation config mismatch")
     if args.checkpoint != (args.model_a_checkpoint if args.model == "model_a" else args.model_b_checkpoint):
         raise ValueError("The selected model/checkpoint does not match the frozen input")
