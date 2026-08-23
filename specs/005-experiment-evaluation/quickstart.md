@@ -1,7 +1,12 @@
 # Nghiệm thu nhanh Phase 5
 
-1. Chạy `python scripts/freeze_experiment.py` trước khi gắn Test vào Kaggle.
-2. Chạy toàn bộ `notebooks/evaluate_models_kaggle.ipynb` trên GPU.
-3. Tải hai prediction JSONL về local.
-4. Chạy `python scripts/evaluate_predictions.py` và `python scripts/build_error_analysis.py`.
-5. Kiểm tra mỗi model có 1.045 ID, metric đủ và `best_model.json` theo rule đã freeze.
+1. Sau khi có hai checkpoint local, tạo freeze manifest **trước khi** gắn Test vào Kaggle:
+   ```powershell
+   python scripts/freeze_experiment.py --model-a-checkpoint checkpoints/model_a --model-b-checkpoint checkpoints/model_b
+   ```
+   Xác nhận manifest có `status="frozen"`, tokenizer contract chung và inventory checksum hợp lệ. Không ghi đè manifest; khi cần kiểm tra lại, chạy cùng lệnh thêm `--verify`.
+2. Chạy `python -m pytest tests/contract/test_prediction_schema.py tests/unit/test_vilexnorm_metrics.py tests/unit/test_freeze_experiment.py tests/unit/test_generate_test_predictions.py -q`; chỉ tiếp tục khi contract và fixture parity nội bộ đều pass. **Lưu ý:** port metric đang chờ fixture/reference độc lập trước khi công bố metric Test.
+3. Chạy toàn bộ `notebooks/evaluate_models_kaggle.ipynb` trên GPU; notebook phải verify manifest trước khi load Test và export hai JSONL từ `/kaggle/working`.
+4. Tải hai prediction JSONL về local, chạy `python scripts/evaluate_predictions.py` rồi `python scripts/build_error_analysis.py`.
+5. Kiểm tra mỗi model có đúng 1.045 ID unique, schema/set/order/input/target khớp Test, đủ bốn metric và `best_model.json` theo rule F1 → ERR → Model A đã freeze.
+6. Chạy lại evaluation từ raw predictions; xác nhận checksum trong `outputs/evaluation/freeze_manifest.json` không đổi trước khi đánh dấu Phase 5 hoàn thành.

@@ -1,0 +1,9 @@
+{
+  "seed": 2026,
+  "batch_size": 16,
+  "max_source_length": 128,
+  "max_new_tokens": 128,
+  "num_beams": 4,
+  "early_stopping": true,
+  "generation_config_version": "phase5_test_generation_v1"
+}
