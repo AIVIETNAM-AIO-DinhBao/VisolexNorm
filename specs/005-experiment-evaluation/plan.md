@@ -14,7 +14,7 @@ Freeze mọi đầu vào local, generate hai prediction bằng một module dùn
 
 ## Freeze contract
 
-`outputs/evaluation/freeze_manifest.json` có `status: "frozen"`, seed `2026`, timestamp, rule chọn Model A/B và inventory (relative path, bytes, SHA-256) cho checkpoint A/B, ViLexNorm Test, tokenizer contract, generation config, metric implementation và provenance Phase 3/4. Manifest không được ghi đè; mọi checksum mismatch phải fail trước khi Test được load.
+`outputs/evaluation/freeze_manifest.json` có `status: "frozen"`, seed `2026`, timestamp, rule chọn Model A/B và inventory (relative path, bytes, SHA-256) cho checkpoint A/B, ViLexNorm Test, tokenizer contract, generation config, metric implementation và provenance Phase 3/4. Manifest không được ghi đè; mọi checksum mismatch phải fail trước khi Test được load. Template mới dùng `higher_f1 → higher_ERR → model_a` vì ERR là Error Reduction Rate; evaluator luôn tôn trọng rule của manifest lịch sử.
 
 Generation canonical dùng beam 4, giới hạn 128 token, cùng thứ tự Test và cùng tokenizer contract cho hai model. Mỗi prediction bắt buộc tuân thủ `contracts/prediction.schema.json`.
 
@@ -24,7 +24,7 @@ Generation canonical dùng beam 4, giới hạn 128 token, cùng thứ tự Test
 2. Local: contract test PredictionRecord và parity fixture cho official metric/port phải pass.
 3. Kaggle GPU: đọc/verify manifest, generate A rồi B theo cùng Test/order/config, export raw JSONL.
 4. Local: validate schema, đúng 1.045 ID unique, cùng set/order và `input_text`/`target_text` khớp Test.
-5. Local: tính ERR, Precision, Recall, F1; xuất so sánh và chọn best model theo F1 → ERR → Model A.
+5. Local: tính ERR, Precision, Recall, F1; xuất so sánh và chọn best model theo F1 cao hơn → ERR cao hơn → Model A cho manifest mới (hoặc đúng rule trong manifest lịch sử).
 6. Local: tạo error analysis đầy đủ và audit deterministic theo thứ tự ID; replay quickstart để xác nhận checksum manifest không đổi và metrics tái tạo được.
 
 ## Artifact
@@ -36,5 +36,6 @@ outputs/evaluation/model_b_test_predictions.jsonl
 outputs/evaluation/test_metrics.json
 outputs/evaluation/comparison.md
 outputs/evaluation/error_analysis.jsonl
+outputs/evaluation/error_audit.json
 outputs/evaluation/best_model.json
 ```

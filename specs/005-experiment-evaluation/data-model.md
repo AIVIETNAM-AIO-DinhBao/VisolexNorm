@@ -11,7 +11,8 @@ checksum phải khớp artifact đã khóa trong freeze manifest. Schema máy đ
 
 Mỗi model có `sample_count`, `ERR`, `precision`, `recall`, `f1`, timestamp, evaluation code
 checksum và prediction checksum. `best_model.json` chỉ chọn giữa hai model đã freeze theo
-`f1` cao hơn → `ERR` thấp hơn → `model_a`.
+`f1` cao hơn → `ERR` cao hơn → `model_a` cho manifest mới; report lưu nguyên rule từ
+manifest lịch sử để tái lập những lượt Test đã freeze.
 
 ## ErrorAnalysisRecord
 

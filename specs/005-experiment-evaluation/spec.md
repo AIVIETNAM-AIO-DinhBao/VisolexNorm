@@ -27,7 +27,7 @@ Script local kiểm tra alignment rồi tính metric theo official ViLexNorm pro
 - **FR-004**: Metric chính là ERR, Precision, Recall, F1 theo official protocol.
 - **FR-005**: Freeze manifest phải ghi source/version/commit của official ViLexNorm metric. Nếu official code không chạy, bản port phải khớp 100% fixture/reference trước khi dùng Test.
 - **FR-006**: Error analysis gán đúng một nhãn chính: `correct`, `missed`, `wrong`, `over-normalization`, `one-to-many`, `many-to-one`, hoặc `suspected-weak-label-noise`. Quy tắc precedence và chọn mẫu audit phải deterministic theo thứ tự ID.
-- **FR-007**: Chọn **best model** chỉ giữa checkpoint Model A và Model B đã freeze: F1 Test cao hơn; nếu bằng nhau, ERR thấp hơn; nếu vẫn bằng nhau, Model A vì đơn giản hơn. Không được dùng Test để chọn checkpoint mới.
+- **FR-007**: Chọn **best model** chỉ giữa checkpoint Model A và Model B đã freeze: F1 Test cao hơn; nếu bằng nhau, ERR (Error Reduction Rate) cao hơn; nếu vẫn bằng nhau, Model A vì đơn giản hơn. Không được dùng Test để chọn checkpoint mới. Manifest đã freeze là lịch sử bất biến: phải áp dụng rule ghi trong manifest đó, kể cả nếu khác template hiện hành.
 - **FR-008**: Không rerun training, tạo checkpoint mới, thay prompt/filtering hoặc đổi generation config sau khi xem Test.
 
 ## Thành công

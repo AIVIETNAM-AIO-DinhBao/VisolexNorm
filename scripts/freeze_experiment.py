@@ -82,7 +82,7 @@ def build_manifest(args: argparse.Namespace) -> dict[str, Any]:
         "seed": 2026,
         "expected_test_count": args.expected_test_count,
         "test_order_sha256": hashlib.sha256(canonical_json(test_ids).encode("utf-8")).hexdigest(),
-        "model_selection_rule": ["higher_f1", "lower_ERR", "model_a"],
+        "model_selection_rule": ["higher_f1", "higher_ERR", "model_a"],
         "metric_reference": metric_reference,
         "tokenizer_contract": tokenizer_a,
         "inputs": inputs,
