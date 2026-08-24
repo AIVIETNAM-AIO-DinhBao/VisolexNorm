@@ -2,10 +2,10 @@
 
 ## Chặng 1 — Manifest, config và quality gate local
 
-- [ ] T001 [P] Tạo `configs/expanded_review_config.json` kế thừa immutable identity Phase 3. **Hoàn thành khi:** config ghi prompt/policy hash, batch 15, retry/cooldown, đường dẫn manifest/cache Phase 8 và không sửa `configs/llm_review_config.json`.
-- [ ] T002 [P] Tạo `configs/model_c_config.json`. **Hoàn thành khi:** config ghi Model A inventory, 8.372 gold/pseudo, hyperparameter Phase 4, công thức số epoch và cấm input Test/`outputs/evaluation/`.
-- [ ] T003 [US1] Cài đặt `scripts/select_remaining_review_manifest.py`. **Hoàn thành khi:** tạo `data/intermediate/visolex_remaining_review_manifest.jsonl` với đúng 48.411 ID; test assert candidate=68.411, old=20.000, intersection=0, union=68.411.
-- [ ] T004 [P] Viết contract/unit test tại `tests/unit/test_expanded_review_manifest.py`. **Hoàn thành khi:** test reject duplicate, old-manifest ID và candidate thiếu provenance; seed/order lặp lại cho kết quả giống nhau.
+- [x] T001 [P] Tạo `configs/expanded_review_config.json` kế thừa immutable identity Phase 3. **Hoàn thành khi:** config ghi prompt/policy hash, batch 15, retry/cooldown, đường dẫn manifest/cache Phase 8 và không sửa `configs/llm_review_config.json`.
+- [x] T002 [P] Tạo `configs/model_c_config.json`. **Hoàn thành khi:** config ghi Model A inventory, 8.372 gold/pseudo, hyperparameter Phase 4, công thức số epoch và cấm input Test/`outputs/evaluation/`.
+- [x] T003 [US1] Cài đặt `scripts/select_remaining_review_manifest.py`. **Hoàn thành khi:** tạo `data/intermediate/visolex_remaining_review_manifest.jsonl` với đúng 48.411 ID; test assert candidate=68.411, old=20.000, intersection=0, union=68.411.
+- [x] T004 [P] Viết contract/unit test tại `tests/unit/test_expanded_review_manifest.py`. **Hoàn thành khi:** test reject duplicate, old-manifest ID và candidate thiếu provenance; seed/order lặp lại cho kết quả giống nhau.
 
 ## Chặng 2 — Review và weak-label pool mở rộng local
 

@@ -1,0 +1,32 @@
+{
+  "phase": 8,
+  "seed": 2026,
+  "initial_checkpoint": "checkpoints/model_a",
+  "initial_checkpoint_inventory_required": true,
+  "gold_path": "data/processed/vilexnorm_train.jsonl",
+  "dev_path": "data/processed/vilexnorm_dev.jsonl",
+  "expanded_weak_label_path": "data/processed/visolex_weak_labeled_expanded.jsonl",
+  "prohibited_input_paths": [
+    "data/processed/vilexnorm_test.jsonl",
+    "outputs/evaluation/"
+  ],
+  "expected_gold_count": 8372,
+  "expected_dev_count": 1050,
+  "gold_per_epoch": 8372,
+  "pseudo_per_epoch": 8372,
+  "num_train_epochs": null,
+  "num_train_epochs_formula": "ceil(expanded_weak_label_count / pseudo_per_epoch)",
+  "max_source_length": 128,
+  "max_target_length": 128,
+  "learning_rate": 2e-05,
+  "per_device_train_batch_size": 8,
+  "per_device_eval_batch_size": 8,
+  "gradient_accumulation_steps": 2,
+  "weight_decay": 0.01,
+  "warmup_ratio": 0.1,
+  "generation_num_beams": 4,
+  "generation_max_length": 128,
+  "early_stopping_patience": 2,
+  "prompt_version": "lexical_norm_review_v1",
+  "selection_metric": "dev_loss"
+}
