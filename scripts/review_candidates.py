@@ -74,6 +74,25 @@ def validate_frozen_prompt(config: dict[str, Any], prompt_path: Path) -> str:
     return digest
 
 
+def validate_manifest_scope(rows: list[dict[str, Any]], config: dict[str, Any]) -> None:
+    """Apply optional config guards for a review manifest namespace."""
+    required_scope = config.get("required_review_scope")
+    if required_scope is None:
+        return
+    if not isinstance(required_scope, str) or not required_scope:
+        raise ValueError("required_review_scope must be a non-empty string")
+    expected_count = config.get("expected_remaining_count")
+    if expected_count is not None and len(rows) != int(expected_count):
+        raise ValueError(f"Unexpected review manifest count: {len(rows)} != {expected_count}")
+    ids = [row.get("id") for row in rows]
+    if any(not isinstance(sample_id, str) or not sample_id for sample_id in ids) or len(set(ids)) != len(ids):
+        raise ValueError("Review manifest contains an invalid or duplicate ID")
+    if any(row.get("review_scope") != required_scope for row in rows):
+        raise ValueError(f"Review manifest must use review_scope={required_scope!r}")
+    if config.get("require_prior_manifest_false") and any(row.get("prior_manifest") is not False for row in rows):
+        raise ValueError("Review manifest contains an ID from a prior manifest")
+
+
 def safe_error_detail(error: Exception) -> str:
     """Return an actionable terminal code without exposing API/request content."""
     text = str(error).lower()
@@ -215,6 +234,7 @@ def main() -> None:
         config["batch_size"] = args.batch_size
     policy = load_policy(Path(config["lexical_policy_path"]))
     rows = read_jsonl(args.manifest)
+    validate_manifest_scope(rows, config)
     if args.mode == "pilot":
         rows = [row for row in rows if row.get("is_pilot")]
         prompt_path = Path(config["draft_prompt_path"])

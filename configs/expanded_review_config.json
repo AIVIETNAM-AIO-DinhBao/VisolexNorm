@@ -4,6 +4,8 @@
   "expected_candidate_count": 68411,
   "expected_prior_manifest_count": 20000,
   "expected_remaining_count": 48411,
+  "required_review_scope": "phase8_remaining",
+  "require_prior_manifest_false": true,
   "candidate_path": "data/intermediate/visolex_model_a_candidates.jsonl",
   "prior_manifest_path": "data/intermediate/visolex_review_manifest.jsonl",
   "remaining_manifest_path": "data/intermediate/visolex_remaining_review_manifest.jsonl",
