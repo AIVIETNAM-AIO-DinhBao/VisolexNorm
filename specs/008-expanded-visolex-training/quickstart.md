@@ -17,9 +17,15 @@ python scripts/select_remaining_review_manifest.py --config configs/expanded_rev
 ```bash
 python scripts/review_candidates.py --config configs/expanded_review_config.json
 python scripts/build_expanded_weak_labels.py --config configs/expanded_review_config.json
+python scripts/audit_weak_labels.py --config configs/expanded_review_config.json
+python scripts/build_model_c_mixture.py --config configs/model_c_config.json
 ```
 
-4. Sau audit pool pass, chạy `notebooks/train_model_c_kaggle.ipynb` từ đầu đến cuối trên Kaggle.
+4. Tạo một Kaggle Dataset private giữ đúng cấu trúc `checkpoints/model_a/`, `data/processed/`
+và `outputs/expanded_review/artifact_manifest.json`; chỉ cần Train, Dev và expanded weak labels,
+không upload Test hoặc `outputs/evaluation/`. Có thể đóng toàn bộ cây thành một file
+`phase8_training_input.zip`. Gắn dataset vào notebook, sửa biến `MOUNT` nếu slug khác, rồi chạy
+`notebooks/train_model_c_kaggle.ipynb` từ đầu đến cuối trên Kaggle GPU.
 Xác nhận output ở `/kaggle/working`, tải `checkpoints/model_c/` và `outputs/model_c/` về local.
 
 5. Xác nhận `phase8_exit_report.json` ghi `test_inputs_loaded=false`. Không chạy evaluator Test

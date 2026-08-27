@@ -4,7 +4,7 @@ This Kaggle-oriented command never accepts or reads a ViLexNorm Test path.
 """
 from __future__ import annotations
 
-import argparse, hashlib, json, math, platform, shutil
+import argparse, hashlib, json, math, platform, shutil, subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -31,6 +31,15 @@ def checkpoint_inventory(checkpoint: Path) -> tuple[list[dict], str]:
     return files, hashlib.sha256(payload).hexdigest()
 
 
+def source_revision() -> str | None:
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], text=True, stderr=subprocess.DEVNULL
+        ).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+
 def validate_mixture_manifest(manifest: dict, config: dict) -> None:
     epochs = manifest.get("epochs", [])
     if manifest.get("gold_count") != config["expected_gold_count"] or manifest.get("dev_count") != config["expected_dev_count"] or manifest.get("weak_label_count") != config["expected_weak_label_count"]:
@@ -52,15 +61,11 @@ def validate_mixture_manifest(manifest: dict, config: dict) -> None:
     if len(covered) != config["expected_weak_label_count"]: raise ValueError("Mixture manifest does not cover the frozen pseudo pool")
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Train Model B from a verified Model A checkpoint")
-    parser.add_argument("--model-a-checkpoint", type=Path, required=True)
-    parser.add_argument("--data-dir", type=Path, required=True, help="Contains train, dev and frozen weak-label JSONL only")
-    parser.add_argument("--mixture-manifest", type=Path, required=True)
-    parser.add_argument("--config", type=Path, default=Path("configs/model_b_config.json"))
-    parser.add_argument("--work-dir", type=Path, default=Path("."))
-    parser.add_argument("--smoke-test", action="store_true")
-    args = parser.parse_args()
+def run_training(
+    args: argparse.Namespace, *, model_name: str = "model_b",
+    pseudo_filename: str = "visolex_weak_labeled.jsonl", phase: int = 4,
+    manifest_validator=validate_mixture_manifest,
+) -> None:
     try:
         import torch, transformers
         from datasets import Dataset
@@ -70,9 +75,12 @@ def main() -> None:
         raise SystemExit("Install requirements-kaggle.txt before training") from error
 
     config = json.loads(args.config.read_text()); manifest = json.loads(args.mixture_manifest.read_text())
-    validate_mixture_manifest(manifest, config)
+    manifest_validator(manifest, config)
     inventory, inventory_sha = checkpoint_inventory(args.model_a_checkpoint)
-    paths = {"gold": args.data_dir / "vilexnorm_train.jsonl", "dev": args.data_dir / "vilexnorm_dev.jsonl", "pseudo": args.data_dir / "visolex_weak_labeled.jsonl"}
+    expected_inventory = manifest.get("model_a_inventory_sha256")
+    if expected_inventory and inventory_sha != expected_inventory:
+        raise ValueError("Model A checkpoint changed after mixture freeze")
+    paths = {"gold": args.data_dir / "vilexnorm_train.jsonl", "dev": args.data_dir / "vilexnorm_dev.jsonl", "pseudo": args.data_dir / pseudo_filename}
     for key, path in paths.items():
         if sha256_file(path) != manifest["checksums"][key]: raise ValueError(f"Input changed since mixture build: {key}")
     gold, dev, pseudo = (read_jsonl(paths[x]) for x in ("gold", "dev", "pseudo"))
@@ -110,7 +118,7 @@ def main() -> None:
     total_steps = steps_per_epoch * len(epoch_specs)
     optimizer = torch.optim.AdamW(model.parameters(), lr=config["learning_rate"], weight_decay=config["weight_decay"])
     scheduler = get_linear_schedule_with_warmup(optimizer, int(total_steps * config["warmup_ratio"]), total_steps)
-    output = args.work_dir / "outputs/model_b"; checkpoint = args.work_dir / "checkpoints/model_b"; output.mkdir(parents=True, exist_ok=True); checkpoint.mkdir(parents=True, exist_ok=True)
+    output = args.work_dir / f"outputs/{model_name}"; checkpoint = args.work_dir / f"checkpoints/{model_name}"; output.mkdir(parents=True, exist_ok=True); checkpoint.mkdir(parents=True, exist_ok=True)
     exported_mixture = output / "training_mixture_manifest.json"; shutil.copy2(args.mixture_manifest, exported_mixture)
     history, best_loss = [], float("inf")
     for spec in epoch_specs:
@@ -134,7 +142,31 @@ def main() -> None:
     write_jsonl([{"id": r["id"], "input_text": r["input_text"], "target_text": r["target_text"], "prediction": p.strip()} for r, p in zip(dev_records, predictions)], output / "dev_predictions.jsonl")
     metrics = {"history": history, "initial_dev_loss": initial_dev_loss, "best_dev_loss": best_loss, "dev_examples": len(dev_records), "exact_sentence_match": sum(p.strip() == r["target_text"] for p, r in zip(predictions, dev_records)) / len(dev_records)}
     (output / "dev_metrics.json").write_text(json.dumps(metrics, indent=2) + "\n")
-    run_config = {"run_type": "smoke_test" if args.smoke_test else "full", "initial_checkpoint": str(args.model_a_checkpoint), "checkpoint_inventory": inventory, "checkpoint_inventory_sha256": inventory_sha, "phase3_manifest_sha256": manifest["phase3_manifest_sha256"], "training_mixture_manifest_sha256": sha256_file(exported_mixture), "gold_checksum": manifest["checksums"]["gold"], "dev_checksum": manifest["checksums"]["dev"], "weak_label_checksum": manifest["checksums"]["pseudo"], "seed": config["seed"], "gold_count": manifest["gold_count"], "dev_count": manifest["dev_count"], "weak_label_count": manifest["weak_label_count"], "pseudo_per_epoch": manifest["pseudo_per_epoch"], "gold_pseudo_ratio": "1:1", "completion_status": manifest["completion_status"], "prompt_version": manifest["prompt_version"], "decision_distribution": manifest["decision_distribution"], "source_distribution": manifest["source_distribution"], "epoch_seeds": [e["epoch_seed"] for e in manifest["epochs"]], "replacement_used": manifest["replacement_used"], "hyperparameters": config, "runtime": {"python_version": platform.python_version(), "torch_version": torch.__version__, "transformers_version": transformers.__version__, "device": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "cpu"}, "best_checkpoint": str(checkpoint), "best_dev_loss": best_loss, "created_at_utc": datetime.now(timezone.utc).isoformat()}
+    run_config = {
+        "phase": phase, "model": model_name,
+        "run_type": "smoke_test" if args.smoke_test else "full",
+        "initial_checkpoint": str(args.model_a_checkpoint), "checkpoint_inventory": inventory,
+        "checkpoint_inventory_sha256": inventory_sha,
+        "input_artifact_manifest_sha256": manifest.get("expanded_artifact_manifest_sha256", manifest.get("phase3_manifest_sha256")),
+        "training_mixture_manifest_sha256": sha256_file(exported_mixture),
+        "gold_checksum": manifest["checksums"]["gold"], "dev_checksum": manifest["checksums"]["dev"],
+        "weak_label_checksum": manifest["checksums"]["pseudo"], "seed": config["seed"],
+        "gold_count": manifest["gold_count"], "dev_count": manifest["dev_count"],
+        "weak_label_count": manifest["weak_label_count"], "pseudo_per_epoch": manifest["pseudo_per_epoch"],
+        "gold_pseudo_ratio": "1:1", "completion_status": manifest["completion_status"],
+        "prompt_version": manifest["prompt_version"], "decision_distribution": manifest["decision_distribution"],
+        "source_distribution": manifest["source_distribution"],
+        "epoch_seeds": [epoch["epoch_seed"] for epoch in manifest["epochs"]],
+        "replacement_used": manifest["replacement_used"], "hyperparameters": config,
+        "runtime": {"python_version": platform.python_version(), "torch_version": torch.__version__,
+                    "transformers_version": transformers.__version__,
+                    "device": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "cpu"},
+        "best_checkpoint": str(checkpoint), "best_dev_loss": best_loss,
+        "test_inputs_loaded": False, "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "source_revision": source_revision(),
+    }
+    if phase == 4:
+        run_config["phase3_manifest_sha256"] = manifest["phase3_manifest_sha256"]
     (output / "train_config.json").write_text(json.dumps(run_config, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     loss_decreased = best_loss < initial_dev_loss
     smoke = {
@@ -142,21 +174,41 @@ def main() -> None:
         "composition": {"gold": 200, "pseudo": 200} if args.smoke_test else None,
         "generation_nonempty": bool(predictions) and any(prediction.strip() for prediction in predictions),
         "checkpoint_reload": True,
+        "checkpoint_inventory_verified": inventory_sha == manifest.get("model_a_inventory_sha256", inventory_sha),
+        "test_inputs_loaded": False,
         "initial_dev_loss": initial_dev_loss,
         "best_dev_loss": best_loss,
         "loss_decreased": loss_decreased,
         "loss_check": "informational_for_smoke_test; investigate before full training if false",
         "history": history,
     }
-    if args.smoke_test: (output / "smoke_test.json").write_text(json.dumps(smoke, indent=2) + "\n")
+    if args.smoke_test:
+        (output / "smoke_test.json").write_text(json.dumps(smoke, indent=2) + "\n")
+    elif getattr(args, "smoke_report", None):
+        report = json.loads(args.smoke_report.read_text(encoding="utf-8"))
+        if not report.get("passed") or report.get("test_inputs_loaded") is not False:
+            raise ValueError("Full training requires a passing leak-free smoke report")
+        shutil.copy2(args.smoke_report, output / "smoke_test.json")
     artifacts = []
     for base in (checkpoint, output):
         for path in sorted(base.rglob("*")):
             if path.is_file() and path.name != "artifact_manifest.json":
                 artifacts.append({"path": path.relative_to(args.work_dir).as_posix(), "bytes": path.stat().st_size, "sha256": sha256_file(path)})
-    artifact_manifest = {"phase": 4, "run_type": run_config["run_type"], "created_at_utc": datetime.now(timezone.utc).isoformat(), "artifacts": artifacts}
+    artifact_manifest = {"phase": phase, "model": model_name, "run_type": run_config["run_type"], "created_at_utc": datetime.now(timezone.utc).isoformat(), "artifacts": artifacts}
     (output / "artifact_manifest.json").write_text(json.dumps(artifact_manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({"checkpoint": str(checkpoint), "best_dev_loss": best_loss, "smoke": args.smoke_test}))
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Train Model B from a verified Model A checkpoint")
+    parser.add_argument("--model-a-checkpoint", type=Path, required=True)
+    parser.add_argument("--data-dir", type=Path, required=True, help="Contains train, dev and frozen weak-label JSONL only")
+    parser.add_argument("--mixture-manifest", type=Path, required=True)
+    parser.add_argument("--config", type=Path, default=Path("configs/model_b_config.json"))
+    parser.add_argument("--work-dir", type=Path, default=Path("."))
+    parser.add_argument("--smoke-test", action="store_true")
+    parser.add_argument("--smoke-report", type=Path)
+    run_training(parser.parse_args())
 
 
 if __name__ == "__main__": main()

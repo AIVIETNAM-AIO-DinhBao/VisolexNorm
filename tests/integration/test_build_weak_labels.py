@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import pytest
+
+from scripts.build_expanded_weak_labels import validate_union
 from scripts.build_weak_labels import build_records, normalized_input_hash
 
 
@@ -45,3 +48,12 @@ def test_empty_model_candidate_is_not_accepted_through_keep() -> None:
     assert accepted == []
     assert stats["drop_counts"]["empty_target"] == 1
     assert stats["counts_by_generation_status"]["empty_after_special_token_decode"] == 1
+
+
+def test_expanded_union_rejects_duplicate_ids() -> None:
+    accepted, _ = build_records(
+        [item("duplicate")], {"duplicate": review("KEEP")}, set(), config(),
+        "model", "lexical_norm_review_v1",
+    )
+    with pytest.raises(ValueError, match="Duplicate weak-label ID"):
+        validate_union(accepted, accepted + accepted, set())

@@ -3,9 +3,11 @@
   "seed": 2026,
   "initial_checkpoint": "checkpoints/model_a",
   "initial_checkpoint_inventory_required": true,
+  "expected_initial_checkpoint_inventory_sha256": "31b3337870a0a8acb6e63f2dfb4aeaac67e86451e2a8fb18c5dbd6aba86432e5",
   "gold_path": "data/processed/vilexnorm_train.jsonl",
   "dev_path": "data/processed/vilexnorm_dev.jsonl",
   "expanded_weak_label_path": "data/processed/visolex_weak_labeled_expanded.jsonl",
+  "expanded_artifact_manifest_path": "outputs/expanded_review/artifact_manifest.json",
   "prohibited_input_paths": [
     "data/processed/vilexnorm_test.jsonl",
     "outputs/evaluation/"

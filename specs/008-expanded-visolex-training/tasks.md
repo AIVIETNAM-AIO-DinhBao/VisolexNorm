@@ -12,13 +12,13 @@
 - [x] T005 [US2] Mở rộng entrypoint `scripts/review_candidates.py` bằng config/path Phase 8, không copy pipeline. **Hoàn thành khi:** dùng `data/intermediate/visolex_expanded_review_cache.sqlite3`, resume đúng và không gửi lại ID Phase 3.
 - [x] T006 [US2] Chạy mock integration test tại `tests/integration/test_expanded_llm_review.py`. **Hoàn thành khi:** assert batch 15, round-robin, cooldown/retry và resume trên manifest Phase 8.
 - [x] T007 [US2] Chạy full review Phase 8 và export `outputs/expanded_review/review_stats.json`. **Hoàn thành khi:** mọi 48.411 ID có decision hợp lệ hoặc approved exclusion; không có secret trong cache/log/export.
-- [ ] T008 [US3] Cài đặt `scripts/build_expanded_weak_labels.py`. **Hoàn thành khi:** xuất `data/processed/visolex_weak_labeled_expanded.jsonl` là union unique Phase 3/8, chỉ KEEP/EDIT và fail khi overlap Dev/Test.
-- [ ] T009 [US3] Audit pool tại `scripts/audit_weak_labels.py` qua input config mới. **Hoàn thành khi:** xuất `outputs/expanded_review/review_audit.jsonl` và `artifact_manifest.json` có checksum/count/source/confidence/decision distribution, SHA-256 artifact Phase 3 và identity cache/prompt; không đổi schema `WeakLabelRecord`.
+- [x] T008 [US3] Cài đặt `scripts/build_expanded_weak_labels.py`. **Kết quả:** pool union unique có 64.813 record (18.970 Phase 3 + 45.843 Phase 8), chỉ KEEP/EDIT hợp lệ, không overlap Dev/Test; SHA-256 `8d0d7fda61fef5805d1d79c3ec9a7a09bf38c875123f21bdd1dad8d120d79386`.
+- [x] T009 [US3] Audit pool tại `scripts/audit_weak_labels.py` qua input config mới. **Kết quả:** đã xuất `outputs/expanded_review/review_audit.jsonl` và frozen `artifact_manifest.json` với checksum/count/source/confidence/decision distribution, SHA-256 artifact Phase 3 và identity cache/prompt; không đổi schema `WeakLabelRecord`.
 
 ## Chặng 3 — Model C trên Kaggle GPU
 
-- [ ] T010 [P] Cài đặt unit test tại `tests/unit/test_model_c_mixture.py`. **Hoàn thành khi:** assert 1:1 mỗi epoch, seed `2026 + epoch_index`, coverage toàn pool và wrap deterministic chỉ ở epoch cuối.
-- [ ] T011 [US4] Cài đặt `scripts/build_model_c_mixture.py`. **Hoàn thành khi:** verify pool/Model A inventory, tính `ceil(pool/8372)` và xuất `outputs/model_c/training_mixture_manifest.json` trước train.
+- [x] T010 [P] Cài đặt unit test tại `tests/unit/test_model_c_mixture.py`. **Kết quả:** assert 1:1 mỗi epoch, seed `2026 + epoch_index`, coverage toàn pool và wrap deterministic chỉ ở epoch cuối.
+- [x] T011 [US4] Cài đặt `scripts/build_model_c_mixture.py`. **Kết quả:** pool/Model A inventory đã verify; manifest 8 epoch đã xuất tại `outputs/model_c/training_mixture_manifest.json`, pseudo union đủ 64.813.
 - [ ] T012 [US4] Cài đặt `scripts/train_model_c.py` và `notebooks/train_model_c_kaggle.ipynb`. **Hoàn thành khi:** notebook run-all trên Kaggle, dependency rõ ràng, không secret/trạng thái ẩn, không load Test và export `/kaggle/working`.
 - [ ] T013 [US4] Chạy smoke test 200 gold + 200 pseudo. **Hoàn thành khi:** `outputs/model_c/smoke_test.json` ghi loss, generation, checkpoint save/load và inventory checksum pass.
 - [ ] T014 [US4] Chạy full training Model C. **Hoàn thành khi:** `checkpoints/model_c/`, Dev predictions/metrics, config và artifact manifest tồn tại; pseudo union bằng pool size.
