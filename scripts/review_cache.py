@@ -49,6 +49,24 @@ class ReviewCache:
                 reviewed_at TEXT NOT NULL,
                 PRIMARY KEY (sample_id, prompt_version, prompt_hash, llm_model)
             );
+            CREATE TABLE IF NOT EXISTS review_attempts (
+                attempt_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                batch_id TEXT NOT NULL,
+                prompt_hash TEXT NOT NULL,
+                prompt_version TEXT NOT NULL,
+                llm_model TEXT NOT NULL,
+                sample_ids_json TEXT NOT NULL,
+                attempt_number INTEGER NOT NULL,
+                status TEXT NOT NULL,
+                error_code TEXT,
+                error_detail TEXT,
+                response_metadata_json TEXT,
+                raw_response TEXT,
+                created_at TEXT NOT NULL,
+                completed_at TEXT
+            );
+            CREATE INDEX IF NOT EXISTS review_attempts_identity_idx
+                ON review_attempts (batch_id, prompt_version, prompt_hash, llm_model);
             """
         )
         self.connection.commit()
@@ -64,7 +82,7 @@ class ReviewCache:
         )
         return {row[0] for row in rows}
 
-    def mark_attempt(self, batch_id: str, prompt_hash: str, version: str, model: str, ids: list[str]) -> None:
+    def mark_attempt(self, batch_id: str, prompt_hash: str, version: str, model: str, ids: list[str]) -> int:
         now = utc_now()
         with self.connection:
             self.connection.execute(
@@ -77,6 +95,36 @@ class ReviewCache:
                     attempt_count = attempt_count + 1, status = 'in_flight', last_error = NULL
                 """,
                 (batch_id, prompt_hash, version, model, json.dumps(ids), now),
+            )
+            attempt_number = int(self.connection.execute(
+                """SELECT attempt_count FROM review_batches WHERE batch_id=? AND prompt_version=?
+                   AND prompt_hash=? AND llm_model=?""",
+                (batch_id, version, prompt_hash, model),
+            ).fetchone()[0])
+            cursor = self.connection.execute(
+                """INSERT INTO review_attempts (
+                       batch_id, prompt_hash, prompt_version, llm_model, sample_ids_json,
+                       attempt_number, status, created_at
+                   ) VALUES (?, ?, ?, ?, ?, ?, 'in_flight', ?)""",
+                (batch_id, prompt_hash, version, model, json.dumps(ids), attempt_number, now),
+            )
+        return int(cursor.lastrowid)
+
+    def complete_attempt(
+        self, attempt_id: int, status: str, *, error_code: str | None = None,
+        error_detail: str | None = None, response_metadata: dict[str, Any] | None = None,
+        raw_response: str | None = None,
+    ) -> None:
+        """Persist one request outcome without losing earlier retry diagnostics."""
+        with self.connection:
+            self.connection.execute(
+                """UPDATE review_attempts SET status=?, error_code=?, error_detail=?,
+                   response_metadata_json=?, raw_response=?, completed_at=? WHERE attempt_id=?""",
+                (
+                    status, error_code, error_detail[:1000] if error_detail else None,
+                    json.dumps(response_metadata, ensure_ascii=False, sort_keys=True) if response_metadata else None,
+                    raw_response, utc_now(), attempt_id,
+                ),
             )
 
     def commit_success(
@@ -114,13 +162,19 @@ class ReviewCache:
     def results_for_ids(self, ids: list[str], version: str, prompt_hash: str, model: str) -> dict[str, dict[str, Any]]:
         if not ids:
             return {}
-        placeholders = ",".join("?" for _ in ids)
-        rows = self.connection.execute(
-            f"""SELECT * FROM review_results WHERE prompt_version=? AND prompt_hash=? AND llm_model=?
-                AND sample_id IN ({placeholders})""",
-            (version, prompt_hash, model, *ids),
-        )
-        return {row["sample_id"]: dict(row) for row in rows}
+        results: dict[str, dict[str, Any]] = {}
+        # Keep well below SQLite's build-dependent host-parameter limit. Phase 8
+        # requests 48,411 IDs here, so one monolithic IN clause is not portable.
+        for start in range(0, len(ids), 900):
+            chunk = ids[start : start + 900]
+            placeholders = ",".join("?" for _ in chunk)
+            rows = self.connection.execute(
+                f"""SELECT * FROM review_results WHERE prompt_version=? AND prompt_hash=? AND llm_model=?
+                    AND sample_id IN ({placeholders})""",
+                (version, prompt_hash, model, *chunk),
+            )
+            results.update({row["sample_id"]: dict(row) for row in rows})
+        return results
 
     def failed_count(self, version: str, prompt_hash: str, model: str) -> int:
         return int(self.connection.execute(

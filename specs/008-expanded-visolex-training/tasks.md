@@ -11,7 +11,7 @@
 
 - [x] T005 [US2] Mở rộng entrypoint `scripts/review_candidates.py` bằng config/path Phase 8, không copy pipeline. **Hoàn thành khi:** dùng `data/intermediate/visolex_expanded_review_cache.sqlite3`, resume đúng và không gửi lại ID Phase 3.
 - [x] T006 [US2] Chạy mock integration test tại `tests/integration/test_expanded_llm_review.py`. **Hoàn thành khi:** assert batch 15, round-robin, cooldown/retry và resume trên manifest Phase 8.
-- [ ] T007 [US2] Chạy full review Phase 8 và export `outputs/expanded_review/review_stats.json`. **Hoàn thành khi:** mọi 48.411 ID có decision hợp lệ hoặc approved exclusion; không có secret trong cache/log/export.
+- [x] T007 [US2] Chạy full review Phase 8 và export `outputs/expanded_review/review_stats.json`. **Hoàn thành khi:** mọi 48.411 ID có decision hợp lệ hoặc approved exclusion; không có secret trong cache/log/export.
 - [ ] T008 [US3] Cài đặt `scripts/build_expanded_weak_labels.py`. **Hoàn thành khi:** xuất `data/processed/visolex_weak_labeled_expanded.jsonl` là union unique Phase 3/8, chỉ KEEP/EDIT và fail khi overlap Dev/Test.
 - [ ] T009 [US3] Audit pool tại `scripts/audit_weak_labels.py` qua input config mới. **Hoàn thành khi:** xuất `outputs/expanded_review/review_audit.jsonl` và `artifact_manifest.json` có checksum/count/source/confidence/decision distribution, SHA-256 artifact Phase 3 và identity cache/prompt; không đổi schema `WeakLabelRecord`.
 

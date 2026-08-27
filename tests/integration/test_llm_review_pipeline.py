@@ -7,7 +7,17 @@ import pytest
 
 from scripts.gemini_key_pool import GeminiKeyPool
 from scripts.review_cache import ReviewCache
-from scripts.review_candidates import parse_response, run_batches, safe_error_detail, validate_frozen_prompt, RESPONSE_VALIDATOR
+from scripts.review_candidates import (
+    GeminiResponse,
+    GeminiResponseError,
+    PROVIDER_RESPONSE_SCHEMA,
+    RESPONSE_VALIDATOR,
+    parse_response,
+    response_text,
+    run_batches,
+    safe_error_detail,
+    validate_frozen_prompt,
+)
 
 
 def row(index: int) -> dict:
@@ -69,6 +79,26 @@ def test_safe_error_detail_is_actionable_without_request_content() -> None:
     assert safe_error_detail(RuntimeError("Cannot send a request, as the client has been closed.")) == "client_closed"
     assert safe_error_detail(RuntimeError("404 model not found")) == "model_or_endpoint_not_found"
     assert safe_error_detail(ValueError("source text must not leak")) == "api_or_transport_error"
+
+
+def test_textless_safety_response_is_not_mislabeled_as_invalid_json() -> None:
+    metadata = {"candidate_count": 1, "finish_reason": "SAFETY"}
+    with pytest.raises(GeminiResponseError, match="finish_safety") as captured:
+        response_text(GeminiResponse(None, metadata))
+    assert captured.value.metadata == metadata
+    assert safe_error_detail(captured.value) == "finish_safety"
+
+
+def test_provider_schema_is_accepted_by_installed_sdk() -> None:
+    from google.genai import types
+
+    generated = types.GenerateContentConfig(
+        response_mime_type="application/json",
+        response_json_schema=PROVIDER_RESPONSE_SCHEMA,
+        automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
+    )
+    assert generated.response_json_schema == PROVIDER_RESPONSE_SCHEMA
+    assert generated.automatic_function_calling.disable is True
 
 
 def test_response_rejects_missing_or_duplicate_ids() -> None:
@@ -134,6 +164,54 @@ def test_auth_error_disables_key_for_remaining_retries(tmp_path: Path) -> None:
     cache.close()
 
 
+def test_safety_failure_is_split_and_attempt_metadata_is_audited(tmp_path: Path) -> None:
+    cache = ReviewCache(tmp_path / "safety.sqlite3")
+    calls: list[list[str]] = []
+
+    def request(key, model, prompt):
+        samples = json.loads(prompt.split("SAMPLES:\n", 1)[1])
+        ids = [sample["id"] for sample in samples]
+        calls.append(ids)
+        if "id-1" in ids:
+            return GeminiResponse(None, {"candidate_count": 1, "finish_reason": "SAFETY"})
+        return successful_response(prompt)
+
+    run_batches(
+        [row(0), row(1), row(2)], "SAMPLES:\n{samples_json}", "a" * 64, "draft", "model",
+        config(), cache, GeminiKeyPool(["key"], cooldown_seconds=0), request, lambda _: None,
+    )
+    assert cache.completed_ids("draft", "a" * 64, "model") == {"id-0", "id-2"}
+    assert calls.count(["id-1"]) == 1
+    attempts = cache.connection.execute(
+        "SELECT status, error_code, response_metadata_json FROM review_attempts ORDER BY attempt_id"
+    ).fetchall()
+    safety_attempts = [attempt for attempt in attempts if attempt["error_code"] == "finish_safety"]
+    assert safety_attempts
+    assert all(json.loads(attempt["response_metadata_json"])["finish_reason"] == "SAFETY" for attempt in safety_attempts)
+    assert all(attempt["status"] == "failed" for attempt in safety_attempts)
+    cache.close()
+
+
+def test_malformed_response_is_preserved_in_attempt_audit(tmp_path: Path) -> None:
+    review_config = config()
+    review_config["max_retries"] = 1
+    cache = ReviewCache(tmp_path / "malformed.sqlite3")
+
+    run_batches(
+        [row(0)], "SAMPLES:\n{samples_json}", "a" * 64, "draft", "model", review_config,
+        cache, GeminiKeyPool(["key"], cooldown_seconds=0),
+        lambda key, model, prompt: GeminiResponse('{"results": [', {"candidate_count": 1, "finish_reason": "STOP"}),
+        lambda _: None,
+    )
+    attempt = cache.connection.execute(
+        "SELECT status, error_code, raw_response FROM review_attempts"
+    ).fetchone()
+    assert dict(attempt) == {
+        "status": "failed", "error_code": "invalid_json_response", "raw_response": '{"results": [',
+    }
+    cache.close()
+
+
 def test_prompt_version_has_an_independent_cache_namespace(tmp_path: Path) -> None:
     cache = ReviewCache(tmp_path / "namespace.sqlite3")
     calls = []
@@ -178,4 +256,20 @@ def test_failed_batch_is_reconciled_by_approved_exclusion(tmp_path: Path) -> Non
         version, prompt_hash, model, {"blocked-sample"}
     ) == 1
     assert cache.failed_count(version, prompt_hash, model) == 0
+    cache.close()
+
+
+def test_results_for_ids_chunks_large_sqlite_queries(tmp_path: Path) -> None:
+    cache = ReviewCache(tmp_path / "large-query.sqlite3")
+    version, prompt_hash, model = "v1", "a" * 64, "gemini-test"
+    expected = {f"sample-{index}" for index in range(1005)}
+    for index in range(0, 1005, 15):
+        ids = [f"sample-{value}" for value in range(index, min(index + 15, 1005))]
+        batch_id = f"batch-{index}"
+        cache.mark_attempt(batch_id, prompt_hash, version, model, ids)
+        cache.commit_success(batch_id, prompt_hash, version, model, [
+            {"id": sample_id, "decision": "KEEP", "corrected_text": None, "reason_code": None}
+            for sample_id in ids
+        ], '{"results": []}')
+    assert set(cache.results_for_ids(sorted(expected), version, prompt_hash, model)) == expected
     cache.close()

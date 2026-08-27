@@ -40,6 +40,11 @@ Kế thừa toàn bộ CandidateRecord và thêm:
 | `created_at` | datetime | UTC ISO-8601 |
 | `completed_at` | datetime/null | UTC ISO-8601 |
 
+Mỗi request attempt còn được append vào bảng SQLite `review_attempts`, gồm identity batch/model,
+`attempt_number`, trạng thái, mã lỗi an toàn, metadata provider (`finish_reason`, prompt block,
+safety và token counts), raw response nếu có, cùng timestamp. Retry sau không ghi đè diagnostic
+attempt trước; API key và prompt/input không được lưu trong bảng này.
+
 ## ReviewResult
 
 | Trường | Kiểu | Quy tắc |

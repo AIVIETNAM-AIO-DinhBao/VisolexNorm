@@ -11,6 +11,8 @@
   "remaining_manifest_path": "data/intermediate/visolex_remaining_review_manifest.jsonl",
   "remaining_manifest_report_path": "outputs/expanded_review/remaining_manifest_report.json",
   "cache_path": "data/intermediate/visolex_expanded_review_cache.sqlite3",
+  "approved_exclusions_path": "outputs/expanded_review/phase8_provider_exclusions.json",
+  "review_stats_path": "outputs/expanded_review/review_stats.json",
   "lexical_policy_path": "configs/lexical_normalization_policy_v1.json",
   "frozen_prompt_path": "prompts/lexical_norm_review_v1.txt",
   "frozen_prompt_version": "lexical_norm_review_v1",
