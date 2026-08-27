@@ -16,15 +16,16 @@ from typing import Any
 from jsonschema import Draft202012Validator
 
 try:
-    from .data_utils import read_jsonl
-    from .evaluation_metrics import OFFICIAL_REFERENCE, evaluate_records
-    from .freeze_experiment import inventory, verify_manifest
-    from .phase3_utils import sha256_file, sha256_json
-except ImportError:
-    from data_utils import read_jsonl
-    from evaluation_metrics import OFFICIAL_REFERENCE, evaluate_records
-    from freeze_experiment import inventory, verify_manifest
-    from phase3_utils import sha256_file, sha256_json
+    from scripts._bootstrap import ensure_project_root
+except ModuleNotFoundError:
+    from _bootstrap import ensure_project_root
+
+ensure_project_root()
+
+from scripts.evaluation_metrics import OFFICIAL_REFERENCE, evaluate_records
+from scripts.freeze_experiment import inventory, verify_manifest
+from visolexnorm.common.artifacts import sha256_file, sha256_json
+from visolexnorm.common.io import read_jsonl
 
 
 ROOT = Path(__file__).parents[1]

@@ -3,20 +3,24 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import math
 import random
-import sys
 from collections import Counter
 from pathlib import Path
 from typing import Any
 
-sys.path.insert(0, str(Path(__file__).parent))
-from build_model_b_mixture import validate_records  # noqa: E402
-from data_utils import read_jsonl  # noqa: E402
-from phase3_utils import load_json, sha256_file  # noqa: E402
-from train_model_b import checkpoint_inventory  # noqa: E402
+try:
+    from scripts._bootstrap import ensure_project_root
+except ModuleNotFoundError:
+    from _bootstrap import ensure_project_root
+
+ensure_project_root()
+
+from scripts.build_model_b_mixture import validate_records
+from scripts.train_model_b import checkpoint_inventory
+from visolexnorm.common.artifacts import sha256_bytes, sha256_file
+from visolexnorm.common.io import load_json, read_jsonl
 
 
 def sample_model_c_epochs(
@@ -110,7 +114,7 @@ def build_manifest(root: Path, config_path: Path) -> dict[str, Any]:
         "epochs": epochs,
     }
     payload = json.dumps(manifest, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
-    manifest["manifest_content_sha256"] = hashlib.sha256(payload).hexdigest()
+    manifest["manifest_content_sha256"] = sha256_bytes(payload)
     return manifest
 
 

@@ -2,18 +2,20 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 try:
-    from .data_utils import read_jsonl
-    from .phase3_utils import canonical_json, sha256_file
-except ImportError:
-    from data_utils import read_jsonl
-    from phase3_utils import canonical_json, sha256_file
+    from scripts._bootstrap import ensure_project_root
+except ModuleNotFoundError:
+    from _bootstrap import ensure_project_root
+
+ensure_project_root()
+
+from visolexnorm.common.artifacts import canonical_json, sha256_bytes, sha256_file, sha256_text
+from visolexnorm.common.io import read_jsonl
 
 
 def inventory(path: Path, *, normalize_text: bool = False) -> dict[str, Any]:
@@ -28,12 +30,12 @@ def inventory(path: Path, *, normalize_text: bool = False) -> dict[str, Any]:
     if path.is_file():
         if normalize_text:
             content = path.read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
-            return {"kind": "file", "bytes": len(content), "sha256": hashlib.sha256(content).hexdigest(), "line_endings_normalized": "LF"}
+            return {"kind": "file", "bytes": len(content), "sha256": sha256_bytes(content), "line_endings_normalized": "LF"}
         return {"kind": "file", "bytes": path.stat().st_size, "sha256": sha256_file(path)}
     files = [{"path": item.relative_to(path).as_posix(), "bytes": item.stat().st_size, "sha256": sha256_file(item)} for item in sorted(path.rglob("*")) if item.is_file()]
     if not files:
         raise ValueError(f"Artifact directory is empty: {path}")
-    digest = hashlib.sha256(canonical_json(files).encode("utf-8")).hexdigest()
+    digest = sha256_text(canonical_json(files))
     return {"kind": "directory", "files": files, "file_count": len(files), "sha256": digest}
 
 
@@ -46,7 +48,7 @@ def tokenizer_inventory(checkpoint: Path) -> dict[str, Any]:
     if not files:
         raise ValueError(f"Checkpoint has no tokenizer files: {checkpoint}")
     entries = [{"path": item.relative_to(checkpoint).as_posix(), "bytes": item.stat().st_size, "sha256": sha256_file(item)} for item in files]
-    return {"files": entries, "sha256": hashlib.sha256(canonical_json(entries).encode("utf-8")).hexdigest()}
+    return {"files": entries, "sha256": sha256_text(canonical_json(entries))}
 
 
 def build_manifest(args: argparse.Namespace) -> dict[str, Any]:
@@ -81,7 +83,7 @@ def build_manifest(args: argparse.Namespace) -> dict[str, Any]:
         "frozen_at_utc": datetime.now(timezone.utc).isoformat(),
         "seed": 2026,
         "expected_test_count": args.expected_test_count,
-        "test_order_sha256": hashlib.sha256(canonical_json(test_ids).encode("utf-8")).hexdigest(),
+        "test_order_sha256": sha256_text(canonical_json(test_ids)),
         "model_selection_rule": ["higher_f1", "higher_ERR", "model_a"],
         "metric_reference": metric_reference,
         "tokenizer_contract": tokenizer_a,
@@ -102,7 +104,7 @@ def verify_manifest(manifest: dict[str, Any], paths: dict[str, Path]) -> None:
         raise ValueError("Frozen tokenizer contract mismatch")
     test_rows = read_jsonl(paths["test"])
     test_ids = [row.get("id") for row in test_rows]
-    actual_order = hashlib.sha256(canonical_json(test_ids).encode("utf-8")).hexdigest()
+    actual_order = sha256_text(canonical_json(test_ids))
     if len(test_ids) != manifest.get("expected_test_count") or actual_order != manifest.get("test_order_sha256"):
         raise ValueError("Frozen Test order or count mismatch")
 

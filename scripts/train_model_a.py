@@ -14,14 +14,19 @@ from __future__ import annotations
 import argparse
 import json
 import platform
-import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-sys.path.insert(0, str(Path(__file__).parent))
-from data_utils import read_jsonl, write_jsonl  # noqa: E402
-from phase3_utils import log_event  # noqa: E402
+try:
+    from scripts._bootstrap import ensure_project_root
+except ModuleNotFoundError:
+    from _bootstrap import ensure_project_root
+
+ensure_project_root()
+
+from visolexnorm.common.io import read_jsonl, write_jsonl
+from visolexnorm.common.progress import log_event
 
 if TYPE_CHECKING:
     from datasets import Dataset

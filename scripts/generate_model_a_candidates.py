@@ -4,13 +4,19 @@ from __future__ import annotations
 
 import argparse
 import math
-import sys
 from pathlib import Path
 from typing import Any, Iterable
 
-sys.path.insert(0, str(Path(__file__).parent))
-from data_utils import read_jsonl  # noqa: E402
-from phase3_utils import ProgressReporter, atomic_write_jsonl, ensure_finite_number, load_json, log_event, sha256_json  # noqa: E402
+try:
+    from scripts._bootstrap import ensure_project_root
+except ModuleNotFoundError:
+    from _bootstrap import ensure_project_root
+
+ensure_project_root()
+
+from visolexnorm.common.artifacts import ensure_finite_number, sha256_json
+from visolexnorm.common.io import atomic_write_jsonl, load_json, read_jsonl
+from visolexnorm.common.progress import ProgressReporter, log_event
 
 
 REQUIRED_INPUT = {"id", "dataset", "original_source", "input_text"}

@@ -5,8 +5,16 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from data_utils import read_jsonl
-from phase3_utils import log_event, sha256_text
+try:
+    from scripts._bootstrap import ensure_project_root
+except ModuleNotFoundError:
+    from _bootstrap import ensure_project_root
+
+ensure_project_root()
+
+from visolexnorm.common.artifacts import sha256_text
+from visolexnorm.common.io import read_jsonl
+from visolexnorm.common.progress import log_event
 
 
 def main() -> None:

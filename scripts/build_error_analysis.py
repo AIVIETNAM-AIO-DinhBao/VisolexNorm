@@ -12,9 +12,13 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from .data_utils import read_jsonl, write_jsonl
-except ImportError:
-    from data_utils import read_jsonl, write_jsonl
+    from scripts._bootstrap import ensure_project_root
+except ModuleNotFoundError:
+    from _bootstrap import ensure_project_root
+
+ensure_project_root()
+
+from visolexnorm.common.io import read_jsonl, write_jsonl
 
 
 def categorize(input_text: str, target_text: str, prediction_text: str, *, weak_label_noise: bool = False) -> str:

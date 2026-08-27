@@ -6,7 +6,15 @@ import re
 from pathlib import Path
 from typing import Any
 
-from phase3_utils import load_json, sha256_json
+try:
+    from scripts._bootstrap import ensure_project_root
+except ModuleNotFoundError:
+    from _bootstrap import ensure_project_root
+
+ensure_project_root()
+
+from visolexnorm.common.artifacts import sha256_json
+from visolexnorm.common.io import load_json
 
 
 WORD_BOUNDARY = re.compile(r"(?<!\w){}(?!\w)", re.IGNORECASE)

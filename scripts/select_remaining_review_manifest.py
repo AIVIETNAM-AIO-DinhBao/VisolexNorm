@@ -4,14 +4,19 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from pathlib import Path
 from typing import Any
 
-sys.path.insert(0, str(Path(__file__).parent))
-from data_utils import read_jsonl  # noqa: E402
-from phase3_utils import atomic_write_jsonl, load_json, sha256_file  # noqa: E402
-from select_review_manifest import validate_candidates  # noqa: E402
+try:
+    from scripts._bootstrap import ensure_project_root
+except ModuleNotFoundError:
+    from _bootstrap import ensure_project_root
+
+ensure_project_root()
+
+from scripts.select_review_manifest import validate_candidates
+from visolexnorm.common.artifacts import sha256_file
+from visolexnorm.common.io import atomic_write_jsonl, load_json, read_jsonl
 
 
 def unique_ids(rows: list[dict[str, Any]], label: str) -> set[str]:

@@ -4,21 +4,24 @@ This Kaggle-oriented command never accepts or reads a ViLexNorm Test path.
 """
 from __future__ import annotations
 
-import argparse, hashlib, json, math, platform, shutil, subprocess
+import argparse
+import json
+import math
+import platform
+import shutil
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
 try:
-    from .data_utils import read_jsonl, write_jsonl
-except ImportError:
-    from data_utils import read_jsonl, write_jsonl
+    from scripts._bootstrap import ensure_project_root
+except ModuleNotFoundError:
+    from _bootstrap import ensure_project_root
 
+ensure_project_root()
 
-def sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""): digest.update(chunk)
-    return digest.hexdigest()
+from visolexnorm.common.artifacts import sha256_file, sha256_text
+from visolexnorm.common.io import read_jsonl, write_jsonl
 
 
 def checkpoint_inventory(checkpoint: Path) -> tuple[list[dict], str]:
@@ -27,8 +30,8 @@ def checkpoint_inventory(checkpoint: Path) -> tuple[list[dict], str]:
     names = {item["path"] for item in files}
     if "config.json" not in names or not any(x.endswith((".safetensors", ".bin")) for x in names) or not any("tokenizer" in x or x.endswith("sentencepiece.bpe.model") for x in names):
         raise ValueError("Model A checkpoint is missing model/tokenizer files")
-    payload = json.dumps(files, sort_keys=True, separators=(",", ":")).encode()
-    return files, hashlib.sha256(payload).hexdigest()
+    payload = json.dumps(files, sort_keys=True, separators=(",", ":"))
+    return files, sha256_text(payload)
 
 
 def source_revision() -> str | None:

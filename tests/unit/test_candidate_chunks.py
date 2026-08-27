@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from scripts.generate_model_a_candidates import REQUIRED_CANDIDATE, load_completed_chunk
-from scripts.phase3_utils import atomic_write_jsonl
+from visolexnorm.common.io import atomic_write_jsonl
 
 
 def candidate(sample_id: str, config_hash: str) -> dict:

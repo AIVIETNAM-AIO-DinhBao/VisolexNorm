@@ -3,16 +3,21 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 from collections import Counter
 from pathlib import Path
 from typing import Any
 
 try:
-    from .train_model_b import run_training
-except ImportError:
-    from train_model_b import run_training
+    from scripts._bootstrap import ensure_project_root
+except ModuleNotFoundError:
+    from _bootstrap import ensure_project_root
+
+ensure_project_root()
+
+from scripts.train_model_b import run_training
+from visolexnorm.common.artifacts import sha256_file, sha256_text
+from visolexnorm.common.io import load_json, read_jsonl
 
 
 def validate_model_c_manifest(manifest: dict[str, Any], config: dict[str, Any]) -> None:
@@ -50,25 +55,6 @@ def reject_prohibited_inputs(args: argparse.Namespace, config: dict[str, Any]) -
     prohibited = [value.replace("\\", "/").lower().rstrip("/") for value in config["prohibited_input_paths"]]
     if any(blocked in path for path in normalized for blocked in prohibited):
         raise ValueError("Model C received a prohibited Test/evaluation input path")
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    value = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(value, dict):
-        raise ValueError(f"Expected a JSON object in {path}")
-    return value
-
-
-def sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
-def read_jsonl(path: Path) -> list[dict[str, Any]]:
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
 def verify_model_c_artifacts(root: Path, manifest: dict[str, Any]) -> None:
@@ -135,9 +121,9 @@ def build_exit_report(root: Path) -> dict[str, Any]:
         item for item in artifact_manifest["artifacts"]
         if item["path"].startswith("checkpoints/model_c/")
     ]
-    checkpoint_inventory_sha256 = hashlib.sha256(
-        json.dumps(checkpoint_entries, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    ).hexdigest()
+    checkpoint_inventory_sha256 = sha256_text(
+        json.dumps(checkpoint_entries, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    )
     report = {
         "schema_version": 1,
         "phase": 8,

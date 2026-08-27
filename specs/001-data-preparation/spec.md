@@ -18,7 +18,8 @@ noise, đồng thời tách Train/Dev/Test và loại exact overlap với Dev/Te
 - `scripts/prepare_vilexnorm.py`
 - `scripts/prepare_visolex.py`
 - `scripts/check_data.py`
-- `scripts/data_utils.py`
+- `visolexnorm/common/io.py` (shared text and JSONL I/O helpers; moved from
+  `scripts/data_utils.py` during the post-Phase-8 refactor)
 
 ## Kết quả ViSoLex thực tế
 

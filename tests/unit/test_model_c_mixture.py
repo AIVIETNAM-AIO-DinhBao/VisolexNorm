@@ -1,11 +1,19 @@
 from collections import Counter
+import json
 
 import pytest
 
 from scripts.build_model_c_mixture import sample_model_c_epochs
-from scripts.train_model_c import assert_dev_only_report, reject_prohibited_inputs, validate_model_c_manifest
+from scripts.train_model_c import (
+    assert_dev_only_report,
+    build_exit_report,
+    finalize_phase8,
+    reject_prohibited_inputs,
+    validate_model_c_manifest,
+)
 from argparse import Namespace
 from pathlib import Path
+from visolexnorm.common.artifacts import sha256_file
 
 
 def test_model_c_rotation_is_deterministic_balanced_and_complete() -> None:
@@ -60,3 +68,64 @@ def test_exit_report_rejects_test_results() -> None:
     report["dev_evaluation"] = {"test_f1": 0.9}
     with pytest.raises(ValueError, match="forbidden Test results"):
         assert_dev_only_report(report)
+
+
+def write_json(path: Path, value: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(value) + "\n", encoding="utf-8")
+
+
+def create_model_c_artifact_tree(root: Path) -> None:
+    output = root / "outputs/model_c"
+    checkpoint = root / "checkpoints/model_c/model.safetensors"
+    checkpoint.parent.mkdir(parents=True)
+    checkpoint.write_bytes(b"weights")
+    write_json(output / "smoke_test.json", {
+        "passed": True, "test_inputs_loaded": False, "checkpoint_reload": True,
+    })
+    write_json(output / "train_config.json", {
+        "run_type": "full", "test_inputs_loaded": False, "source_revision": "revision",
+        "checkpoint_inventory_sha256": "a" * 64, "best_dev_loss": 0.2,
+    })
+    write_json(output / "dev_metrics.json", {
+        "dev_examples": 1, "best_dev_loss": 0.2, "exact_sentence_match": 0.5,
+        "history": [{"epoch": 1, "dev_loss": 0.2}],
+    })
+    write_json(output / "training_mixture_manifest.json", {
+        "epochs": [{"pseudo_ids": ["pseudo-1"]}], "pseudo_union_count": 1,
+        "num_train_epochs": 1, "gold_count": 1, "pseudo_per_epoch": 1,
+        "checksums": {"pseudo": "b" * 64},
+    })
+    (output / "dev_predictions.jsonl").write_text(
+        json.dumps({"id": "vilexnorm_dev_000001", "prediction": "không"}) + "\n",
+        encoding="utf-8",
+    )
+    write_json(root / "outputs/expanded_review/artifact_manifest.json", {
+        "counts": {"phase3": 0, "phase8": 1, "expanded": 1},
+    })
+    write_json(root / "outputs/expanded_review/review_stats.json", {
+        "manifest_review_count": 1, "valid_llm_review_count": 1,
+        "provider_exclusion_count": 0, "reconciled_count": 1,
+        "decision_counts": {"KEEP": 1},
+    })
+    write_json(root / "outputs/model_b/dev_metrics.json", {
+        "best_dev_loss": 0.3, "exact_sentence_match": 0.4,
+    })
+    relative = checkpoint.relative_to(root).as_posix()
+    write_json(output / "artifact_manifest.json", {
+        "phase": 8, "model": "model_c", "run_type": "full",
+        "artifacts": [{
+            "path": relative, "bytes": checkpoint.stat().st_size,
+            "sha256": sha256_file(checkpoint),
+        }],
+    })
+
+
+def test_model_c_exit_report_build_and_finalize_use_common_hashing(tmp_path: Path) -> None:
+    create_model_c_artifact_tree(tmp_path)
+    report = build_exit_report(tmp_path)
+    assert report["status"] == "completed"
+    assert report["test_inputs_loaded"] is False
+    assert report["acceptance"]["artifact_checksums_verified"] is True
+    destination = finalize_phase8(tmp_path, tmp_path / "exit-report.json")
+    assert json.loads(destination.read_text(encoding="utf-8"))["evaluation_scope"] == "dev_only_exploratory"

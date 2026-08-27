@@ -9,12 +9,17 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
-import sys
+try:
+    from scripts._bootstrap import ensure_project_root
+except ModuleNotFoundError:
+    from _bootstrap import ensure_project_root
 
-sys.path.insert(0, str(Path(__file__).parent))
-from data_utils import read_jsonl  # noqa: E402
-from generate_model_a_candidates import REQUIRED_CANDIDATE  # noqa: E402
-from phase3_utils import atomic_write_jsonl, ensure_finite_number, load_json, log_event  # noqa: E402
+ensure_project_root()
+
+from scripts.generate_model_a_candidates import REQUIRED_CANDIDATE
+from visolexnorm.common.artifacts import ensure_finite_number
+from visolexnorm.common.io import atomic_write_jsonl, load_json, read_jsonl
+from visolexnorm.common.progress import log_event
 
 
 def validate_candidates(rows: list[dict[str, Any]]) -> None:

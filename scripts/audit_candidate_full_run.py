@@ -12,8 +12,15 @@ from typing import Any
 
 from jsonschema import Draft202012Validator
 
-from data_utils import read_jsonl
-from phase3_utils import load_json, sha256_file, sha256_json
+try:
+    from scripts._bootstrap import ensure_project_root
+except ModuleNotFoundError:
+    from _bootstrap import ensure_project_root
+
+ensure_project_root()
+
+from visolexnorm.common.artifacts import sha256_file, sha256_json
+from visolexnorm.common.io import load_json, read_jsonl
 
 
 ROOT = Path(__file__).parents[1]

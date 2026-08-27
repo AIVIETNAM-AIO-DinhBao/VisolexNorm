@@ -4,15 +4,20 @@ from __future__ import annotations
 
 import argparse
 import csv
-import sys
 from collections import Counter
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent))
-from data_utils import read_jsonl  # noqa: E402
-from lexical_policy import load_policy, review_identity_hash  # noqa: E402
-from phase3_utils import load_json, log_event  # noqa: E402
-from review_cache import ReviewCache  # noqa: E402
+try:
+    from scripts._bootstrap import ensure_project_root
+except ModuleNotFoundError:
+    from _bootstrap import ensure_project_root
+
+ensure_project_root()
+
+from scripts.lexical_policy import load_policy, review_identity_hash
+from scripts.review_cache import ReviewCache
+from visolexnorm.common.io import load_json, read_jsonl
+from visolexnorm.common.progress import log_event
 
 
 FIELDS = [

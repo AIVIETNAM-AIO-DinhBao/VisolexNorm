@@ -7,9 +7,16 @@ import json
 import shutil
 from pathlib import Path
 
-from data_utils import read_jsonl
-from lexical_policy import load_policy, review_identity_hash
-from phase3_utils import load_json, log_event
+try:
+    from scripts._bootstrap import ensure_project_root
+except ModuleNotFoundError:
+    from _bootstrap import ensure_project_root
+
+ensure_project_root()
+
+from scripts.lexical_policy import load_policy, review_identity_hash
+from visolexnorm.common.io import load_json, read_jsonl
+from visolexnorm.common.progress import log_event
 
 
 def main() -> None:

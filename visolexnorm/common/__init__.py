@@ -1,0 +1,1 @@
+"""Dependency-free utilities shared across ViSoLexNorm pipeline domains."""

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from collections import Counter, defaultdict
 from difflib import SequenceMatcher
 from pathlib import Path
@@ -12,11 +11,18 @@ from typing import Any
 
 from jsonschema import Draft202012Validator
 
-sys.path.insert(0, str(Path(__file__).parent))
-from data_utils import clean_text, read_jsonl  # noqa: E402
-from phase3_utils import ProgressReporter, atomic_write_jsonl, load_json, log_event, sha256_text  # noqa: E402
-from review_cache import ReviewCache  # noqa: E402
-from review_candidates import validate_frozen_prompt  # noqa: E402
+try:
+    from scripts._bootstrap import ensure_project_root
+except ModuleNotFoundError:
+    from _bootstrap import ensure_project_root
+
+ensure_project_root()
+
+from scripts.review_cache import ReviewCache
+from scripts.review_candidates import validate_frozen_prompt
+from visolexnorm.common.artifacts import sha256_text
+from visolexnorm.common.io import atomic_write_jsonl, clean_text, load_json, read_jsonl
+from visolexnorm.common.progress import ProgressReporter, log_event
 
 
 ROOT = Path(__file__).parents[1]

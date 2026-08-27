@@ -1,29 +1,22 @@
 """Verify frozen Phase 3 inputs and build deterministic Model B epoch mixtures."""
 from __future__ import annotations
 
-import argparse, hashlib, json, random
+import argparse
+import json
+import random
 from collections import Counter
 from pathlib import Path
 from typing import Any
 
 try:
-    from .data_utils import read_jsonl
-except ImportError:  # Direct execution: python scripts/build_model_b_mixture.py
-    from data_utils import read_jsonl
+    from scripts._bootstrap import ensure_project_root
+except ModuleNotFoundError:
+    from _bootstrap import ensure_project_root
 
+ensure_project_root()
 
-def sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    value = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(value, dict): raise ValueError(f"{path} must contain an object")
-    return value
+from visolexnorm.common.artifacts import sha256_bytes, sha256_file
+from visolexnorm.common.io import load_json, read_jsonl
 
 
 def verify_artifact(root: Path, index: dict[str, dict[str, Any]], relative: str) -> str:
@@ -88,7 +81,7 @@ def build_manifest(root: Path, config_path: Path, phase3_path: Path) -> dict[str
     if len(usage) != len(pseudo): raise AssertionError("Pseudo pool coverage incomplete")
     manifest = {"schema_version": 1, "phase": 4, "phase3_manifest_path": phase3_path.relative_to(root).as_posix(), "phase3_manifest_sha256": sha256_file(phase3_path), "completion_status": phase3["completion_status"], "input_paths": paths, "checksums": checksums, "gold_count": len(gold), "dev_count": len(dev), "weak_label_count": len(pseudo), "gold_pseudo_ratio": "1:1", "pseudo_per_epoch": config["pseudo_per_epoch"], "prompt_version": config["prompt_version"], "decision_distribution": dict(sorted(Counter(r["llm_decision"] for r in pseudo).items())), "source_distribution": dict(sorted(Counter(r["original_source"] for r in pseudo).items())), "replacement_used": replacement, "pseudo_union_count": len(usage), "pseudo_usage_distribution": {str(k): v for k, v in sorted(Counter(usage.values()).items())}, "epochs": epochs}
     payload = json.dumps(manifest, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
-    manifest["manifest_content_sha256"] = hashlib.sha256(payload).hexdigest()
+    manifest["manifest_content_sha256"] = sha256_bytes(payload)
     return manifest
 
 

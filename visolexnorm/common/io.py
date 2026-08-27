@@ -1,9 +1,10 @@
-"""Small standard-library helpers shared by Phase 1 data scripts."""
+"""Text, JSON, and JSONL I/O helpers used across the project."""
 
 from __future__ import annotations
 
 import csv
 import json
+import os
 import re
 import unicodedata
 from pathlib import Path
@@ -20,7 +21,7 @@ def clean_text(value: Any) -> str | None:
 
 
 def read_rows(path: Path) -> list[dict[str, Any]]:
-    """Read a CSV, TSV, JSON list/object, or JSONL file into dict rows."""
+    """Read CSV, TSV, JSON list/object, or JSONL records into dictionaries."""
     suffix = path.suffix.lower()
     if suffix in {".csv", ".tsv"}:
         delimiter = "\t" if suffix == ".tsv" else ","
@@ -45,7 +46,6 @@ def read_rows(path: Path) -> list[dict[str, Any]]:
         if isinstance(value, list) and all(isinstance(row, dict) for row in value):
             return value
         if isinstance(value, dict):
-            # Supports a common wrapper such as {"data": [...]}.
             for key in ("data", "records", "items"):
                 rows = value.get(key)
                 if isinstance(rows, list) and all(isinstance(row, dict) for row in rows):
@@ -57,7 +57,13 @@ def read_rows(path: Path) -> list[dict[str, Any]]:
     raise ValueError(f"Unsupported file type: {path}. Use .csv, .tsv, .json, or .jsonl.")
 
 
+def read_jsonl(path: Path) -> list[dict[str, Any]]:
+    """Read JSONL records from a UTF-8 file."""
+    return read_rows(path)
+
+
 def write_jsonl(records: Iterable[dict[str, Any]], output_path: Path) -> int:
+    """Write JSONL records and return the number written."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
     count = 0
     with output_path.open("w", encoding="utf-8", newline="\n") as handle:
@@ -67,5 +73,29 @@ def write_jsonl(records: Iterable[dict[str, Any]], output_path: Path) -> int:
     return count
 
 
-def read_jsonl(path: Path) -> list[dict[str, Any]]:
-    return read_rows(path)
+def atomic_write_jsonl(records: Iterable[dict[str, Any]], path: Path) -> int:
+    """Durably write JSONL through a same-directory temporary file."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    count = 0
+    try:
+        with temporary.open("w", encoding="utf-8", newline="\n") as handle:
+            for record in records:
+                handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+                count += 1
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+    finally:
+        if temporary.exists():
+            temporary.unlink()
+    return count
+
+
+def load_json(path: Path) -> dict[str, Any]:
+    """Load a JSON object, rejecting arrays and scalar values."""
+    with path.open(encoding="utf-8") as handle:
+        value = json.load(handle)
+    if not isinstance(value, dict):
+        raise ValueError(f"Expected a JSON object in {path}")
+    return value

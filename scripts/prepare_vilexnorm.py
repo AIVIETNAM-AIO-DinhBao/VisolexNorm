@@ -13,8 +13,15 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from data_utils import clean_text, read_rows, write_jsonl
-from phase3_utils import log_event
+try:
+    from scripts._bootstrap import ensure_project_root
+except ModuleNotFoundError:
+    from _bootstrap import ensure_project_root
+
+ensure_project_root()
+
+from visolexnorm.common.io import clean_text, read_rows, write_jsonl
+from visolexnorm.common.progress import log_event
 
 
 def process_split(

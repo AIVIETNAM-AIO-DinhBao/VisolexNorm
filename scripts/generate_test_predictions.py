@@ -10,13 +10,15 @@ import json
 from pathlib import Path
 
 try:
-    from .data_utils import read_jsonl
-    from .freeze_experiment import inventory, verify_manifest
-    from .phase3_utils import sha256_file, sha256_json
-except ImportError:
-    from data_utils import read_jsonl
-    from freeze_experiment import inventory, verify_manifest
-    from phase3_utils import sha256_file, sha256_json
+    from scripts._bootstrap import ensure_project_root
+except ModuleNotFoundError:
+    from _bootstrap import ensure_project_root
+
+ensure_project_root()
+
+from scripts.freeze_experiment import inventory, verify_manifest
+from visolexnorm.common.artifacts import sha256_file, sha256_json
+from visolexnorm.common.io import read_jsonl
 
 
 def validate_predictions(rows: list[dict], test_rows: list[dict], model_name: str, checkpoint_sha: str, config_sha: str) -> None:

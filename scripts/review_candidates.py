@@ -7,7 +7,6 @@ import json
 import math
 import os
 import random
-import sys
 import time
 from collections import Counter
 from dataclasses import dataclass, field
@@ -17,12 +16,19 @@ from typing import Any, Callable
 
 from jsonschema import Draft202012Validator
 
-sys.path.insert(0, str(Path(__file__).parent))
-from data_utils import read_jsonl  # noqa: E402
-from gemini_key_pool import GeminiKeyPool, classify_error  # noqa: E402
-from lexical_policy import apply_policy, load_policy, review_identity_hash  # noqa: E402
-from phase3_utils import ProgressReporter, load_json, log_event, sha256_json, sha256_text  # noqa: E402
-from review_cache import ReviewCache  # noqa: E402
+try:
+    from scripts._bootstrap import ensure_project_root
+except ModuleNotFoundError:
+    from _bootstrap import ensure_project_root
+
+ensure_project_root()
+
+from scripts.gemini_key_pool import GeminiKeyPool, classify_error
+from scripts.lexical_policy import apply_policy, load_policy, review_identity_hash
+from scripts.review_cache import ReviewCache
+from visolexnorm.common.artifacts import sha256_json, sha256_text
+from visolexnorm.common.io import load_json, read_jsonl
+from visolexnorm.common.progress import ProgressReporter, log_event
 
 
 @dataclass
