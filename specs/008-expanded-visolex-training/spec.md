@@ -1,6 +1,6 @@
 # Đặc tả giai đoạn 8: Mở rộng LLM review và huấn luyện Model C
 
-**Trạng thái**: Đã lên kế hoạch — chưa triển khai
+**Trạng thái**: Hoàn thành workstream Model C Dev-only — T016 chờ nghiệm thu Phase 6
 **Lịch thực hiện**: Workstream nghiên cứu chạy song song với Phase 6
 **Phụ thuộc**: Candidate/cache Phase 3, checkpoint Model A và kết quả Phase 5
 **Môi trường**: Gemini review trên local; huấn luyện BARTpho trên Kaggle GPU

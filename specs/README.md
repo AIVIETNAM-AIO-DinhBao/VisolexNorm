@@ -13,7 +13,7 @@ dự án**, có phạm vi, đầu vào, đầu ra và cổng nghiệm thu độc
 | 004 | Huấn luyện Model B | Hoàn thành | Kaggle GPU | 003 |
 | 005 | Đánh giá thực nghiệm A/B | Hoàn thành; Model B được chọn | Kaggle GPU + Local | 002, 004 |
 | 006 | Suy luận local và web app | Sẵn sàng triển khai với Model B | Local | 005 |
-| 008 | Mở rộng LLM review và huấn luyện Model C | Đã lên kế hoạch; chạy song song 006 | Local + Kaggle GPU | 002, 003, 005 |
+| 008 | Mở rộng LLM review và huấn luyện Model C | Hoàn thành Dev-only; chờ boundary check Phase 6 | Local + Kaggle GPU | 002, 003, 005 |
 | 007 | Tái lập và đóng gói | Chờ 006 và 008 | Local | 001–006, 008 |
 
 ## Luồng artifact

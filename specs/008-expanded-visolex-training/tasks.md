@@ -19,13 +19,13 @@
 
 - [x] T010 [P] Cài đặt unit test tại `tests/unit/test_model_c_mixture.py`. **Kết quả:** assert 1:1 mỗi epoch, seed `2026 + epoch_index`, coverage toàn pool và wrap deterministic chỉ ở epoch cuối.
 - [x] T011 [US4] Cài đặt `scripts/build_model_c_mixture.py`. **Kết quả:** pool/Model A inventory đã verify; manifest 8 epoch đã xuất tại `outputs/model_c/training_mixture_manifest.json`, pseudo union đủ 64.813.
-- [ ] T012 [US4] Cài đặt `scripts/train_model_c.py` và `notebooks/train_model_c_kaggle.ipynb`. **Hoàn thành khi:** notebook run-all trên Kaggle, dependency rõ ràng, không secret/trạng thái ẩn, không load Test và export `/kaggle/working`.
-- [ ] T013 [US4] Chạy smoke test 200 gold + 200 pseudo. **Hoàn thành khi:** `outputs/model_c/smoke_test.json` ghi loss, generation, checkpoint save/load và inventory checksum pass.
-- [ ] T014 [US4] Chạy full training Model C. **Hoàn thành khi:** `checkpoints/model_c/`, Dev predictions/metrics, config và artifact manifest tồn tại; pseudo union bằng pool size.
+- [x] T012 [US4] Cài đặt `scripts/train_model_c.py` và `notebooks/train_model_c_kaggle.ipynb`. **Kết quả:** notebook run-all tại source revision `2c7646b`, runtime Tesla T4, không load Test và đã export `/kaggle/working`.
+- [x] T013 [US4] Chạy smoke test 200 gold + 200 pseudo. **Kết quả:** generation, checkpoint save/load, Model A inventory và cờ `test_inputs_loaded=false` đều pass.
+- [x] T014 [US4] Chạy full training Model C. **Kết quả:** đủ 8 epoch, pseudo union 64.813; checkpoint, 1.050 Dev predictions, metrics, config và 11 artifact đều khớp SHA-256.
 
 ## Chặng 4 — Dev-only nghiệm thu và ranh giới app
 
-- [ ] T015 [US5] Tạo `outputs/model_c/phase8_exit_report.json`. **Hoàn thành khi:** report ghi best Dev loss, provenance, coverage, `test_inputs_loaded=false` và không chứa Test metric/prediction.
+- [x] T015 [US5] Tạo `outputs/model_c/phase8_exit_report.json`. **Kết quả:** report Dev-only ghi best Dev loss `0,193742`, provenance, coverage, mọi checksum pass, `test_inputs_loaded=false` và không chứa Test metric/prediction.
 - [ ] T016 [US5] Xác minh Phase 6 vẫn đọc `outputs/evaluation/best_model.json` Model B. **Hoàn thành khi:** smoke test app không đọc artifact Model C và kết quả ghi trong `outputs/inference_smoke_test.json`.
 
 ## Phụ thuộc

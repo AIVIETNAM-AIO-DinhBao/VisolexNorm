@@ -3,7 +3,7 @@ from collections import Counter
 import pytest
 
 from scripts.build_model_c_mixture import sample_model_c_epochs
-from scripts.train_model_c import reject_prohibited_inputs, validate_model_c_manifest
+from scripts.train_model_c import assert_dev_only_report, reject_prohibited_inputs, validate_model_c_manifest
 from argparse import Namespace
 from pathlib import Path
 
@@ -52,3 +52,11 @@ def test_model_c_manifest_rejects_non_final_wrap() -> None:
     manifest["epochs"][0]["replacement_used"] = True
     with pytest.raises(ValueError, match="wrap flag"):
         validate_model_c_manifest(manifest, config)
+
+
+def test_exit_report_rejects_test_results() -> None:
+    report = {"evaluation_scope": "dev_only_exploratory", "test_inputs_loaded": False}
+    assert_dev_only_report(report)
+    report["dev_evaluation"] = {"test_f1": 0.9}
+    with pytest.raises(ValueError, match="forbidden Test results"):
+        assert_dev_only_report(report)
