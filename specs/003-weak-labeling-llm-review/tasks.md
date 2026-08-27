@@ -10,7 +10,7 @@
 
 ## Nhóm 2 — US1 Candidate generation trên Kaggle
 
-- [x] T006 [US1] Viết module batch generation, sequence confidence và chunk resume trong `scripts/generate_candidates.py`
+- [x] T006 [US1] Viết module batch generation, sequence confidence và chunk resume trong `scripts/generate_model_a_candidates.py` (tên file được chuẩn hóa trong refactor sau Phase 8; implementation và contract không đổi).
 - [x] T007 [US1] Tạo notebook điều phối GPU tại `notebooks/generate_visolex_candidates_kaggle.ipynb`
 - [x] T008 [US1] Thêm contract/unit tests cho candidate và ghép chunk tại `tests/contract/test_phase3_schemas.py` và `tests/unit/test_candidate_chunks.py`
 - [x] T009 [US1] Nghiệm thu full run 68.411 mẫu thay smoke artifact đã mất bằng `scripts/audit_candidate_full_run.py` và `outputs/model_a/candidate_full_run_integrity.json` theo phê duyệt chủ dự án

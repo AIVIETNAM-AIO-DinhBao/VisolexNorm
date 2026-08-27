@@ -13,7 +13,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).parent))
 from data_utils import read_jsonl  # noqa: E402
-from generate_candidates import REQUIRED_CANDIDATE  # noqa: E402
+from generate_model_a_candidates import REQUIRED_CANDIDATE  # noqa: E402
 from phase3_utils import atomic_write_jsonl, ensure_finite_number, load_json, log_event  # noqa: E402
 
 

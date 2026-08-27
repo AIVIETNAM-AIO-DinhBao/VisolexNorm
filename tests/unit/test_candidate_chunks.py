@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from scripts.generate_candidates import load_completed_chunk
+from scripts.generate_model_a_candidates import REQUIRED_CANDIDATE, load_completed_chunk
 from scripts.phase3_utils import atomic_write_jsonl
 
 
@@ -18,6 +18,21 @@ def candidate(sample_id: str, config_hash: str) -> dict:
 
 def source(sample_id: str) -> dict:
     return {"id": sample_id, "dataset": "ViSoLex", "original_source": "ViHSD", "input_text": "mik ko bt"}
+
+
+def test_candidate_generator_preserves_the_frozen_ten_field_contract() -> None:
+    assert REQUIRED_CANDIDATE == {
+        "id",
+        "dataset",
+        "original_source",
+        "input_text",
+        "candidate_text",
+        "model_a_confidence",
+        "candidate_checkpoint",
+        "generation_config_hash",
+        "sequence_token_count",
+        "generation_status",
+    }
 
 
 def test_completed_chunk_is_reusable(tmp_path: Path) -> None:
