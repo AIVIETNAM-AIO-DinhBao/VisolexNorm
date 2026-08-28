@@ -2,21 +2,13 @@
 
 from __future__ import annotations
 
-import argparse
 import json
 from pathlib import Path
 from typing import Any
 
-try:
-    from scripts._bootstrap import ensure_project_root
-except ModuleNotFoundError:
-    from _bootstrap import ensure_project_root
-
-ensure_project_root()
-
-from scripts.build_weak_labels import WEAK_VALIDATOR, build_records, normalized_input_hash
-from scripts.review_cache import ReviewCache
-from scripts.review_candidates import validate_frozen_prompt, validate_manifest_scope
+from visolexnorm.review.cache import ReviewCache
+from visolexnorm.review.pipeline import validate_frozen_prompt, validate_manifest_scope
+from visolexnorm.weak_labels.builder import WEAK_VALIDATOR, build_records, normalized_input_hash
 from visolexnorm.candidates.manifests import assign_confidence_bands
 from visolexnorm.common.artifacts import sha256_file
 from visolexnorm.common.io import atomic_write_jsonl, load_json, read_jsonl
@@ -105,7 +97,7 @@ def build_expanded_pool(root: Path, config_path: Path) -> tuple[list[dict[str, A
     excluded_ids = load_exclusion_ids(paths["exclusions"], prompt_hash, model)
     if len(excluded_ids) != stats.get("provider_exclusion_count"):
         raise ValueError("Provider exclusion count does not match review statistics")
-    cache = ReviewCache(paths["cache"])
+    cache = ReviewCache.open_reader(paths["cache"])
     try:
         ids = [row["id"] for row in manifest]
         version = config["frozen_prompt_version"]
@@ -146,22 +138,23 @@ def build_expanded_pool(root: Path, config_path: Path) -> tuple[list[dict[str, A
     return expanded, summary
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--repo-root", type=Path, default=Path("."))
-    parser.add_argument("--config", type=Path, default=Path("configs/expanded_review_config.json"))
-    parser.add_argument("--output", type=Path)
-    args = parser.parse_args()
-    root = args.repo_root.resolve()
-    config_path = args.config if args.config.is_absolute() else root / args.config
-    config = load_json(config_path)
-    output = args.output or Path(config["expanded_weak_label_path"])
-    output = output if output.is_absolute() else root / output
-    rows, summary = build_expanded_pool(root, config_path)
-    atomic_write_jsonl(rows, output)
-    summary["expanded_weak_label_sha256"] = sha256_file(output)
-    print(json.dumps(summary, ensure_ascii=False))
+def load_initial_exclusion_ids(path: Path | None) -> set[str]:
+    if path is None:
+        return set()
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, list) or not all(isinstance(row, dict) and isinstance(row.get("id"), str) for row in payload):
+        raise ValueError("--excluded-ids-file must be a JSON array of objects containing id")
+    return {row["id"] for row in payload}
 
 
-if __name__ == "__main__":
-    main()
+def build_initial_pool(manifest: list[dict[str, Any]], protected_hashes: set[str], config: dict[str, Any], model: str, prompt_hash: str, cache: ReviewCache, excluded_ids: set[str] | None = None) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    excluded_ids = excluded_ids or set()
+    version = config["frozen_prompt_version"]
+    ids = [row["id"] for row in manifest]
+    reviews = cache.results_for_ids(ids, version, prompt_hash, model)
+    missing_ids = set(ids) - set(reviews)
+    if missing_ids != excluded_ids:
+        raise RuntimeError(f"Missing reviews must exactly match approved exclusions; missing={len(missing_ids)} exclusions={len(excluded_ids)}")
+    if cache.failed_count(version, prompt_hash, model):
+        raise RuntimeError("Review cache still contains unresolved failed batches")
+    return build_records(manifest, reviews, protected_hashes, config, model, version, quiet=True, excluded_ids=excluded_ids)

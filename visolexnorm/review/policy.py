@@ -6,13 +6,6 @@ import re
 from pathlib import Path
 from typing import Any
 
-try:
-    from scripts._bootstrap import ensure_project_root
-except ModuleNotFoundError:
-    from _bootstrap import ensure_project_root
-
-ensure_project_root()
-
 from visolexnorm.common.artifacts import sha256_json
 from visolexnorm.common.io import load_json
 

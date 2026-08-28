@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import argparse
-import json
 from collections import Counter, defaultdict
 from difflib import SequenceMatcher
 from pathlib import Path
@@ -11,21 +9,12 @@ from typing import Any
 
 from jsonschema import Draft202012Validator
 
-try:
-    from scripts._bootstrap import ensure_project_root
-except ModuleNotFoundError:
-    from _bootstrap import ensure_project_root
-
-ensure_project_root()
-
-from scripts.review_cache import ReviewCache
-from scripts.review_candidates import validate_frozen_prompt
 from visolexnorm.common.artifacts import sha256_text
-from visolexnorm.common.io import atomic_write_jsonl, clean_text, load_json, read_jsonl
-from visolexnorm.common.progress import ProgressReporter, log_event
+from visolexnorm.common.io import clean_text, load_json
+from visolexnorm.common.progress import ProgressReporter
 
 
-ROOT = Path(__file__).parents[1]
+ROOT = Path(__file__).parents[2]
 WEAK_VALIDATOR = Draft202012Validator(load_json(
     ROOT / "specs/003-weak-labeling-llm-review/contracts/weak-label.schema.json"
 ))
@@ -124,52 +113,3 @@ def build_records(manifest, reviews, protected_hashes, config, model, prompt_ver
         "prompt_version": prompt_version, "llm_model": model,
     }
     return accepted, stats
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Build strict Phase 3 weak labels.")
-    parser.add_argument("--manifest", type=Path, default=Path("data/intermediate/visolex_review_manifest.jsonl"))
-    parser.add_argument("--cache", type=Path)
-    parser.add_argument("--protected-hashes", type=Path, required=True)
-    parser.add_argument("--model", required=True)
-    parser.add_argument("--config", type=Path, default=Path("configs/llm_review_config.json"))
-    parser.add_argument("--output", type=Path, default=Path("data/processed/visolex_weak_labeled.jsonl"))
-    parser.add_argument("--stats", type=Path, default=Path("outputs/weak_label_stats.json"))
-    parser.add_argument("--excluded-ids-file", type=Path, help="Approved JSON array of IDs excluded after unrecoverable LLM responses")
-    parser.add_argument("--quiet", action="store_true", help="Suppress operational progress logs")
-    args = parser.parse_args()
-    config = load_json(args.config)
-    prompt_hash = validate_frozen_prompt(config, Path(config["frozen_prompt_path"]))
-    manifest = read_jsonl(args.manifest)
-    excluded_ids: set[str] = set()
-    if args.excluded_ids_file:
-        payload = json.loads(args.excluded_ids_file.read_text(encoding="utf-8"))
-        if not isinstance(payload, list) or not all(isinstance(row, dict) and isinstance(row.get("id"), str) for row in payload):
-            raise ValueError("--excluded-ids-file must be a JSON array of objects containing id")
-        excluded_ids = {row["id"] for row in payload}
-    log_event("START", f"Weak-label build: manifest={len(manifest)} model={args.model} prompt={config['frozen_prompt_version']}", quiet=args.quiet)
-    protected_hashes = {line.strip() for line in args.protected_hashes.read_text(encoding="utf-8").splitlines() if line.strip()}
-    cache = ReviewCache(args.cache or Path(config["cache_path"]))
-    try:
-        ids = [row["id"] for row in manifest]
-        version = config["frozen_prompt_version"]
-        reviews = cache.results_for_ids(ids, version, prompt_hash, args.model)
-        missing_ids = set(ids) - set(reviews)
-        if missing_ids != excluded_ids:
-            raise RuntimeError(f"Missing reviews must exactly match approved exclusions; missing={len(missing_ids)} exclusions={len(excluded_ids)}")
-        cache.reconcile_superseded_failures(version, prompt_hash, args.model, excluded_ids)
-        if cache.failed_count(version, prompt_hash, args.model):
-            raise RuntimeError("Review cache still contains unresolved failed batches")
-    finally:
-        cache.close()
-    accepted, stats = build_records(
-        manifest, reviews, protected_hashes, config, args.model, version, args.quiet, excluded_ids
-    )
-    atomic_write_jsonl(accepted, args.output)
-    args.stats.parent.mkdir(parents=True, exist_ok=True)
-    args.stats.write_text(json.dumps(stats, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    log_event("DONE", f"Weak-label build: accepted={len(accepted)} validation_drops={stats['validation_drop_count']} output={args.output} stats={args.stats}", quiet=args.quiet)
-
-
-if __name__ == "__main__":
-    main()

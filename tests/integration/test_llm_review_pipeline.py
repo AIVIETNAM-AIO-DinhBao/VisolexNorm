@@ -5,18 +5,15 @@ from pathlib import Path
 
 import pytest
 
-from scripts.gemini_key_pool import GeminiKeyPool
-from scripts.review_cache import ReviewCache
-from scripts.review_candidates import (
+from visolexnorm.review.cache import ReviewCache
+from visolexnorm.review.contracts import PROVIDER_RESPONSE_SCHEMA, RESPONSE_VALIDATOR, parse_response
+from visolexnorm.review.pipeline import run_batches, validate_frozen_prompt
+from visolexnorm.review.provider import (
     GeminiResponse,
     GeminiResponseError,
-    PROVIDER_RESPONSE_SCHEMA,
-    RESPONSE_VALIDATOR,
-    parse_response,
     response_text,
-    run_batches,
     safe_error_detail,
-    validate_frozen_prompt,
+    GeminiKeyPool,
 )
 
 

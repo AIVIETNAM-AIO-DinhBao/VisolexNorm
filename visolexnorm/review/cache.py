@@ -1,4 +1,4 @@
-"""SQLite WAL repository for atomic Phase 3 review batches."""
+"""SQLite repository for atomic review batches and read-only artifact access."""
 
 from __future__ import annotations
 
@@ -14,11 +14,20 @@ def utc_now() -> str:
 
 
 class ReviewCache:
-    def __init__(self, path: Path):
-        path.parent.mkdir(parents=True, exist_ok=True)
+    """Review cache preserving the historical Phase 3/8 table contracts."""
+
+    def __init__(self, path: Path, *, readonly: bool = False):
+        if not readonly:
+            path.parent.mkdir(parents=True, exist_ok=True)
         self.path = path
-        self.connection = sqlite3.connect(path)
+        self.readonly = readonly
+        if readonly:
+            self.connection = sqlite3.connect(f"file:{path.resolve().as_posix()}?mode=ro", uri=True)
+        else:
+            self.connection = sqlite3.connect(path)
         self.connection.row_factory = sqlite3.Row
+        if readonly:
+            return
         self.connection.execute("PRAGMA journal_mode=WAL")
         self.connection.execute("PRAGMA synchronous=FULL")
         self.connection.executescript(
@@ -71,6 +80,20 @@ class ReviewCache:
         )
         self.connection.commit()
 
+    @classmethod
+    def open_reader(cls, path: Path) -> "ReviewCache":
+        """Open an existing cache without DDL, PRAGMAs, or writes."""
+        return cls(path, readonly=True)
+
+    def _require_writer(self) -> None:
+        if self.readonly:
+            raise RuntimeError("Review cache is read-only")
+
+    def has_attempts_table(self) -> bool:
+        return self.connection.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='review_attempts'"
+        ).fetchone() is not None
+
     def close(self) -> None:
         self.connection.close()
 
@@ -83,6 +106,7 @@ class ReviewCache:
         return {row[0] for row in rows}
 
     def mark_attempt(self, batch_id: str, prompt_hash: str, version: str, model: str, ids: list[str]) -> int:
+        self._require_writer()
         now = utc_now()
         with self.connection:
             self.connection.execute(
@@ -116,6 +140,7 @@ class ReviewCache:
         raw_response: str | None = None,
     ) -> None:
         """Persist one request outcome without losing earlier retry diagnostics."""
+        self._require_writer()
         with self.connection:
             self.connection.execute(
                 """UPDATE review_attempts SET status=?, error_code=?, error_detail=?,
@@ -131,6 +156,7 @@ class ReviewCache:
         self, batch_id: str, prompt_hash: str, version: str, model: str,
         results: list[dict[str, Any]], raw_response: str,
     ) -> None:
+        self._require_writer()
         now = utc_now()
         with self.connection:
             for result in results:
@@ -152,6 +178,7 @@ class ReviewCache:
             )
 
     def mark_failed(self, batch_id: str, version: str, prompt_hash: str, model: str, error: str) -> None:
+        self._require_writer()
         with self.connection:
             self.connection.execute(
                 """UPDATE review_batches SET status='failed', last_error=?, completed_at=?
@@ -187,6 +214,7 @@ class ReviewCache:
         self, version: str, prompt_hash: str, model: str, resolved_without_review: set[str] | None = None,
     ) -> int:
         """Mark failed attempts superseded once every referenced sample has a committed result."""
+        self._require_writer()
         resolved = self.completed_ids(version, prompt_hash, model) | (resolved_without_review or set())
         rows = self.connection.execute(
             """SELECT batch_id, sample_ids_json FROM review_batches WHERE prompt_version=?
@@ -206,3 +234,36 @@ class ReviewCache:
                     (now, batch_id, version, prompt_hash, model),
                 )
         return len(superseded)
+
+    def blocked_singleton_metadata(self, version: str, prompt_hash: str, model: str, sample_id: str) -> list[dict[str, Any]]:
+        """Return Phase 8 singleton prompt-block evidence without exposing other cache rows."""
+        if not self.has_attempts_table():
+            return []
+        rows = self.connection.execute(
+            """SELECT response_metadata_json FROM review_attempts
+               WHERE prompt_version=? AND prompt_hash=? AND llm_model=? AND error_code='prompt_blocked'
+               AND json_array_length(sample_ids_json)=1
+               AND EXISTS (SELECT 1 FROM json_each(sample_ids_json) WHERE value=?)
+               ORDER BY attempt_id DESC""",
+            (version, prompt_hash, model, sample_id),
+        ).fetchall()
+        return [json.loads(row[0]) for row in rows if row[0]]
+
+    def batch_status_counts(self, version: str, prompt_hash: str, model: str) -> dict[str, int]:
+        rows = self.connection.execute(
+            """SELECT status, COUNT(*) FROM review_batches
+               WHERE prompt_version=? AND prompt_hash=? AND llm_model=? GROUP BY status""",
+            (version, prompt_hash, model),
+        )
+        return {str(status): int(count) for status, count in rows}
+
+    def attempt_outcome_counts(self, version: str, prompt_hash: str, model: str) -> dict[tuple[str, str], int]:
+        if not self.has_attempts_table():
+            return {}
+        rows = self.connection.execute(
+            """SELECT status, error_code, COUNT(*) FROM review_attempts
+               WHERE prompt_version=? AND prompt_hash=? AND llm_model=?
+               GROUP BY status, error_code""",
+            (version, prompt_hash, model),
+        )
+        return {(str(status), str(code or "success")): int(count) for status, code, count in rows}

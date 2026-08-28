@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from scripts.build_expanded_weak_labels import validate_union
-from scripts.build_weak_labels import build_records, normalized_input_hash
+from visolexnorm.weak_labels.builder import build_records, normalized_input_hash
+from visolexnorm.weak_labels.pipeline import validate_union
 
 
 def item(sample_id, decision="KEEP"):

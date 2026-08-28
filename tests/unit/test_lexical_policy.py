@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.lexical_policy import apply_policy, load_policy
+from visolexnorm.review.policy import apply_policy, load_policy
 
 
 ROOT = Path(__file__).parents[2]

@@ -23,7 +23,7 @@ candidate, 69 chunk liên tục, schema/confidence/config/provenance và ZIP che
 
 ```bash
 python scripts/candidates.py select-review --candidates data/intermediate/visolex_model_a_candidates.jsonl --config configs/llm_review_config.json
-python scripts/review_candidates.py --mode pilot --config configs/llm_review_config.json
+python scripts/reviews.py run --mode pilot --config configs/llm_review_config.json
 ```
 
 Kỳ vọng: manifest 20.000 dòng, pilot 240 dòng và 16 request Gemini nếu không retry.
@@ -32,7 +32,7 @@ chứa `approved=true`, review identity SHA-256 (prompt + lexical policy) và đ
 `audited_ids`. Sau đó chạy:
 
 ```bash
-python scripts/freeze_review_prompt.py --pilot-report outputs/pilot_review_report_v6.json --approved --replace-existing
+python scripts/reviews.py freeze-prompt --pilot-report outputs/pilot_review_report_v6.json --approved --replace-existing
 ```
 
 Batch chính từ chối chạy nếu v1/hash chưa được freeze.
@@ -40,7 +40,7 @@ Batch chính từ chối chạy nếu v1/hash chưa được freeze.
 ## 4. Review chính và resume
 
 ```bash
-python scripts/review_candidates.py --mode full --config configs/llm_review_config.json
+python scripts/reviews.py run --mode full --config configs/llm_review_config.json
 ```
 
 Dừng tiến trình sau vài batch rồi chạy lại cùng lệnh. Kỳ vọng: các result đã commit không bị
@@ -50,8 +50,8 @@ gọi lại; tiến trình tiếp tục từ sample chưa hoàn thành.
 
 ```bash
 python scripts/data.py export-protected-hashes
-python scripts/build_weak_labels.py --protected-hashes data/processed/vilexnorm_protected_input_hashes.txt --model "$GEMINI_MODEL" --config configs/llm_review_config.json --excluded-ids-file outputs/phase3_provider_exclusions.json
-python scripts/audit_weak_labels.py --weak-labels data/processed/visolex_weak_labeled.jsonl --stats outputs/weak_label_stats.json --approved-exclusions outputs/phase3_provider_exclusions.json
+python scripts/weak_labels.py build-initial --protected-hashes data/processed/vilexnorm_protected_input_hashes.txt --model "$GEMINI_MODEL" --config configs/llm_review_config.json --excluded-ids-file outputs/phase3_provider_exclusions.json
+python scripts/weak_labels.py audit --weak-labels data/processed/visolex_weak_labeled.jsonl --stats outputs/weak_label_stats.json --approved-exclusions outputs/phase3_provider_exclusions.json
 ```
 
 Kỳ vọng:

@@ -128,7 +128,7 @@ round-robins the configured API keys for requests/retries, and logs failures
 without exposing keys:
 
 ```bash
-python scripts/review_candidates.py --mode pilot --config configs/llm_review_config.json
+python scripts/reviews.py run --mode pilot --config configs/llm_review_config.json
 ```
 
 ### Operational progress and resume
@@ -156,16 +156,16 @@ all 240 pilot IDs; then run the full manifest. SQLite automatically resumes the
 frozen-v1 namespace:
 
 ```bash
-python scripts/freeze_review_prompt.py --pilot-report outputs/pilot_review_report.json --approved
-python scripts/review_candidates.py --mode full --config configs/llm_review_config.json
+python scripts/reviews.py freeze-prompt --pilot-report outputs/pilot_review_report.json --approved
+python scripts/reviews.py run --mode full --config configs/llm_review_config.json
 ```
 
 Build final weak labels and statistics locally:
 
 ```bash
 python scripts/data.py export-protected-hashes
-python scripts/build_weak_labels.py --protected-hashes data/processed/vilexnorm_protected_input_hashes.txt --model gemini-2.5-flash
-python scripts/audit_weak_labels.py --weak-labels data/processed/visolex_weak_labeled.jsonl --stats outputs/weak_label_stats.json
+python scripts/weak_labels.py build-initial --protected-hashes data/processed/vilexnorm_protected_input_hashes.txt --model gemini-2.5-flash
+python scripts/weak_labels.py audit --weak-labels data/processed/visolex_weak_labeled.jsonl --stats outputs/weak_label_stats.json
 ```
 
 This produces `data/processed/visolex_weak_labeled.jsonl` and

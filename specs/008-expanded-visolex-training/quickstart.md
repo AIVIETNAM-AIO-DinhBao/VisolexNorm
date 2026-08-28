@@ -15,9 +15,9 @@ python scripts/candidates.py select-remaining --config configs/expanded_review_c
 3. Chạy review local bằng secret Gemini đã cấu hình, có thể resume từ cache Phase 8:
 
 ```bash
-python scripts/review_candidates.py --config configs/expanded_review_config.json
-python scripts/build_expanded_weak_labels.py --config configs/expanded_review_config.json
-python scripts/audit_weak_labels.py --config configs/expanded_review_config.json
+python scripts/reviews.py run --mode full --config configs/expanded_review_config.json
+python scripts/weak_labels.py build-expanded --config configs/expanded_review_config.json
+python scripts/weak_labels.py audit --config configs/expanded_review_config.json
 python scripts/build_model_c_mixture.py --config configs/model_c_config.json
 ```
 

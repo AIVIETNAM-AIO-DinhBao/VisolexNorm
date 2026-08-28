@@ -41,8 +41,8 @@ def test_all_direct_cli_entry_points_reach_help() -> None:
 
 
 def test_review_cache_has_one_canonical_module_identity() -> None:
-    import scripts.review_cache as review_cache
-    import scripts.review_candidates as review_candidates
+    import visolexnorm.review.cache as review_cache
+    import visolexnorm.review.pipeline as review_pipeline
 
     assert "review_cache" not in sys.modules
-    assert review_candidates.ReviewCache is review_cache.ReviewCache
+    assert review_pipeline.ReviewCache is review_cache.ReviewCache
