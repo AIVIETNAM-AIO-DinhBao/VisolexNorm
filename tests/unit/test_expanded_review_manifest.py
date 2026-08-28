@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from scripts.select_remaining_review_manifest import select_remaining
+from visolexnorm.candidates.manifests import select_remaining_review_manifest
 
 
 def candidate(index: int) -> dict:
@@ -32,8 +32,8 @@ def config(candidate_count: int, prior_count: int) -> dict:
 def test_selection_is_deterministic_and_preserves_candidate_order() -> None:
     candidates = [candidate(index) for index in range(1, 6)]
     prior = [candidates[1], candidates[3]]
-    first = select_remaining(candidates, prior, config(5, 2))
-    second = select_remaining(candidates, prior, config(5, 2))
+    first = select_remaining_review_manifest(candidates, prior, config(5, 2))
+    second = select_remaining_review_manifest(candidates, prior, config(5, 2))
 
     assert first == second
     assert [row["id"] for row in first] == ["visolex_000001", "visolex_000003", "visolex_000005"]
@@ -44,15 +44,15 @@ def test_selection_is_deterministic_and_preserves_candidate_order() -> None:
 def test_selection_rejects_duplicate_or_unknown_prior_ids() -> None:
     candidates = [candidate(index) for index in range(1, 4)]
     with pytest.raises(ValueError, match="duplicate prior manifest ID"):
-        select_remaining(candidates, [candidates[0], candidates[0]], config(3, 2))
+        select_remaining_review_manifest(candidates, [candidates[0], candidates[0]], config(3, 2))
 
     unknown = {**candidate(9), "id": "visolex_unknown"}
     with pytest.raises(ValueError, match="absent from candidates"):
-        select_remaining(candidates, [unknown], config(3, 1))
+        select_remaining_review_manifest(candidates, [unknown], config(3, 1))
 
 
 def test_selection_rejects_candidate_without_required_provenance() -> None:
     invalid = candidate(1)
     invalid.pop("candidate_checkpoint")
     with pytest.raises(ValueError, match="Candidate fields do not match contract"):
-        select_remaining([invalid], [], config(1, 0))
+        select_remaining_review_manifest([invalid], [], config(1, 0))

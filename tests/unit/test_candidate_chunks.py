@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from scripts.generate_model_a_candidates import REQUIRED_CANDIDATE, load_completed_chunk
+from visolexnorm.candidates.contracts import REQUIRED_CANDIDATE
+from visolexnorm.candidates.generation import load_completed_chunk
 from visolexnorm.common.io import atomic_write_jsonl
 
 

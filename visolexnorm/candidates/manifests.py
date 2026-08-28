@@ -1,37 +1,25 @@
-"""Select the deterministic 20k source × confidence review manifest and pilot."""
+"""Deterministic Phase 3 and Phase 8 review manifest selection."""
 
 from __future__ import annotations
 
-import argparse
 import math
 import random
-from collections import Counter, defaultdict
+from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
-try:
-    from scripts._bootstrap import ensure_project_root
-except ModuleNotFoundError:
-    from _bootstrap import ensure_project_root
-
-ensure_project_root()
-
-from scripts.generate_model_a_candidates import REQUIRED_CANDIDATE
-from visolexnorm.common.artifacts import ensure_finite_number
-from visolexnorm.common.io import atomic_write_jsonl, load_json, read_jsonl
-from visolexnorm.common.progress import log_event
+from visolexnorm.candidates.contracts import validate_candidates
+from visolexnorm.common.artifacts import sha256_file
 
 
-def validate_candidates(rows: list[dict[str, Any]]) -> None:
-    seen: set[str] = set()
+def unique_ids(rows: list[dict[str, Any]], label: str) -> set[str]:
+    ids: set[str] = set()
     for row in rows:
-        if set(row) != REQUIRED_CANDIDATE:
-            raise ValueError(f"Candidate fields do not match contract: {row.get('id')}")
         sample_id = row.get("id")
-        if not isinstance(sample_id, str) or not sample_id or sample_id in seen:
-            raise ValueError(f"Invalid or duplicate candidate ID: {sample_id!r}")
-        ensure_finite_number(row.get("model_a_confidence"), "model_a_confidence")
-        seen.add(sample_id)
+        if not isinstance(sample_id, str) or not sample_id or sample_id in ids:
+            raise ValueError(f"Invalid or duplicate {label} ID: {sample_id!r}")
+        ids.add(sample_id)
+    return ids
 
 
 def largest_remainder_quotas(counts: dict[str, int], budget: int, source_order: list[str]) -> dict[str, int]:
@@ -71,7 +59,8 @@ def assign_confidence_bands(rows: list[dict[str, Any]], bands: list[str]) -> dic
     return result
 
 
-def create_manifest(rows: list[dict[str, Any]], config: dict[str, Any]) -> list[dict[str, Any]]:
+def select_stratified_review_manifest(rows: list[dict[str, Any]], config: dict[str, Any]) -> list[dict[str, Any]]:
+    """Select the frozen Phase 3 source-by-confidence review manifest."""
     validate_candidates(rows)
     source_order = list(config["source_order"])
     bands = list(config["confidence_bands"])
@@ -87,7 +76,6 @@ def create_manifest(rows: list[dict[str, Any]], config: dict[str, Any]) -> list[
     source_quotas = largest_remainder_quotas(
         {source: len(by_source[source]) for source in source_order}, budget, source_order
     )
-
     selected: list[dict[str, Any]] = []
     for source in source_order:
         if not by_source[source]:
@@ -98,9 +86,8 @@ def create_manifest(rows: list[dict[str, Any]], config: dict[str, Any]) -> list[
             pool = list(band_rows[band])
             if band_quotas[band] > len(pool):
                 raise ValueError(f"Insufficient candidates in {source}/{band}")
-            rng = random.Random(f"{seed}:{source}:{band_index}")
-            rng.shuffle(pool)
-            for rank, candidate in enumerate(pool[: band_quotas[band]], start=1):
+            random.Random(f"{seed}:{source}:{band_index}").shuffle(pool)
+            for rank, candidate in enumerate(pool[:band_quotas[band]], start=1):
                 selected.append({
                     **candidate,
                     "confidence_band": band,
@@ -114,29 +101,59 @@ def create_manifest(rows: list[dict[str, Any]], config: dict[str, Any]) -> list[
     return selected
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Create the deterministic Phase 3 review manifest.")
-    parser.add_argument("--candidates", type=Path, required=True)
-    parser.add_argument("--output", type=Path, default=Path("data/intermediate/visolex_review_manifest.jsonl"))
-    parser.add_argument("--pilot-output", type=Path, default=Path("data/intermediate/visolex_pilot_manifest.jsonl"))
-    parser.add_argument("--config", type=Path, default=Path("configs/llm_review_config.json"))
-    parser.add_argument("--quiet", action="store_true", help="Suppress operational progress logs")
-    args = parser.parse_args()
+def select_remaining_review_manifest(
+    candidates: list[dict[str, Any]], prior_manifest: list[dict[str, Any]], config: dict[str, Any]
+) -> list[dict[str, Any]]:
+    """Return the candidate-order-preserving Phase 8 complement of Phase 3 IDs."""
+    validate_candidates(candidates)
+    candidate_ids = {row["id"] for row in candidates}
+    prior_ids = unique_ids(prior_manifest, "prior manifest")
+    unexpected = prior_ids - candidate_ids
+    if unexpected:
+        raise ValueError(f"Prior manifest contains {len(unexpected)} IDs absent from candidates")
+    expected = (
+        ("candidate", len(candidates), int(config["expected_candidate_count"])),
+        ("prior manifest", len(prior_manifest), int(config["expected_prior_manifest_count"])),
+    )
+    for label, actual, required in expected:
+        if actual != required:
+            raise ValueError(f"Unexpected {label} count: {actual} != {required}")
+    seed = int(config["seed"])
+    remaining = [
+        {
+            **row,
+            "review_scope": "phase8_remaining",
+            "prior_manifest": False,
+            "selection_seed": seed,
+            "selection_rank": index,
+        }
+        for index, row in enumerate((row for row in candidates if row["id"] not in prior_ids), start=1)
+    ]
+    if len(remaining) != int(config["expected_remaining_count"]):
+        raise ValueError(f"Unexpected remaining count: {len(remaining)} != {config['expected_remaining_count']}")
+    return remaining
 
-    config = load_json(args.config)
-    candidates = read_jsonl(args.candidates)
-    log_event("START", f"Review-manifest selection: candidates={len(candidates)} budget={config['review_budget']} seed={config['seed']}", quiet=args.quiet)
-    manifest = create_manifest(candidates, config)
-    pilot = [row for row in manifest if row["is_pilot"]]
-    active_sources = {row["original_source"] for row in manifest}
-    expected_pilot = int(config["pilot_per_stratum"]) * len(active_sources) * len(config["confidence_bands"])
-    if len(pilot) != expected_pilot:
-        raise RuntimeError(f"Pilot count mismatch: expected {expected_pilot}, found {len(pilot)}")
-    atomic_write_jsonl(manifest, args.output)
-    atomic_write_jsonl(pilot, args.pilot_output)
-    log_event("PROGRESS", f"Review-manifest quotas: {dict(Counter(row['original_source'] for row in manifest))}", quiet=args.quiet)
-    log_event("DONE", f"Review-manifest selection: manifest={len(manifest)} pilot={len(pilot)} output={args.output} pilot_output={args.pilot_output}", quiet=args.quiet)
 
-
-if __name__ == "__main__":
-    main()
+def build_remaining_report(
+    candidates_path: Path,
+    prior_manifest_path: Path,
+    remaining_path: Path,
+    candidates: list[dict[str, Any]],
+    prior_manifest: list[dict[str, Any]],
+    remaining: list[dict[str, Any]],
+) -> dict[str, Any]:
+    return {
+        "schema_version": 1,
+        "phase": 8,
+        "candidate_count": len(candidates),
+        "prior_manifest_count": len(prior_manifest),
+        "remaining_count": len(remaining),
+        "candidate_path": candidates_path.as_posix(),
+        "candidate_sha256": sha256_file(candidates_path),
+        "prior_manifest_path": prior_manifest_path.as_posix(),
+        "prior_manifest_sha256": sha256_file(prior_manifest_path),
+        "remaining_manifest_path": remaining_path.as_posix(),
+        "candidate_order_preserved": True,
+        "prior_manifest_is_candidate_subset": True,
+        "prior_remaining_intersection_count": 0,
+    }

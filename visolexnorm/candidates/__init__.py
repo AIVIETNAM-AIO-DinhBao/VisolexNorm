@@ -1,0 +1,1 @@
+"""Model A candidate generation, manifest selection, and integrity auditing."""

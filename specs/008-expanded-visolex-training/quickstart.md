@@ -9,7 +9,7 @@ pytest tests/unit/test_expanded_review_manifest.py tests/integration/test_expand
 2. Tạo manifest 48.411 ID và xác minh report count/union/intersection:
 
 ```bash
-python scripts/select_remaining_review_manifest.py --config configs/expanded_review_config.json
+python scripts/candidates.py select-remaining --config configs/expanded_review_config.json
 ```
 
 3. Chạy review local bằng secret Gemini đã cấu hình, có thể resume từ cache Phase 8:

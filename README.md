@@ -9,15 +9,15 @@ Place raw files under `data/raw/` (this directory is ignored by Git), then run
 the scripts below with the field names used by the raw datasets.
 
 ```bash
-python scripts/prepare_vilexnorm.py --train data/raw/vilexnorm/train.jsonl --dev data/raw/vilexnorm/dev.jsonl --test data/raw/vilexnorm/test.jsonl --input-field original --target-field normalized
+python scripts/data.py prepare-vilexnorm --train data/raw/vilexnorm/train.jsonl --dev data/raw/vilexnorm/dev.jsonl --test data/raw/vilexnorm/test.jsonl --input-field original --target-field normalized
 ```
 
 ```bash
-python scripts/prepare_visolex.py --source ViHSD data/raw/visolex/vihsd.csv text --source UIT-VSMEC data/raw/visolex/vsmec.csv text --source ViHOS data/raw/visolex/vihos.csv text --source ViSpamReviews data/raw/visolex/spam_reviews.csv text --source UIT-ViSFD data/raw/visolex/visfd.csv text
+python scripts/data.py prepare-visolex --source ViHSD data/raw/visolex/vihsd.csv text --source UIT-VSMEC data/raw/visolex/vsmec.csv text --source ViHOS data/raw/visolex/vihos.csv text --source ViSpamReviews data/raw/visolex/spam_reviews.csv text --source UIT-ViSFD data/raw/visolex/visfd.csv text
 ```
 
 ```bash
-python scripts/check_data.py
+python scripts/data.py validate
 ```
 
 ## Current downloaded data
@@ -43,9 +43,9 @@ The verified field mapping is:
 The exact commands used for the current artifacts are:
 
 ```bash
-python scripts/prepare_vilexnorm.py --train data/raw/vilexnorm/train.csv --dev data/raw/vilexnorm/dev.csv --test data/raw/vilexnorm/test.csv --input-field original --target-field normalized
-python scripts/prepare_visolex.py --source ViHSD data/raw/visolex/ViHSD.csv free_text --source UIT-VSMEC data/raw/visolex/UIT-VSMEC.csv Sentence --source ViHOS data/raw/visolex/ViHOS.csv sentence --source ViSpamReviews data/raw/visolex/ViSpamReviews.csv Comment --source UIT-ViSFD data/raw/visolex/UIT-ViSFD.csv comment
-python scripts/check_data.py
+python scripts/data.py prepare-vilexnorm --train data/raw/vilexnorm/train.csv --dev data/raw/vilexnorm/dev.csv --test data/raw/vilexnorm/test.csv --input-field original --target-field normalized
+python scripts/data.py prepare-visolex --source ViHSD data/raw/visolex/ViHSD.csv free_text --source UIT-VSMEC data/raw/visolex/UIT-VSMEC.csv Sentence --source ViHOS data/raw/visolex/ViHOS.csv sentence --source ViSpamReviews data/raw/visolex/ViSpamReviews.csv Comment --source UIT-ViSFD data/raw/visolex/UIT-ViSFD.csv comment
+python scripts/data.py validate
 ```
 
 Current Phase 1 counts:
@@ -119,7 +119,7 @@ Select the reproducible source/confidence-stratified review set (strict budget:
 20,000; pilot: 240 in `configs/llm_review_config.json`):
 
 ```bash
-python scripts/select_review_manifest.py --candidates data/intermediate/visolex_model_a_candidates.jsonl --config configs/llm_review_config.json
+python scripts/candidates.py select-review --candidates data/intermediate/visolex_model_a_candidates.jsonl --config configs/llm_review_config.json
 ```
 
 First run the 240-example pilot and manually inspect every result. The
@@ -163,7 +163,7 @@ python scripts/review_candidates.py --mode full --config configs/llm_review_conf
 Build final weak labels and statistics locally:
 
 ```bash
-python scripts/export_protected_hashes.py
+python scripts/data.py export-protected-hashes
 python scripts/build_weak_labels.py --protected-hashes data/processed/vilexnorm_protected_input_hashes.txt --model gemini-2.5-flash
 python scripts/audit_weak_labels.py --weak-labels data/processed/visolex_weak_labeled.jsonl --stats outputs/weak_label_stats.json
 ```

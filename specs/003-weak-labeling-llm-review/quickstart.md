@@ -13,7 +13,7 @@ Khi cần sinh mới, mở `notebooks/generate_visolex_candidates_kaggle.ipynb`,
 được chủ dự án duyệt:
 
 ```bash
-python scripts/audit_candidate_full_run.py
+python scripts/candidates.py audit
 ```
 
 Kỳ vọng: `outputs/model_a/candidate_full_run_integrity.json` có `passed=true`, đủ 68.411
@@ -22,7 +22,7 @@ candidate, 69 chunk liên tục, schema/confidence/config/provenance và ZIP che
 ## 3. Tạo manifest và pilot local
 
 ```bash
-python scripts/select_review_manifest.py --candidates data/intermediate/visolex_model_a_candidates.jsonl --config configs/llm_review_config.json
+python scripts/candidates.py select-review --candidates data/intermediate/visolex_model_a_candidates.jsonl --config configs/llm_review_config.json
 python scripts/review_candidates.py --mode pilot --config configs/llm_review_config.json
 ```
 
@@ -49,7 +49,7 @@ gọi lại; tiến trình tiếp tục từ sample chưa hoàn thành.
 ## 5. Xây weak labels
 
 ```bash
-python scripts/export_protected_hashes.py
+python scripts/data.py export-protected-hashes
 python scripts/build_weak_labels.py --protected-hashes data/processed/vilexnorm_protected_input_hashes.txt --model "$GEMINI_MODEL" --config configs/llm_review_config.json --excluded-ids-file outputs/phase3_provider_exclusions.json
 python scripts/audit_weak_labels.py --weak-labels data/processed/visolex_weak_labeled.jsonl --stats outputs/weak_label_stats.json --approved-exclusions outputs/phase3_provider_exclusions.json
 ```

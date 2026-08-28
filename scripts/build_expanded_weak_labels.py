@@ -17,7 +17,7 @@ ensure_project_root()
 from scripts.build_weak_labels import WEAK_VALIDATOR, build_records, normalized_input_hash
 from scripts.review_cache import ReviewCache
 from scripts.review_candidates import validate_frozen_prompt, validate_manifest_scope
-from scripts.select_review_manifest import assign_confidence_bands
+from visolexnorm.candidates.manifests import assign_confidence_bands
 from visolexnorm.common.artifacts import sha256_file
 from visolexnorm.common.io import atomic_write_jsonl, load_json, read_jsonl
 
