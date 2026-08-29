@@ -18,7 +18,7 @@ python scripts/candidates.py select-remaining --config configs/expanded_review_c
 python scripts/reviews.py run --mode full --config configs/expanded_review_config.json
 python scripts/weak_labels.py build-expanded --config configs/expanded_review_config.json
 python scripts/weak_labels.py audit --config configs/expanded_review_config.json
-python scripts/build_model_c_mixture.py --config configs/model_c_config.json
+python scripts/training.py build-mixture --model model_c --config configs/model_c_config.json
 ```
 
 4. Tạo một Kaggle Dataset private giữ đúng cấu trúc `checkpoints/model_a/`, `data/processed/`

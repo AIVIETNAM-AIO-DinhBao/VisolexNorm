@@ -1,9 +1,9 @@
-"""Fine-tune BARTpho-syllable on ViLexNorm gold Train and evaluate on Dev.
+﻿"""Fine-tune BARTpho-syllable on ViLexNorm gold Train and evaluate on Dev.
 
 Designed for Kaggle GPU. It deliberately never reads the ViLexNorm Test split.
 
 Example:
-python scripts/train_model_a.py \
+python scripts/training.py train --model model_a \
   --data-dir /kaggle/input/visolexnorm-processed \
   --config configs/model_a_config.json \
   --work-dir /kaggle/working
@@ -11,19 +11,12 @@ python scripts/train_model_a.py \
 
 from __future__ import annotations
 
-import argparse
 import json
 import platform
+from argparse import Namespace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
-
-try:
-    from scripts._bootstrap import ensure_project_root
-except ModuleNotFoundError:
-    from _bootstrap import ensure_project_root
-
-ensure_project_root()
 
 from visolexnorm.common.io import read_jsonl, write_jsonl
 from visolexnorm.common.progress import log_event
@@ -48,20 +41,7 @@ def require_gold_records(records: list[dict[str, Any]], split: str) -> None:
             raise ValueError(f"{split} record {index} is not a valid gold pair")
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Train ViLexNorm gold-only Model A on Kaggle.")
-    parser.add_argument("--data-dir", type=Path, required=True)
-    parser.add_argument("--config", type=Path, default=Path("configs/model_a_config.json"))
-    parser.add_argument("--work-dir", type=Path, default=Path("."))
-    parser.add_argument("--smoke-test", action="store_true", help="Use small subsets for a quick pipeline check")
-    parser.add_argument(
-        "--checkpoint-path",
-        type=Path,
-        help="Existing Trainer checkpoint to evaluate/export without training again",
-    )
-    parser.add_argument("--quiet", action="store_true", help="Suppress operational artifact logs")
-    args = parser.parse_args()
-
+def run_gold_training(args: Namespace) -> None:
     try:
         import numpy as np
         import torch
@@ -214,7 +194,3 @@ def main() -> None:
     with (output_dir / "train_config.json").open("w", encoding="utf-8") as handle:
         json.dump(run_config, handle, ensure_ascii=False, indent=2)
     log_event("DONE", f"Model A training: checkpoint={checkpoint_dir} outputs={output_dir} dev_loss={metrics.get('dev_loss')} exact_sentence_match={metrics['exact_sentence_match']:.4f}", quiet=args.quiet)
-
-
-if __name__ == "__main__":
-    main()

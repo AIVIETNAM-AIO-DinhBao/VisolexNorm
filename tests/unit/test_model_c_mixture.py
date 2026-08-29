@@ -3,13 +3,12 @@ import json
 
 import pytest
 
-from scripts.build_model_c_mixture import sample_model_c_epochs
-from scripts.train_model_c import (
+from visolexnorm.training.mixtures import sample_model_c_epochs, validate_model_c_manifest
+from visolexnorm.training.reports import (
     assert_dev_only_report,
     build_exit_report,
     finalize_phase8,
     reject_prohibited_inputs,
-    validate_model_c_manifest,
 )
 from argparse import Namespace
 from pathlib import Path
