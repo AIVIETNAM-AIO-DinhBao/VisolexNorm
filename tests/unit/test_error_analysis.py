@@ -1,4 +1,4 @@
-from scripts.build_error_analysis import analyze_rows, categorize
+from visolexnorm.evaluation.errors import analyze_rows, categorize
 
 
 def test_category_precedence() -> None:

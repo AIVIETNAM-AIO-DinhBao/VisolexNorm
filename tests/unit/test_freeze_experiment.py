@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.freeze_experiment import build_manifest, verify_manifest
+from visolexnorm.evaluation.freeze import build_manifest, verify_manifest
 
 
 def _checkpoint(path: Path) -> None:

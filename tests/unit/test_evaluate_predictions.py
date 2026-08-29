@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 from jsonschema import Draft202012Validator
 
-from scripts.evaluate_predictions import select_best_model, validate_prediction_rows
+from visolexnorm.evaluation.scoring import select_best_model, validate_prediction_rows
 
 
 ROOT = Path(__file__).parents[2]

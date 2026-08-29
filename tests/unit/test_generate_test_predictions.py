@@ -1,4 +1,4 @@
-from scripts.generate_test_predictions import validate_predictions
+from visolexnorm.evaluation.predictions import validate_predictions
 
 
 def _test_rows() -> list[dict]:

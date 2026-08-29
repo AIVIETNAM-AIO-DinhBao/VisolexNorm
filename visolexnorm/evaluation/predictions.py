@@ -1,22 +1,14 @@
-"""Generate frozen Phase 5 Test predictions on Kaggle GPU.
+﻿"""Generate frozen Phase 5 Test predictions on Kaggle GPU.
 
 The command verifies every frozen input before opening ViLexNorm Test. It is
 intended to run once per model from `evaluate_models_kaggle.ipynb`.
 """
 from __future__ import annotations
 
-import argparse
 import json
 from pathlib import Path
 
-try:
-    from scripts._bootstrap import ensure_project_root
-except ModuleNotFoundError:
-    from _bootstrap import ensure_project_root
-
-ensure_project_root()
-
-from scripts.freeze_experiment import inventory, verify_manifest
+from visolexnorm.evaluation.freeze import inventory, verify_manifest
 from visolexnorm.common.artifacts import sha256_file, sha256_json
 from visolexnorm.common.io import read_jsonl
 
@@ -36,20 +28,7 @@ def validate_predictions(rows: list[dict], test_rows: list[dict], model_name: st
             raise ValueError(f"Prediction {index} is empty")
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--manifest", type=Path, required=True)
-    parser.add_argument("--model", choices=("model_a", "model_b"), required=True)
-    parser.add_argument("--checkpoint", type=Path, required=True)
-    parser.add_argument("--test", type=Path, required=True)
-    parser.add_argument("--generation-config", type=Path, required=True)
-    parser.add_argument("--model-a-checkpoint", type=Path, required=True)
-    parser.add_argument("--model-b-checkpoint", type=Path, required=True)
-    parser.add_argument("--phase3-manifest", type=Path, required=True)
-    parser.add_argument("--phase4-exit-report", type=Path, required=True)
-    parser.add_argument("--metric-code", type=Path, required=True)
-    parser.add_argument("--output", type=Path, required=True)
-    args = parser.parse_args()
+def generate_predictions(args: object) -> None:
     try:
         import torch
         from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, set_seed
@@ -95,7 +74,3 @@ def main() -> None:
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text("".join(json.dumps(row, ensure_ascii=False) + "\n" for row in predictions), encoding="utf-8")
     print(json.dumps({"model": args.model, "records": len(predictions), "output": str(args.output)}))
-
-
-if __name__ == "__main__":
-    main()

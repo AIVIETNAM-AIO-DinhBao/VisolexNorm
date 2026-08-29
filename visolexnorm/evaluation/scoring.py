@@ -6,7 +6,6 @@ if a historical manifest reaches that tie-break, its recorded rule is used.
 """
 from __future__ import annotations
 
-import argparse
 import json
 import subprocess
 from datetime import datetime, timezone
@@ -15,20 +14,13 @@ from typing import Any
 
 from jsonschema import Draft202012Validator
 
-try:
-    from scripts._bootstrap import ensure_project_root
-except ModuleNotFoundError:
-    from _bootstrap import ensure_project_root
 
-ensure_project_root()
-
-from scripts.evaluation_metrics import OFFICIAL_REFERENCE, evaluate_records
-from scripts.freeze_experiment import inventory, verify_manifest
+from visolexnorm.evaluation.freeze import inventory, verify_manifest
 from visolexnorm.common.artifacts import sha256_file, sha256_json
 from visolexnorm.common.io import read_jsonl
 
 
-ROOT = Path(__file__).parents[1]
+ROOT = Path(__file__).parents[2]
 PREDICTION_FIELDS = {"id", "input_text", "target_text", "prediction_text", "model", "checkpoint_checksum", "generation_config_hash"}
 
 
@@ -81,7 +73,7 @@ def render_comparison(metrics: dict[str, dict[str, Any]], best: dict[str, Any]) 
     return "\n".join(lines)
 
 
-def evaluate(args: argparse.Namespace) -> dict[str, Any]:
+def evaluate(args: Any, *, evaluate_records: Any, metric_reference: dict[str, Any]) -> dict[str, Any]:
     manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
     paths = {"model_a_checkpoint": args.model_a_checkpoint, "model_b_checkpoint": args.model_b_checkpoint, "test": args.test, "generation_config": args.generation_config, "metric_code": args.metric_code, "phase3_manifest": args.phase3_manifest, "phase4_exit_report": args.phase4_exit_report}
     verify_manifest(manifest, paths)
@@ -96,33 +88,10 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
         reports[model] = {**evaluate_records(rows), "prediction_sha256": sha256_file(prediction_path), "checkpoint_checksum": checkpoint_hash, "generation_config_hash": config_hash}
     winner, criterion = select_best_model(reports, manifest["model_selection_rule"])
     evaluated_at = datetime.now(timezone.utc).isoformat()
-    common = {"schema_version": 1, "phase": 5, "evaluated_at_utc": evaluated_at, "freeze_manifest_sha256": sha256_file(args.manifest), "metric_code_inventory": inventory(args.metric_code, normalize_text=True), "metric_reference": OFFICIAL_REFERENCE, "source_commit": git_commit(ROOT), "models": reports}
+    common = {"schema_version": 1, "phase": 5, "evaluated_at_utc": evaluated_at, "freeze_manifest_sha256": sha256_file(args.manifest), "metric_code_inventory": inventory(args.metric_code, normalize_text=True), "metric_reference": metric_reference, "source_commit": git_commit(ROOT), "models": reports}
     best = {"schema_version": 1, "phase": 5, "selected_model": winner, "deciding_criterion": criterion, "frozen_selection_rule": manifest["model_selection_rule"], "selected_checkpoint_checksum": reports[winner]["checkpoint_checksum"], "selected_prediction_sha256": reports[winner]["prediction_sha256"], "freeze_manifest_sha256": common["freeze_manifest_sha256"], "evaluated_at_utc": evaluated_at}
     args.output_dir.mkdir(parents=True, exist_ok=True)
     (args.output_dir / "test_metrics.json").write_text(json.dumps(common, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     (args.output_dir / "best_model.json").write_text(json.dumps(best, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     (args.output_dir / "comparison.md").write_text(render_comparison(reports, best), encoding="utf-8", newline="\n")
     return {"metrics": common, "best_model": best}
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--manifest", type=Path, default=Path("outputs/evaluation/freeze_manifest.json"))
-    parser.add_argument("--model-a-prediction", type=Path, default=Path("outputs/evaluation/model_a_test_predictions.jsonl"))
-    parser.add_argument("--model-b-prediction", type=Path, default=Path("outputs/evaluation/model_b_test_predictions.jsonl"))
-    parser.add_argument("--output-dir", type=Path, default=Path("outputs/evaluation"))
-    parser.add_argument("--model-a-checkpoint", type=Path, default=Path("checkpoints/model_a"))
-    parser.add_argument("--model-b-checkpoint", type=Path, default=Path("checkpoints/model_b"))
-    parser.add_argument("--test", type=Path, default=Path("data/processed/vilexnorm_test.jsonl"))
-    parser.add_argument("--generation-config", type=Path, default=Path("configs/evaluation_generation_config.json"))
-    parser.add_argument("--metric-code", type=Path, default=Path("scripts/evaluation_metrics.py"))
-    parser.add_argument("--phase3-manifest", type=Path, default=Path("outputs/phase3_manifest.json"))
-    parser.add_argument("--phase4-exit-report", type=Path, default=Path("outputs/model_b/phase4_exit_report.json"))
-    parser.add_argument("--schema", type=Path, default=Path("specs/005-experiment-evaluation/contracts/prediction.schema.json"))
-    args = parser.parse_args()
-    result = evaluate(args)
-    print(json.dumps({"selected_model": result["best_model"]["selected_model"], "metrics": result["metrics"]["models"]}, ensure_ascii=False, indent=2))
-
-
-if __name__ == "__main__":
-    main()

@@ -1,4 +1,4 @@
-"""Create deterministic per-example Phase 5 error analysis and audit samples.
+﻿"""Create deterministic per-example Phase 5 error analysis and audit samples.
 
 Category precedence: correct; over-normalization; missed; one-to-many;
 many-to-one; suspected-weak-label-noise; wrong. Noise requires explicit,
@@ -6,17 +6,9 @@ frozen supplied Test IDs; without evidence, uncertain examples remain wrong.
 """
 from __future__ import annotations
 
-import argparse
 import json
 from pathlib import Path
 from typing import Any
-
-try:
-    from scripts._bootstrap import ensure_project_root
-except ModuleNotFoundError:
-    from _bootstrap import ensure_project_root
-
-ensure_project_root()
 
 from visolexnorm.common.io import read_jsonl, write_jsonl
 
@@ -51,15 +43,7 @@ def analyze_rows(rows_a: list[dict[str, Any]], rows_b: list[dict[str, Any]], noi
     return result
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--model-a-prediction", type=Path, default=Path("outputs/evaluation/model_a_test_predictions.jsonl"))
-    parser.add_argument("--model-b-prediction", type=Path, default=Path("outputs/evaluation/model_b_test_predictions.jsonl"))
-    parser.add_argument("--output", type=Path, default=Path("outputs/evaluation/error_analysis.jsonl"))
-    parser.add_argument("--audit-output", type=Path, default=Path("outputs/evaluation/error_audit.json"))
-    parser.add_argument("--weak-label-evidence", type=Path)
-    parser.add_argument("--audit-limit", type=int, default=100)
-    args = parser.parse_args()
+def write_error_analysis(args: Any) -> dict[str, int]:
     if args.audit_limit < 1:
         raise ValueError("audit-limit must be positive")
     noise_ids = set()
@@ -73,8 +57,4 @@ def main() -> None:
     audits = {model: [record for record in records if record[f"{model}_category"] != "correct"][:args.audit_limit] for model in ("model_a", "model_b")}
     args.audit_output.parent.mkdir(parents=True, exist_ok=True)
     args.audit_output.write_text(json.dumps(audits, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps({"records": len(records), "model_a_audit_errors": len(audits["model_a"]), "model_b_audit_errors": len(audits["model_b"])}))
-
-
-if __name__ == "__main__":
-    main()
+    return {"records": len(records), "model_a_audit_errors": len(audits["model_a"]), "model_b_audit_errors": len(audits["model_b"])}

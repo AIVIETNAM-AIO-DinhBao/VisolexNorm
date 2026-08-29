@@ -1,18 +1,11 @@
 """Create or verify the immutable input manifest required before Phase 5 reads Test."""
 from __future__ import annotations
 
-import argparse
 import json
+from argparse import Namespace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
-
-try:
-    from scripts._bootstrap import ensure_project_root
-except ModuleNotFoundError:
-    from _bootstrap import ensure_project_root
-
-ensure_project_root()
 
 from visolexnorm.common.artifacts import canonical_json, sha256_bytes, sha256_file, sha256_text
 from visolexnorm.common.io import read_jsonl
@@ -51,7 +44,7 @@ def tokenizer_inventory(checkpoint: Path) -> dict[str, Any]:
     return {"files": entries, "sha256": sha256_text(canonical_json(entries))}
 
 
-def build_manifest(args: argparse.Namespace) -> dict[str, Any]:
+def build_manifest(args: Namespace) -> dict[str, Any]:
     test_rows = read_jsonl(args.test)
     test_ids = [row.get("id") for row in test_rows]
     if len(test_rows) != args.expected_test_count or len(test_ids) != len(set(test_ids)):
@@ -107,39 +100,3 @@ def verify_manifest(manifest: dict[str, Any], paths: dict[str, Path]) -> None:
     actual_order = sha256_text(canonical_json(test_ids))
     if len(test_ids) != manifest.get("expected_test_count") or actual_order != manifest.get("test_order_sha256"):
         raise ValueError("Frozen Test order or count mismatch")
-
-
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=Path, default=Path("outputs/evaluation/freeze_manifest.json"))
-    parser.add_argument("--model-a-checkpoint", type=Path, required=True)
-    parser.add_argument("--model-b-checkpoint", type=Path, required=True)
-    parser.add_argument("--test", type=Path, default=Path("data/processed/vilexnorm_test.jsonl"))
-    parser.add_argument("--generation-config", type=Path, default=Path("configs/evaluation_generation_config.json"))
-    parser.add_argument("--metric-code", type=Path, default=Path("scripts/evaluation_metrics.py"))
-    parser.add_argument("--phase3-manifest", type=Path, default=Path("outputs/phase3_manifest.json"))
-    parser.add_argument("--phase4-exit-report", type=Path, default=Path("outputs/model_b/phase4_exit_report.json"))
-    parser.add_argument("--metric-reference", type=Path, default=Path("specs/005-experiment-evaluation/contracts/metric_reference.json"))
-    parser.add_argument("--expected-test-count", type=int, default=1045)
-    parser.add_argument("--verify", action="store_true")
-    return parser.parse_args()
-
-
-def main() -> None:
-    args = parse_args()
-    paths = {"model_a_checkpoint": args.model_a_checkpoint, "model_b_checkpoint": args.model_b_checkpoint, "test": args.test, "generation_config": args.generation_config, "metric_code": args.metric_code, "phase3_manifest": args.phase3_manifest, "phase4_exit_report": args.phase4_exit_report}
-    if args.verify:
-        manifest = json.loads(args.output.read_text(encoding="utf-8"))
-        verify_manifest(manifest, paths)
-        print(json.dumps({"verified": True, "manifest": str(args.output)}))
-        return
-    if args.output.exists():
-        raise FileExistsError(f"Frozen manifest already exists: {args.output}; use --verify, never overwrite it")
-    manifest = build_manifest(args)
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps({"frozen": True, "manifest": str(args.output)}))
-
-
-if __name__ == "__main__":
-    main()

@@ -46,3 +46,34 @@ def test_review_cache_has_one_canonical_module_identity() -> None:
 
     assert "review_cache" not in sys.modules
     assert review_pipeline.ReviewCache is review_cache.ReviewCache
+
+
+def test_training_cli_has_package_backed_subcommands() -> None:
+    for command in ("build-mixture", "train", "finalize"):
+        result = run_python(str(ROOT / "scripts" / "training.py"), command, "--help")
+        assert result.returncode == 0, result.stderr
+
+
+def test_evaluation_cli_has_package_backed_subcommands() -> None:
+    for command in ("freeze", "verify-freeze", "generate", "score", "analyze-errors"):
+        result = run_python(str(ROOT / "scripts" / "evaluation.py"), command, "--help")
+        assert result.returncode == 0, result.stderr
+
+
+def test_model_specific_cli_restrictions_fail_before_runtime_dependencies() -> None:
+    invalid_finalize = run_python(
+        str(ROOT / "scripts" / "training.py"),
+        "finalize",
+        "--model",
+        "model_a",
+    )
+    invalid_generation = run_python(
+        str(ROOT / "scripts" / "evaluation.py"),
+        "generate",
+        "--model",
+        "model_c",
+    )
+    assert invalid_finalize.returncode == 2
+    assert "invalid choice" in invalid_finalize.stderr
+    assert invalid_generation.returncode == 2
+    assert "invalid choice" in invalid_generation.stderr
