@@ -8,13 +8,6 @@ import os
 from collections import Counter
 from pathlib import Path
 
-try:
-    from scripts._bootstrap import ensure_project_root
-except ModuleNotFoundError:
-    from _bootstrap import ensure_project_root
-
-ensure_project_root()
-
 from visolexnorm.common.io import load_json, read_jsonl
 from visolexnorm.common.progress import log_event
 from visolexnorm.review.cache import ReviewCache

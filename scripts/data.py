@@ -7,13 +7,6 @@ import json
 import random
 from pathlib import Path
 
-try:
-    from scripts._bootstrap import ensure_project_root
-except ModuleNotFoundError:
-    from _bootstrap import ensure_project_root
-
-ensure_project_root()
-
 from visolexnorm.common.io import read_jsonl, write_jsonl
 from visolexnorm.common.progress import log_event
 from visolexnorm.data.preparation import (

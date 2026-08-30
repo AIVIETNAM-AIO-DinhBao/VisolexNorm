@@ -6,13 +6,6 @@ import argparse
 import json
 from pathlib import Path
 
-try:
-    from scripts._bootstrap import ensure_project_root
-except ModuleNotFoundError:
-    from _bootstrap import ensure_project_root
-
-ensure_project_root()
-
 from visolexnorm.evaluation.errors import write_error_analysis
 from visolexnorm.evaluation.freeze import build_manifest, verify_manifest
 from visolexnorm.evaluation.predictions import generate_predictions

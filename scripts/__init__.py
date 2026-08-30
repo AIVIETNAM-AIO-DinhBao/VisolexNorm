@@ -1,1 +1,1 @@
-"""Command modules and compatibility entry points for ViSoLexNorm pipelines."""
+"""Module entry points for ViSoLexNorm domain pipelines."""

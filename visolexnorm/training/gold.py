@@ -3,7 +3,7 @@
 Designed for Kaggle GPU. It deliberately never reads the ViLexNorm Test split.
 
 Example:
-python scripts/training.py train --model model_a \
+python -m scripts.training train --model model_a \
   --data-dir /kaggle/input/visolexnorm-processed \
   --config configs/model_a_config.json \
   --work-dir /kaggle/working

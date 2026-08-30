@@ -6,13 +6,6 @@ import argparse
 import json
 from pathlib import Path
 
-try:
-    from scripts._bootstrap import ensure_project_root
-except ModuleNotFoundError:
-    from _bootstrap import ensure_project_root
-
-ensure_project_root()
-
 from visolexnorm.common.artifacts import sha256_file
 from visolexnorm.common.io import atomic_write_jsonl, load_json, read_jsonl
 from visolexnorm.common.progress import log_event

@@ -13,7 +13,7 @@ Khi cần sinh mới, mở `notebooks/generate_visolex_candidates_kaggle.ipynb`,
 được chủ dự án duyệt:
 
 ```bash
-python scripts/candidates.py audit
+python -m scripts.candidates audit
 ```
 
 Kỳ vọng: `outputs/model_a/candidate_full_run_integrity.json` có `passed=true`, đủ 68.411
@@ -22,8 +22,8 @@ candidate, 69 chunk liên tục, schema/confidence/config/provenance và ZIP che
 ## 3. Tạo manifest và pilot local
 
 ```bash
-python scripts/candidates.py select-review --candidates data/intermediate/visolex_model_a_candidates.jsonl --config configs/llm_review_config.json
-python scripts/reviews.py run --mode pilot --config configs/llm_review_config.json
+python -m scripts.candidates select-review --candidates data/intermediate/visolex_model_a_candidates.jsonl --config configs/llm_review_config.json
+python -m scripts.reviews run --mode pilot --config configs/llm_review_config.json
 ```
 
 Kỳ vọng: manifest 20.000 dòng, pilot 240 dòng và 16 request Gemini nếu không retry.
@@ -32,7 +32,7 @@ chứa `approved=true`, review identity SHA-256 (prompt + lexical policy) và đ
 `audited_ids`. Sau đó chạy:
 
 ```bash
-python scripts/reviews.py freeze-prompt --pilot-report outputs/pilot_review_report_v6.json --approved --replace-existing
+python -m scripts.reviews freeze-prompt --pilot-report outputs/pilot_review_report_v6.json --approved --replace-existing
 ```
 
 Batch chính từ chối chạy nếu v1/hash chưa được freeze.
@@ -40,7 +40,7 @@ Batch chính từ chối chạy nếu v1/hash chưa được freeze.
 ## 4. Review chính và resume
 
 ```bash
-python scripts/reviews.py run --mode full --config configs/llm_review_config.json
+python -m scripts.reviews run --mode full --config configs/llm_review_config.json
 ```
 
 Dừng tiến trình sau vài batch rồi chạy lại cùng lệnh. Kỳ vọng: các result đã commit không bị
@@ -49,9 +49,9 @@ gọi lại; tiến trình tiếp tục từ sample chưa hoàn thành.
 ## 5. Xây weak labels
 
 ```bash
-python scripts/data.py export-protected-hashes
-python scripts/weak_labels.py build-initial --protected-hashes data/processed/vilexnorm_protected_input_hashes.txt --model "$GEMINI_MODEL" --config configs/llm_review_config.json --excluded-ids-file outputs/phase3_provider_exclusions.json
-python scripts/weak_labels.py audit --weak-labels data/processed/visolex_weak_labeled.jsonl --stats outputs/weak_label_stats.json --approved-exclusions outputs/phase3_provider_exclusions.json
+python -m scripts.data export-protected-hashes
+python -m scripts.weak_labels build-initial --protected-hashes data/processed/vilexnorm_protected_input_hashes.txt --model "$GEMINI_MODEL" --config configs/llm_review_config.json --excluded-ids-file outputs/phase3_provider_exclusions.json
+python -m scripts.weak_labels audit --weak-labels data/processed/visolex_weak_labeled.jsonl --stats outputs/weak_label_stats.json --approved-exclusions outputs/phase3_provider_exclusions.json
 ```
 
 Kỳ vọng:

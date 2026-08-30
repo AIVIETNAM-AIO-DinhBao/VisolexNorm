@@ -19,7 +19,7 @@ from visolexnorm.training.strategies import ModelCTrainingStrategy
 from visolexnorm.training.trainer import run_mixture_training
 
 
-ROOT = Path(__file__).parents[2]
+ROOT = Path(__file__).parents[1]
 REMOVED_ENTRY_POINTS = re.compile(
     r"scripts/(?:build_model_[bc]_mixture|train_model_[abc]|freeze_experiment|"
     r"generate_test_predictions|evaluate_predictions|build_error_analysis)\.py"
@@ -31,6 +31,10 @@ ACTIVE_DOCUMENTS = [
     ROOT / "specs/008-expanded-visolex-training/quickstart.md",
 ]
 ACTIVE_NOTEBOOKS = sorted((ROOT / "notebooks").glob("*.ipynb"))
+DOMAIN_NAMES = ("data", "candidates", "reviews", "weak_labels", "training", "evaluation")
+DIRECT_DOMAIN_COMMAND = re.compile(
+    r"(?:python|!python)\s+scripts/(?:" + "|".join(DOMAIN_NAMES) + r")\.py"
+)
 PUBLIC_MODULES = (
     "visolexnorm.training.gold",
     "visolexnorm.training.mixtures",
@@ -52,12 +56,44 @@ def test_active_workflows_do_not_reference_removed_entry_points() -> None:
     assert not stale, "\n".join(stale)
 
 
+def test_active_workflows_use_module_execution_without_bootstrap() -> None:
+    stale: list[str] = []
+    for path in ACTIVE_DOCUMENTS + ACTIVE_NOTEBOOKS:
+        text = path.read_text(encoding="utf-8")
+        if DIRECT_DOMAIN_COMMAND.search(text):
+            stale.append(str(path.relative_to(ROOT)))
+    assert not stale, "\n".join(stale)
+    assert not (ROOT / "scripts/_bootstrap.py").exists()
+    source = "\n".join(path.read_text(encoding="utf-8") for path in (ROOT / "scripts").glob("*.py"))
+    assert "sys.path.insert" not in source
+    assert "ensure_project_root" not in source
+
+
+def test_maintenance_command_map_covers_removed_entry_points() -> None:
+    guide = (ROOT / "docs/maintenance.md").read_text(encoding="utf-8")
+    historical_names = {
+        "prepare_vilexnorm.py", "prepare_visolex.py", "check_data.py",
+        "export_protected_hashes.py", "generate_candidates.py",
+        "generate_model_a_candidates.py", "select_review_manifest.py",
+        "select_remaining_review_manifest.py", "audit_candidate_full_run.py",
+        "review_candidates.py", "review_with_gemini.py", "export_pilot_audit.py",
+        "freeze_review_prompt.py", "build_weak_labels.py",
+        "build_expanded_weak_labels.py", "audit_weak_labels.py",
+        "build_model_b_mixture.py", "build_model_c_mixture.py",
+        "train_model_a.py", "train_model_b.py", "train_model_c.py",
+        "freeze_experiment.py", "generate_test_predictions.py",
+        "evaluate_predictions.py", "build_error_analysis.py",
+    }
+    missing = sorted(name for name in historical_names if name not in guide)
+    assert not missing, missing
+
+
 def test_active_notebooks_are_valid_json_and_use_domain_clis() -> None:
     commands = "\n".join(path.read_text(encoding="utf-8") for path in ACTIVE_NOTEBOOKS)
     for path in ACTIVE_NOTEBOOKS:
         json.loads(path.read_text(encoding="utf-8"))
-    assert "scripts/training.py" in commands
-    assert "scripts/evaluation.py" in commands
+    assert "python -m scripts.training" in commands
+    assert "'python', '-m', 'scripts.evaluation'" in commands
     assert "REPLACE_WITH_FIXED_PHASE5_COMMIT" not in commands
 
 

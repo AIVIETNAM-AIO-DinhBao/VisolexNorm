@@ -8,13 +8,6 @@ import math
 from collections import Counter
 from pathlib import Path
 
-try:
-    from scripts._bootstrap import ensure_project_root
-except ModuleNotFoundError:
-    from _bootstrap import ensure_project_root
-
-ensure_project_root()
-
 from visolexnorm.candidates.audit import audit_candidate_run
 from visolexnorm.candidates.contracts import validate_inputs
 from visolexnorm.candidates.generation import chunk_path, generate_chunk, load_completed_chunk, merge_chunks

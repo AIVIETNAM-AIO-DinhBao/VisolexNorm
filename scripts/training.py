@@ -6,13 +6,6 @@ import argparse
 import json
 from pathlib import Path
 
-try:
-    from scripts._bootstrap import ensure_project_root
-except ModuleNotFoundError:
-    from _bootstrap import ensure_project_root
-
-ensure_project_root()
-
 from visolexnorm.training.mixtures import build_model_b_manifest, build_model_c_manifest
 from visolexnorm.training.reports import finalize_model_c
 from visolexnorm.training.strategies import ModelBTrainingStrategy, ModelCTrainingStrategy
