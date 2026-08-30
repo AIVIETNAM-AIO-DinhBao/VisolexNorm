@@ -9,7 +9,11 @@ data/raw/
 data/intermediate/
 data/processed/
 checkpoints/
-outputs/
+outputs/*
+!outputs/app/
+outputs/app/*
+!outputs/app/model_selection.json
+!outputs/app/model_c_promotion_smoke_test.json
 
 # Large reproducibility bundles are stored outside Git; checksums live in the Phase 3 exit report.
 model_a_artifacts.zip

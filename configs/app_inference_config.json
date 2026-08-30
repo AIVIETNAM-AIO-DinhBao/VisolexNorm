@@ -1,0 +1,6 @@
+{
+  "selection_path": "outputs/app/model_selection.json",
+  "max_source_length": 128,
+  "max_new_tokens": 128,
+  "num_beams": 4
+}

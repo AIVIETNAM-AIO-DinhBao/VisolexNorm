@@ -11,6 +11,7 @@ from visolexnorm.evaluation.errors import write_error_analysis
 from visolexnorm.evaluation.freeze import build_manifest, verify_manifest
 from visolexnorm.evaluation.predictions import generate_predictions
 from visolexnorm.evaluation.scoring import evaluate
+from visolexnorm.app.selection import build_model_c_selection
 
 
 def freeze_paths(args: argparse.Namespace) -> dict[str, Path]:
@@ -60,6 +61,15 @@ def run_posthoc_score(args: argparse.Namespace) -> None:
 def run_posthoc_errors(args: argparse.Namespace) -> None:
     count = benchmark.write_pairwise_error_analysis(args)
     print(json.dumps({"records": count, "output": str(args.output), "promotion_eligible": False}))
+
+
+def run_posthoc_promote(args: argparse.Namespace) -> None:
+    if args.output.exists():
+        raise FileExistsError(f"Application selection already exists: {args.output}; review it instead of overwriting it")
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    selection = build_model_c_selection(args)
+    args.output.write_text(json.dumps(selection, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps({"selected_model": selection["selected_model"], "rollback_model": selection["rollback_model"], "output": str(args.output)}))
 
 
 def add_frozen_inputs(parser: argparse.ArgumentParser, *, required: bool = False) -> None:
@@ -164,6 +174,15 @@ def main() -> None:
     posthoc_errors.add_argument("--model-c-prediction", type=Path, default=Path("outputs/evaluation_abc_posthoc/model_c_test_predictions.jsonl"))
     posthoc_errors.add_argument("--output", type=Path, default=Path("outputs/evaluation_abc_posthoc/pairwise_error_analysis.jsonl"))
     posthoc_errors.set_defaults(handler=run_posthoc_errors)
+    posthoc_promote = commands.add_parser("posthoc-promote", help="Create a Model C application selection with Model B rollback")
+    posthoc_promote.add_argument("--benchmark-manifest", type=Path, default=Path("outputs/evaluation_abc_posthoc/benchmark_manifest.json"))
+    posthoc_promote.add_argument("--benchmark-metrics", type=Path, default=Path("outputs/evaluation_abc_posthoc/metrics.json"))
+    posthoc_promote.add_argument("--benchmark-deltas", type=Path, default=Path("outputs/evaluation_abc_posthoc/pairwise_deltas.json"))
+    posthoc_promote.add_argument("--benchmark-report", type=Path, default=Path("outputs/evaluation_abc_posthoc/benchmark_report.json"))
+    posthoc_promote.add_argument("--phase5-best-model", type=Path, default=Path("outputs/evaluation/best_model.json"))
+    posthoc_promote.add_argument("--output", type=Path, default=Path("outputs/app/model_selection.json"))
+    add_posthoc_inputs(posthoc_promote)
+    posthoc_promote.set_defaults(handler=run_posthoc_promote)
     args = parser.parse_args()
     args.handler(args)
 

@@ -6,6 +6,8 @@
     "external_destination_configured": false,
     "large_artifacts_externalized": false,
     "model_b_required_for_phase6_t016": true,
+    "model_b_required_as_phase10_rollback": true,
+    "model_c_required_as_phase10_application_checkpoint": true,
     "phase5_selected_model": "model_b",
     "cleanup_candidate_bytes": 33728217
   },
@@ -152,11 +154,12 @@
       "path": "checkpoints/model_c",
       "kind": "directory",
       "bytes": 1916838714,
-      "inventory_sha256": "df2c92289dcca009dc0b4119bbc4dc42c784483e71acd6f00370a071f94bd480",
-      "authority": "frozen-manifest",
-      "retention": "externalize-pending",
+      "inventory_sha256": "e2f4b33dae20b2ed86a2b51d163b3cbe2063fbc24dc9b4a4e0cfe774f69fa622",
+      "authority": "Phase 9 benchmark and Phase 10 app selection",
+      "retention": "keep-local",
       "referenced_by": [
-        "outputs/model_c/artifact_manifest.json"
+        "outputs/model_c/artifact_manifest.json",
+        "outputs/app/model_selection.json"
       ],
       "external_location": null
     },

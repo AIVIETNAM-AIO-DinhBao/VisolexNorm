@@ -26,6 +26,7 @@ def test_model_b_and_phase5_selection_artifacts_are_keep_local() -> None:
     assert all(by_path[path]["retention"] == "keep-local" for path in required)
     assert inventory["policy"]["phase5_selected_model"] == "model_b"
     assert inventory["policy"]["model_b_required_for_phase6_t016"] is True
+    assert by_path["checkpoints/model_c"]["retention"] == "keep-local"
 
 
 def test_large_artifacts_are_not_marked_removed_without_external_storage() -> None:
@@ -40,7 +41,6 @@ def test_large_artifacts_are_not_marked_removed_without_external_storage() -> No
     }
     assert {
         "checkpoints/model_a",
-        "checkpoints/model_c",
         "model_a_artifacts.zip",
         "model_c_artifacts.zip",
         "visolex_model_a_candidates.zip",

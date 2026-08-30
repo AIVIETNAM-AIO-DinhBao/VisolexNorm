@@ -196,8 +196,8 @@ python -m scripts.evaluation score
 python -m scripts.evaluation analyze-errors
 ```
 
-The frozen comparison selects **Model B** by higher F1. Model C is not part of
-the Phase 5 Test comparison.
+The historical Phase 5 comparison selects **Model B** by higher F1. Model C is
+not part of the immutable Phase 5 Test comparison.
 
 ## Phase 8: expanded Model C research
 
@@ -209,14 +209,16 @@ python -m scripts.training build-mixture --model model_c
 python -m scripts.training finalize --model model_c
 ```
 
-Model C must not read ViLexNorm Test or `outputs/evaluation`, and it does not
-replace Model B as the application checkpoint.
+Model C did not read ViLexNorm Test during training. Its later Phase 9
+post-hoc benchmark is used for the current application selection, while the
+Phase 5 historical result remains unchanged.
 
 ## Phase 9: descriptive A/B/C benchmark
 
-The current Model C checkpoint can be compared with the frozen Model A/B raw
+The current Model C checkpoint was compared with frozen Model A/B raw
 predictions on the previously observed ViLexNorm Test. This is a **post-hoc**
-descriptive benchmark only; it cannot replace Model B or change Phase 5.
+benchmark: it does not change Phase 5, but its verified result promotes Model C
+as the current application checkpoint with Model B retained as rollback.
 
 ```bash
 python -m scripts.evaluation posthoc-verify
@@ -226,6 +228,15 @@ python -m scripts.evaluation posthoc-score
 Generate the one required Model C prediction file with
 `notebooks/evaluate_model_c_posthoc_kaggle.ipynb`, then run the scoring command.
 See `specs/009-posthoc-abc-benchmark/quickstart.md` for the complete workflow.
+
+The current application selection is created by:
+
+```bash
+python -m scripts.evaluation posthoc-promote
+pip install -r requirements-inference.txt
+python -m visolexnorm.app.inference --smoke
+python -m visolexnorm.app.inference --text "toi muon dc sach"
+```
 
 ## Maintenance
 

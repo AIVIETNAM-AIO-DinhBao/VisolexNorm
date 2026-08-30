@@ -1,0 +1,5 @@
+# Local offline BARTpho application inference (Phase 10).
+torch>=2.0
+transformers>=4.38
+sentencepiece>=0.1.99
+safetensors>=0.4

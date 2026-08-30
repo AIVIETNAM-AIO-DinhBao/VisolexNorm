@@ -81,10 +81,11 @@ and avoids `sys.path` mutation.
 
 Maintenance changes must preserve all of the following:
 
-1. Model B remains the selected application checkpoint. Do not change
-   `outputs/evaluation/best_model.json` or the Phase 6 default to Model C.
-2. Model C remains Dev-only exploratory research. It must not read ViLexNorm
-   Test or `outputs/evaluation`, and it must not self-promote.
+1. `outputs/evaluation/best_model.json` remains the historical Phase 5 A/B
+   selection artifact and names Model B. Do not rewrite it.
+2. `outputs/app/model_selection.json` is the current application selection
+   artifact. It names Model C after the verified Phase 9 post-hoc benchmark and
+   retains Model B as verified rollback.
 3. No maintenance task calls Gemini, trains a model, or runs GPU prediction
    generation unless explicitly approved as a new research run.
 4. Frozen prompts, lexical policy, configs, schemas, and historical manifests
@@ -126,9 +127,17 @@ python -m scripts.evaluation posthoc-analyze-errors
 ```
 
 This benchmark is intentionally marked
-`posthoc_previously_observed_vilexnorm_test` and `promotion_eligible=false`.
-It never modifies the Phase 5 `best_model.json`, freeze manifest, metrics, or
-error analysis. See `specs/009-posthoc-abc-benchmark/` for its contract.
+`posthoc_previously_observed_vilexnorm_test` and does not modify the Phase 5
+`best_model.json`, freeze manifest, metrics, or error analysis. The explicit
+Phase 10 app decision is created from its verified evidence:
+
+```text
+python -m scripts.evaluation posthoc-promote
+python -m visolexnorm.app.inference --smoke
+```
+
+The promotion artifact keeps Model B rollback metadata. See
+`specs/009-posthoc-abc-benchmark/` and `specs/010-model-c-app-promotion/`.
 
 Training mixture and Model C report reconstruction tests require the ignored
 local artifacts. Score/error replay must write to a temporary directory rather
@@ -136,9 +145,11 @@ than overwrite `outputs/evaluation`.
 
 ## Artifact retention policy
 
-### Keep local until Phase 6/T016
+### Keep local for application and rollback
 
+- `checkpoints/model_c/`
 - `checkpoints/model_b/`
+- `outputs/app/model_selection.json`
 - `outputs/evaluation/best_model.json`
 - `outputs/evaluation/freeze_manifest.json`
 - Model B raw Test predictions and minimum app/test data
