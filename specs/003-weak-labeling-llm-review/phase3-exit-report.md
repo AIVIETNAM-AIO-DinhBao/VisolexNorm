@@ -48,6 +48,13 @@ Binary/data artifacts được `.gitignore` và phải lưu ngoài Git. Hai bund
 1–3, gồm canonical inputs, Model A, candidates, review cache, prompt/policy và final outputs.
 Không xóa hoặc ghi đè bundle ngoài Git trước khi có ít nhất một bản sao độc lập.
 
+## Historical pilot evidence
+
+Chi tiết annotation của pilot v1 bị từ chối được lưu tại
+[`pilot-audit-v1-findings.md`](pilot-audit-v1-findings.md). Tài liệu này thay thế
+script one-off đã bị loại trong refactor sau Phase 8; nó không thay đổi pilot v6,
+prompt v1 freeze hay bất kỳ artifact Phase 3 nào.
+
 ## Lệnh xác minh
 
 ```bash

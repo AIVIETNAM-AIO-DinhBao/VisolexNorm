@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 
-from scripts.select_review_manifest import create_manifest, largest_remainder_quotas
+from visolexnorm.candidates.manifests import largest_remainder_quotas, select_stratified_review_manifest
 
 
 SOURCES = ["ViHSD", "UIT-VSMEC", "ViHOS", "ViSpamReviews", "UIT-ViSFD"]
@@ -41,8 +41,8 @@ def test_manifest_is_deterministic_balanced_and_has_240_pilot_samples() -> None:
         for _ in range(count):
             index += 1
             rows.append(candidate(index, source))
-    first = create_manifest(rows, config())
-    second = create_manifest(rows, config())
+    first = select_stratified_review_manifest(rows, config())
+    second = select_stratified_review_manifest(rows, config())
     assert [row["id"] for row in first] == [row["id"] for row in second]
     assert len(first) == 20000
     assert sum(row["is_pilot"] for row in first) == 240

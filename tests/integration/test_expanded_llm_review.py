@@ -5,14 +5,14 @@ from pathlib import Path
 
 import pytest
 
-from scripts.gemini_key_pool import GeminiKeyPool
-from scripts.review_cache import ReviewCache
-from scripts.review_candidates import (
+from visolexnorm.review.cache import ReviewCache
+from visolexnorm.review.pipeline import (
     export_review_stats,
     load_approved_exclusions,
     run_batches,
     validate_manifest_scope,
 )
+from visolexnorm.review.provider import GeminiKeyPool
 
 
 def row(index: int) -> dict:

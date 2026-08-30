@@ -9,15 +9,15 @@ Place raw files under `data/raw/` (this directory is ignored by Git), then run
 the scripts below with the field names used by the raw datasets.
 
 ```bash
-python scripts/prepare_vilexnorm.py --train data/raw/vilexnorm/train.jsonl --dev data/raw/vilexnorm/dev.jsonl --test data/raw/vilexnorm/test.jsonl --input-field original --target-field normalized
+python -m scripts.data prepare-vilexnorm --train data/raw/vilexnorm/train.jsonl --dev data/raw/vilexnorm/dev.jsonl --test data/raw/vilexnorm/test.jsonl --input-field original --target-field normalized
 ```
 
 ```bash
-python scripts/prepare_visolex.py --source ViHSD data/raw/visolex/vihsd.csv text --source UIT-VSMEC data/raw/visolex/vsmec.csv text --source ViHOS data/raw/visolex/vihos.csv text --source ViSpamReviews data/raw/visolex/spam_reviews.csv text --source UIT-ViSFD data/raw/visolex/visfd.csv text
+python -m scripts.data prepare-visolex --source ViHSD data/raw/visolex/vihsd.csv text --source UIT-VSMEC data/raw/visolex/vsmec.csv text --source ViHOS data/raw/visolex/vihos.csv text --source ViSpamReviews data/raw/visolex/spam_reviews.csv text --source UIT-ViSFD data/raw/visolex/visfd.csv text
 ```
 
 ```bash
-python scripts/check_data.py
+python -m scripts.data validate
 ```
 
 ## Current downloaded data
@@ -43,9 +43,9 @@ The verified field mapping is:
 The exact commands used for the current artifacts are:
 
 ```bash
-python scripts/prepare_vilexnorm.py --train data/raw/vilexnorm/train.csv --dev data/raw/vilexnorm/dev.csv --test data/raw/vilexnorm/test.csv --input-field original --target-field normalized
-python scripts/prepare_visolex.py --source ViHSD data/raw/visolex/ViHSD.csv free_text --source UIT-VSMEC data/raw/visolex/UIT-VSMEC.csv Sentence --source ViHOS data/raw/visolex/ViHOS.csv sentence --source ViSpamReviews data/raw/visolex/ViSpamReviews.csv Comment --source UIT-ViSFD data/raw/visolex/UIT-ViSFD.csv comment
-python scripts/check_data.py
+python -m scripts.data prepare-vilexnorm --train data/raw/vilexnorm/train.csv --dev data/raw/vilexnorm/dev.csv --test data/raw/vilexnorm/test.csv --input-field original --target-field normalized
+python -m scripts.data prepare-visolex --source ViHSD data/raw/visolex/ViHSD.csv free_text --source UIT-VSMEC data/raw/visolex/UIT-VSMEC.csv Sentence --source ViHOS data/raw/visolex/ViHOS.csv sentence --source ViSpamReviews data/raw/visolex/ViSpamReviews.csv Comment --source UIT-ViSFD data/raw/visolex/UIT-ViSFD.csv comment
+python -m scripts.data validate
 ```
 
 Current Phase 1 counts:
@@ -119,7 +119,7 @@ Select the reproducible source/confidence-stratified review set (strict budget:
 20,000; pilot: 240 in `configs/llm_review_config.json`):
 
 ```bash
-python scripts/select_review_manifest.py --candidates data/intermediate/visolex_model_a_candidates.jsonl --config configs/llm_review_config.json
+python -m scripts.candidates select-review --candidates data/intermediate/visolex_model_a_candidates.jsonl --config configs/llm_review_config.json
 ```
 
 First run the 240-example pilot and manually inspect every result. The
@@ -128,7 +128,7 @@ round-robins the configured API keys for requests/retries, and logs failures
 without exposing keys:
 
 ```bash
-python scripts/review_candidates.py --mode pilot --config configs/llm_review_config.json
+python -m scripts.reviews run --mode pilot --config configs/llm_review_config.json
 ```
 
 ### Operational progress and resume
@@ -156,16 +156,16 @@ all 240 pilot IDs; then run the full manifest. SQLite automatically resumes the
 frozen-v1 namespace:
 
 ```bash
-python scripts/freeze_review_prompt.py --pilot-report outputs/pilot_review_report.json --approved
-python scripts/review_candidates.py --mode full --config configs/llm_review_config.json
+python -m scripts.reviews freeze-prompt --pilot-report outputs/pilot_review_report.json --approved
+python -m scripts.reviews run --mode full --config configs/llm_review_config.json
 ```
 
 Build final weak labels and statistics locally:
 
 ```bash
-python scripts/export_protected_hashes.py
-python scripts/build_weak_labels.py --protected-hashes data/processed/vilexnorm_protected_input_hashes.txt --model gemini-2.5-flash
-python scripts/audit_weak_labels.py --weak-labels data/processed/visolex_weak_labeled.jsonl --stats outputs/weak_label_stats.json
+python -m scripts.data export-protected-hashes
+python -m scripts.weak_labels build-initial --protected-hashes data/processed/vilexnorm_protected_input_hashes.txt --model gemini-2.5-flash
+python -m scripts.weak_labels audit --weak-labels data/processed/visolex_weak_labeled.jsonl --stats outputs/weak_label_stats.json
 ```
 
 This produces `data/processed/visolex_weak_labeled.jsonl` and
@@ -173,3 +173,47 @@ This produces `data/processed/visolex_weak_labeled.jsonl` and
 the recorded configs) to a private Kaggle Dataset for Phase 4. Every weak label
 used by Model B has a Gemini review decision and retains its ViSoLex/Model A
 provenance.
+
+## Phase 4: train Model B
+
+Build the frozen three-epoch mixture without running training locally:
+
+```bash
+python -m scripts.training build-mixture --model model_b
+```
+
+The active Kaggle workflow is `notebooks/train_model_b_kaggle.ipynb`. Model B
+uses all 18,970 accepted Phase 3 pseudo IDs across the frozen epoch rotation.
+
+## Phase 5: frozen Model A/B evaluation
+
+Create or verify the freeze manifest, then score already generated raw
+predictions locally:
+
+```bash
+python -m scripts.evaluation verify-freeze
+python -m scripts.evaluation score
+python -m scripts.evaluation analyze-errors
+```
+
+The frozen comparison selects **Model B** by higher F1. Model C is not part of
+the Phase 5 Test comparison.
+
+## Phase 8: expanded Model C research
+
+Model C uses the expanded 64,813-record pseudo-label pool and remains a
+Dev-only exploratory checkpoint:
+
+```bash
+python -m scripts.training build-mixture --model model_c
+python -m scripts.training finalize --model model_c
+```
+
+Model C must not read ViLexNorm Test or `outputs/evaluation`, and it does not
+replace Model B as the application checkpoint.
+
+## Maintenance
+
+See [`docs/maintenance.md`](docs/maintenance.md) for the architecture map,
+historical command migration, verification invariants, and artifact retention
+policy.

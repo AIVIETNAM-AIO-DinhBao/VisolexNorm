@@ -1,6 +1,6 @@
 import pytest
 
-from scripts.export_pilot_audit import export_rows
+from visolexnorm.review.pilot import export_rows
 
 
 def manifest(sample_id: str) -> dict:

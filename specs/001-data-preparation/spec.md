@@ -15,10 +15,11 @@ noise, đồng thời tách Train/Dev/Test và loại exact overlap với Dev/Te
 - `data/processed/vilexnorm_dev.jsonl`: 1.050 mẫu.
 - `data/processed/vilexnorm_test.jsonl`: 1.045 mẫu.
 - `data/processed/visolex_unlabeled.jsonl`: 68.411 mẫu.
-- `scripts/prepare_vilexnorm.py`
-- `scripts/prepare_visolex.py`
-- `scripts/check_data.py`
-- `scripts/data_utils.py`
+- `scripts/data.py` (`prepare-vilexnorm`, `prepare-visolex`, `validate` và
+  `export-protected-hashes`; thay thế các script Phase 1 riêng lẻ trong
+  refactor sau Phase 8)
+- `visolexnorm/common/io.py` (shared text and JSONL I/O helpers; moved from
+  `scripts/data_utils.py` during the post-Phase-8 refactor)
 
 ## Kết quả ViSoLex thực tế
 

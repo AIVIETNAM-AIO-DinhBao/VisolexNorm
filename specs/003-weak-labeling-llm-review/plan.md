@@ -42,7 +42,7 @@ notebooks/
 prompts/
 └── lexical_norm_review_v1.txt
 scripts/
-├── generate_candidates.py
+├── generate_model_a_candidates.py
 ├── select_review_manifest.py
 ├── review_candidates.py
 ├── build_weak_labels.py

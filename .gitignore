@@ -1,5 +1,6 @@
 __pycache__/
 *.py[cod]
+.pytest_cache/
 .venv/
 .tmp/
 
@@ -15,6 +16,7 @@ model_a_artifacts.zip
 visolex_model_a_candidates.zip
 phase5_test_predictions.zip
 model_c_artifacts.zip
+model_c_artifacts/
 model_c_checkpoint.zip
 phase8_training_input.zip
 
