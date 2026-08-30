@@ -55,7 +55,18 @@ def test_training_cli_has_package_backed_subcommands() -> None:
 
 
 def test_evaluation_cli_has_package_backed_subcommands() -> None:
-    for command in ("freeze", "verify-freeze", "generate", "score", "analyze-errors"):
+    for command in (
+        "freeze",
+        "verify-freeze",
+        "generate",
+        "score",
+        "analyze-errors",
+        "posthoc-freeze",
+        "posthoc-verify",
+        "posthoc-generate",
+        "posthoc-score",
+        "posthoc-analyze-errors",
+    ):
         result = run_python("-m", "scripts.evaluation", command, "--help")
         assert result.returncode == 0, result.stderr
 
@@ -79,3 +90,15 @@ def test_model_specific_cli_restrictions_fail_before_runtime_dependencies() -> N
     assert "invalid choice" in invalid_finalize.stderr
     assert invalid_generation.returncode == 2
     assert "invalid choice" in invalid_generation.stderr
+
+
+def test_posthoc_generation_rejects_model_b_before_runtime_dependencies() -> None:
+    result = run_python(
+        "-m",
+        "scripts.evaluation",
+        "posthoc-generate",
+        "--model",
+        "model_b",
+    )
+    assert result.returncode == 2
+    assert "invalid choice" in result.stderr

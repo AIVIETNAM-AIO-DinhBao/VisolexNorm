@@ -112,6 +112,24 @@ git diff --exit-code -- scripts/evaluation_metrics.py
 git diff --check
 ```
 
+## Post-hoc A/B/C benchmark
+
+Phase 9 adds a descriptive Model C result on the already observed Phase 5
+ViLexNorm Test. Its isolated namespace is `outputs/evaluation_abc_posthoc/`.
+It reuses frozen Model A/B predictions and generates only Model C predictions:
+
+```text
+python -m scripts.evaluation posthoc-verify
+python -m scripts.evaluation posthoc-generate --model model_c
+python -m scripts.evaluation posthoc-score
+python -m scripts.evaluation posthoc-analyze-errors
+```
+
+This benchmark is intentionally marked
+`posthoc_previously_observed_vilexnorm_test` and `promotion_eligible=false`.
+It never modifies the Phase 5 `best_model.json`, freeze manifest, metrics, or
+error analysis. See `specs/009-posthoc-abc-benchmark/` for its contract.
+
 Training mixture and Model C report reconstruction tests require the ignored
 local artifacts. Score/error replay must write to a temporary directory rather
 than overwrite `outputs/evaluation`.

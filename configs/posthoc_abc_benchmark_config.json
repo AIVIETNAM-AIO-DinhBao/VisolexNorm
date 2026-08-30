@@ -1,0 +1,12 @@
+{
+  "phase": 9,
+  "benchmark_type": "posthoc_abc_vilexnorm_test",
+  "test_previously_observed": true,
+  "promotion_eligible": false,
+  "expected_test_count": 1045,
+  "generation_config_path": "configs/evaluation_generation_config.json",
+  "metric_code_path": "scripts/evaluation_metrics.py",
+  "benchmark_code_path": "visolexnorm/evaluation/benchmark.py",
+  "bootstrap_seed": 2026,
+  "bootstrap_samples": 2000
+}

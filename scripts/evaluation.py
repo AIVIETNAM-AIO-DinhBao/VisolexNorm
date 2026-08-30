@@ -6,6 +6,7 @@ import argparse
 import json
 from pathlib import Path
 
+from visolexnorm.evaluation import benchmark
 from visolexnorm.evaluation.errors import write_error_analysis
 from visolexnorm.evaluation.freeze import build_manifest, verify_manifest
 from visolexnorm.evaluation.predictions import generate_predictions
@@ -36,6 +37,31 @@ def run_score(args: argparse.Namespace) -> None:
     print(json.dumps({"selected_model": result["best_model"]["selected_model"], "metrics": result["metrics"]["models"]}, ensure_ascii=False, indent=2))
 
 
+def run_posthoc_freeze(args: argparse.Namespace) -> None:
+    if args.output.exists():
+        raise FileExistsError(f"Post-hoc manifest already exists: {args.output}; use posthoc-verify, never overwrite it")
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(json.dumps(benchmark.build_manifest(args), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps({"frozen": True, "manifest": str(args.output), "promotion_eligible": False}))
+
+
+def run_posthoc_verify(args: argparse.Namespace) -> None:
+    benchmark.verify_manifest(json.loads(args.manifest.read_text(encoding="utf-8")), args)
+    print(json.dumps({"verified": True, "manifest": str(args.manifest), "promotion_eligible": False}))
+
+
+def run_posthoc_score(args: argparse.Namespace) -> None:
+    from scripts.evaluation_metrics import OFFICIAL_REFERENCE, evaluate_records
+
+    result = benchmark.score_benchmark(args, evaluate_records=evaluate_records, metric_reference=OFFICIAL_REFERENCE)
+    print(json.dumps({"descriptive_leader": result["report"]["descriptive_leader"], "promotion_eligible": False, "metrics": result["metrics"]["models"]}, ensure_ascii=False, indent=2))
+
+
+def run_posthoc_errors(args: argparse.Namespace) -> None:
+    count = benchmark.write_pairwise_error_analysis(args)
+    print(json.dumps({"records": count, "output": str(args.output), "promotion_eligible": False}))
+
+
 def add_frozen_inputs(parser: argparse.ArgumentParser, *, required: bool = False) -> None:
     parser.add_argument("--model-a-checkpoint", type=Path, required=required, default=None if required else Path("checkpoints/model_a"))
     parser.add_argument("--model-b-checkpoint", type=Path, required=required, default=None if required else Path("checkpoints/model_b"))
@@ -54,6 +80,25 @@ def add_freeze_inputs(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--metric-code", type=Path, default=Path("scripts/evaluation_metrics.py"))
     parser.add_argument("--phase3-manifest", type=Path, default=Path("outputs/phase3_manifest.json"))
     parser.add_argument("--phase4-exit-report", type=Path, default=Path("outputs/model_b/phase4_exit_report.json"))
+
+
+def add_posthoc_inputs(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--config", type=Path, default=Path("configs/posthoc_abc_benchmark_config.json"))
+    parser.add_argument("--phase5-manifest", type=Path, default=Path("outputs/evaluation/freeze_manifest.json"))
+    parser.add_argument("--phase5-metrics", type=Path, default=Path("outputs/evaluation/test_metrics.json"))
+    parser.add_argument("--model-a-prediction", type=Path, default=Path("outputs/evaluation/model_a_test_predictions.jsonl"))
+    parser.add_argument("--model-b-prediction", type=Path, default=Path("outputs/evaluation/model_b_test_predictions.jsonl"))
+    parser.add_argument("--model-a-checkpoint", type=Path, default=Path("checkpoints/model_a"))
+    parser.add_argument("--model-b-checkpoint", type=Path, default=Path("checkpoints/model_b"))
+    parser.add_argument("--model-c-checkpoint", type=Path, default=Path("checkpoints/model_c"))
+    parser.add_argument("--model-c-artifact-manifest", type=Path, default=Path("outputs/model_c/artifact_manifest.json"))
+    parser.add_argument("--model-c-exit-report", type=Path, default=Path("outputs/model_c/phase8_exit_report.json"))
+    parser.add_argument("--test", type=Path, default=Path("data/processed/vilexnorm_test.jsonl"))
+    parser.add_argument("--generation-config", type=Path, default=Path("configs/evaluation_generation_config.json"))
+    parser.add_argument("--metric-code", type=Path, default=Path("scripts/evaluation_metrics.py"))
+    parser.add_argument("--phase3-manifest", type=Path, default=Path("outputs/phase3_manifest.json"))
+    parser.add_argument("--phase4-exit-report", type=Path, default=Path("outputs/model_b/phase4_exit_report.json"))
+    parser.add_argument("--schema", type=Path, default=Path("specs/009-posthoc-abc-benchmark/contracts/prediction.schema.json"))
 
 
 def main() -> None:
@@ -92,6 +137,33 @@ def main() -> None:
     errors.add_argument("--weak-label-evidence", type=Path)
     errors.add_argument("--audit-limit", type=int, default=100)
     errors.set_defaults(handler=lambda args: print(json.dumps(write_error_analysis(args))))
+    posthoc_freeze = commands.add_parser("posthoc-freeze", help="Freeze non-promotional A/B/C post-hoc benchmark inputs")
+    posthoc_freeze.add_argument("--output", type=Path, default=Path("outputs/evaluation_abc_posthoc/benchmark_manifest.json"))
+    add_posthoc_inputs(posthoc_freeze)
+    posthoc_freeze.set_defaults(handler=run_posthoc_freeze)
+    posthoc_verify = commands.add_parser("posthoc-verify", help="Verify frozen post-hoc benchmark inputs")
+    posthoc_verify.add_argument("--manifest", type=Path, default=Path("outputs/evaluation_abc_posthoc/benchmark_manifest.json"))
+    add_posthoc_inputs(posthoc_verify)
+    posthoc_verify.set_defaults(handler=run_posthoc_verify)
+    posthoc_generate = commands.add_parser("posthoc-generate", help="Generate frozen Model C post-hoc predictions on GPU")
+    posthoc_generate.add_argument("--manifest", type=Path, default=Path("outputs/evaluation_abc_posthoc/benchmark_manifest.json"))
+    posthoc_generate.add_argument("--model", choices=("model_c",), required=True)
+    posthoc_generate.add_argument("--checkpoint", type=Path, default=Path("checkpoints/model_c"))
+    posthoc_generate.add_argument("--output", type=Path, default=Path("outputs/evaluation_abc_posthoc/model_c_test_predictions.jsonl"))
+    add_posthoc_inputs(posthoc_generate)
+    posthoc_generate.set_defaults(handler=benchmark.generate_model_c_predictions)
+    posthoc_score = commands.add_parser("posthoc-score", help="Score frozen A/B predictions with one Model C post-hoc prediction")
+    posthoc_score.add_argument("--manifest", type=Path, default=Path("outputs/evaluation_abc_posthoc/benchmark_manifest.json"))
+    posthoc_score.add_argument("--model-c-prediction", type=Path, default=Path("outputs/evaluation_abc_posthoc/model_c_test_predictions.jsonl"))
+    posthoc_score.add_argument("--output-dir", type=Path, default=Path("outputs/evaluation_abc_posthoc"))
+    add_posthoc_inputs(posthoc_score)
+    posthoc_score.set_defaults(handler=run_posthoc_score)
+    posthoc_errors = commands.add_parser("posthoc-analyze-errors", help="Write post-hoc A/B/C pairwise error analysis")
+    posthoc_errors.add_argument("--model-a-prediction", type=Path, default=Path("outputs/evaluation/model_a_test_predictions.jsonl"))
+    posthoc_errors.add_argument("--model-b-prediction", type=Path, default=Path("outputs/evaluation/model_b_test_predictions.jsonl"))
+    posthoc_errors.add_argument("--model-c-prediction", type=Path, default=Path("outputs/evaluation_abc_posthoc/model_c_test_predictions.jsonl"))
+    posthoc_errors.add_argument("--output", type=Path, default=Path("outputs/evaluation_abc_posthoc/pairwise_error_analysis.jsonl"))
+    posthoc_errors.set_defaults(handler=run_posthoc_errors)
     args = parser.parse_args()
     args.handler(args)
 

@@ -212,6 +212,21 @@ python -m scripts.training finalize --model model_c
 Model C must not read ViLexNorm Test or `outputs/evaluation`, and it does not
 replace Model B as the application checkpoint.
 
+## Phase 9: descriptive A/B/C benchmark
+
+The current Model C checkpoint can be compared with the frozen Model A/B raw
+predictions on the previously observed ViLexNorm Test. This is a **post-hoc**
+descriptive benchmark only; it cannot replace Model B or change Phase 5.
+
+```bash
+python -m scripts.evaluation posthoc-verify
+python -m scripts.evaluation posthoc-score
+```
+
+Generate the one required Model C prediction file with
+`notebooks/evaluate_model_c_posthoc_kaggle.ipynb`, then run the scoring command.
+See `specs/009-posthoc-abc-benchmark/quickstart.md` for the complete workflow.
+
 ## Maintenance
 
 See [`docs/maintenance.md`](docs/maintenance.md) for the architecture map,

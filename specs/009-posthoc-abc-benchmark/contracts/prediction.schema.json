@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PostHocAbcPredictionRecord",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "input_text",
+    "target_text",
+    "prediction_text",
+    "model",
+    "checkpoint_checksum",
+    "generation_config_hash"
+  ],
+  "properties": {
+    "id": {"type": "string", "minLength": 1},
+    "input_text": {"type": "string"},
+    "target_text": {"type": "string"},
+    "prediction_text": {"type": "string", "minLength": 1},
+    "model": {"enum": ["model_a", "model_b", "model_c"]},
+    "checkpoint_checksum": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "generation_config_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+  }
+}
