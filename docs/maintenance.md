@@ -147,3 +147,12 @@ in `docs/artifact-retention.json`, and only then remove the workspace copy.
 
 The machine-readable status and cleanup result are recorded in
 `docs/artifact-retention.json`.
+
+### Local cleanup status
+
+The post-refactor cleanup removed local caches, Phase 8 temporary process
+files, superseded pilot revisions, the obsolete recovery snapshot, and the
+verified duplicate extracted Model C mixture manifest. Model A/B/C checkpoints
+and all provenance ZIP files remain in the workspace because no external
+destination was configured. Their inventory status is `externalize-pending`;
+they must not be removed until a copied-file SHA-256 verification is recorded.
