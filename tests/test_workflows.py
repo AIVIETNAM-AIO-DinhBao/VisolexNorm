@@ -94,6 +94,8 @@ def test_active_notebooks_are_valid_json_and_use_domain_clis() -> None:
         json.loads(path.read_text(encoding="utf-8"))
     assert "python -m scripts.training" in commands
     assert "'python', '-m', 'scripts.evaluation'" in commands
+    assert "SOURCE_REF = 'main'" in commands
+    assert "SOURCE_REF = 'refactor/" not in commands
     assert "REPLACE_WITH_FIXED_PHASE5_COMMIT" not in commands
 
 
