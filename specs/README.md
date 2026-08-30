@@ -5,6 +5,9 @@ dự án**, có phạm vi, đầu vào, đầu ra và cổng nghiệm thu độc
 
 ## Trạng thái
 
+Số Phase là mã định danh lịch sử gắn với artifact, không phải hàng đợi thực hiện tuần tự. Xem
+[`docs/roadmap.md`](../docs/roadmap.md) để biết thứ tự thực hiện và phần việc còn lại hiện hành.
+
 | Mã | Giai đoạn | Trạng thái | Môi trường chính | Phụ thuộc |
 |---|---|---|---|---|
 | 001 | Chuẩn hóa dữ liệu | Hoàn thành | Local | Không |
@@ -12,9 +15,11 @@ dự án**, có phạm vi, đầu vào, đầu ra và cổng nghiệm thu độc
 | 003 | Model A candidates và LLM review | Hoàn thành | Kaggle GPU + Local | 001, 002 |
 | 004 | Huấn luyện Model B | Hoàn thành | Kaggle GPU | 003 |
 | 005 | Đánh giá thực nghiệm A/B | Hoàn thành; Model B được chọn | Kaggle GPU + Local | 002, 004 |
-| 006 | Suy luận local và web app | Sẵn sàng triển khai với Model B | Local | 005 |
-| 008 | Mở rộng LLM review và huấn luyện Model C | Hoàn thành Dev-only; chờ boundary check Phase 6 | Local + Kaggle GPU | 002, 003, 005 |
-| 007 | Tái lập và đóng gói | Chờ 006 và 008 | Local | 001–006, 008 |
+| 006 | Hoàn thiện suy luận local và Gradio | Đang thực hiện; core inference đã có, còn Gradio và real CPU smoke | Local | 005, 010 |
+| 007 | Tái lập, đóng gói và release | Chưa thực hiện; làm sau khi 006 hoàn tất | Local | 001–006, 008–010 |
+| 008 | Mở rộng LLM review và huấn luyện Model C | Hoàn thành; boundary task cũ được 010 thay thế | Local + Kaggle GPU | 002, 003, 005 |
+| 009 | Benchmark A/B/C hậu kiểm | Hoàn thành; Model C là descriptive leader | Kaggle GPU + Local | 005, 008 |
+| 010 | Chọn checkpoint cho ứng dụng | Hoàn thành; Model C mặc định, Model B rollback | Local | 005, 009 |
 
 ## Luồng artifact
 
@@ -24,9 +29,10 @@ dự án**, có phạm vi, đầu vào, đầu ra và cổng nghiệm thu độc
   → 003 candidates → Gemini review → weak labels
   → 004 Model B
   → 005 kết quả A/B, chọn Model B và đóng băng Test
-  ├→ 006 Model B và Gradio local
-  └→ 008 review phần candidate còn lại → Model C (Dev-only)
-       └→ 007 gói bàn giao tái lập được
+  ├→ 008 review phần candidate còn lại → Model C
+  │    → 009 benchmark hậu kiểm → 010 chọn Model C cho app, Model B rollback
+  └→ 006 hoàn thiện local inference và Gradio
+       → 007 gói bàn giao tái lập được
 ```
 
 ## Quy ước tài liệu
@@ -53,6 +59,6 @@ truyền `SPECIFY_FEATURE_DIRECTORY`, rồi chạy tuần tự:
 → /speckit-implement
 ```
 
-Các tài liệu thiết kế hiện có là quyết định đã chốt. Nếu thay đổi quyết định, phải cập nhật
-`research.md`, contract liên quan và chạy lại bước phân tích nhất quán trước triển khai. Test
-đã mở ở Phase 5 không được dùng để chọn Model C hoặc thay checkpoint cho Phase 6.
+Các tài liệu thiết kế giữ lại quyết định tại thời điểm mỗi Phase được thực hiện. Quyết định app
+hiện hành nằm trong Phase 10: Model C là mặc định và Model B là rollback. Điều này không sửa
+historical selection của Phase 5 và không biến benchmark hậu kiểm Phase 9 thành holdout độc lập.

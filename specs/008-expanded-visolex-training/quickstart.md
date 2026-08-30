@@ -29,4 +29,5 @@ không upload Test hoặc `outputs/evaluation/`. Có thể đóng toàn bộ câ
 Xác nhận output ở `/kaggle/working`, tải `checkpoints/model_c/` và `outputs/model_c/` về local.
 
 5. Xác nhận `phase8_exit_report.json` ghi `test_inputs_loaded=false`. Không chạy evaluator Test
-Phase 5, không sửa `outputs/evaluation/best_model.json`, và giữ app Phase 6 trên Model B.
+Phase 5, không sửa `outputs/evaluation/best_model.json` và không tự promotion Model C trong
+Phase 8. Quyết định app hiện hành được quản lý riêng bởi Phase 10.

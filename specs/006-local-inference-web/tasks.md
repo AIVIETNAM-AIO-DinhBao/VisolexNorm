@@ -1,11 +1,11 @@
 # Nhiệm vụ: Local inference và Gradio
 
-- [ ] T001 [P] Tạo dependency local và `configs/inference_config.json`
-- [ ] T002 [US1] Cài đặt checksum và lazy model loader trong `app/model_loader.py`
-- [ ] T003 [US1] Cài đặt validation, normalize và CLI trong `app/inference.py`
-- [ ] T004 [P] [US1] Viết unit tests tại `tests/unit/test_inference_validation.py`
-- [ ] T005 [US2] Cài đặt Gradio local trong `app/web.py`
-- [ ] T006 [P] [US2] Viết UI callback tests tại `tests/unit/test_web_callbacks.py`
-- [ ] T007 [US3] Viết integration test cache/offline tại `tests/integration/test_local_inference.py`
-- [ ] T008 [US3] Chạy smoke test best checkpoint và xuất `outputs/inference_smoke_test.json`
-- [ ] T009 [US3] Chạy `specs/006-local-inference-web/quickstart.md` trên laptop và ghi kết quả offline vào `outputs/inference_smoke_test.json`
+- [x] T001 [P] Tạo dependency/config local. **Kết quả Phase 10:** `requirements-inference.txt` và `configs/app_inference_config.json`.
+- [x] T002 [US1] Cài đặt inventory verification và lazy model loader. **Kết quả Phase 10:** `visolexnorm/app/selection.py`, `loader.py` với Model C default/Model B rollback.
+- [x] T003 [US1] Cài đặt validation, `normalize` và CLI. **Kết quả Phase 10:** `visolexnorm/app/inference.py`.
+- [x] T004 [P] [US1] Viết unit tests resolver/rollback và promotion artifact tại `tests/app/`.
+- [ ] T005 [US2] Cài đặt Gradio local trong `visolexnorm/app/web.py`.
+- [ ] T006 [P] [US2] Viết UI callback tests tại `tests/app/test_web_callbacks.py`.
+- [ ] T007 [US3] Viết integration test model cache và offline inference tại `tests/app/test_local_inference.py`.
+- [ ] T008 [US3] Cài dependency và chạy CPU smoke test thật: nạp tokenizer/model, sinh kết quả không rỗng và kiểm tra rollback; cập nhật `outputs/app/model_c_promotion_smoke_test.json`.
+- [ ] T009 [US3] Chạy `specs/006-local-inference-web/quickstart.md` trên laptop và ghi nghiệm thu offline end-to-end.

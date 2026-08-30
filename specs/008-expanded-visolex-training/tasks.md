@@ -26,11 +26,11 @@
 ## Chặng 4 — Dev-only nghiệm thu và ranh giới app
 
 - [x] T015 [US5] Tạo `outputs/model_c/phase8_exit_report.json`. **Kết quả:** report Dev-only ghi best Dev loss `0,193742`, provenance, coverage, mọi checksum pass, `test_inputs_loaded=false` và không chứa Test metric/prediction.
-- [ ] T016 [US5] Xác minh Phase 6 vẫn đọc `outputs/evaluation/best_model.json` Model B. **Hoàn thành khi:** smoke test app không đọc artifact Model C và kết quả ghi trong `outputs/inference_smoke_test.json`.
+- [x] T016 [US5] Historical app boundary. **Superseded by Phase 10:** Phase 8 không tự promotion Model C; current app selection sau hậu kiểm nay nằm tại `outputs/app/model_selection.json`, chọn Model C và giữ Model B rollback.
 
 ## Phụ thuộc
 
 ```text
-T001–T004 → T005–T009 → T010–T014 → T015
-Phase 6 chạy song song T001–T015; T016 chỉ chạy khi Phase 6 hoàn thành.
+T001–T004 → T005–T009 → T010–T014 → T015 → T016 (đóng bằng quyết định Phase 10)
+Phase 6 chạy song song T001–T015; app promotion chỉ xảy ra sau Phase 9/10.
 ```

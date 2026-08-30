@@ -1,6 +1,6 @@
 # Đặc tả giai đoạn 5: Đánh giá thực nghiệm Model A và Model B
 
-**Trạng thái**: Chờ Model B
+**Trạng thái**: Hoàn thành và đóng băng — Model B được chọn trong historical A/B comparison
 **Phụ thuộc**: checkpoint Model A/Model B đã nghiệm thu trên Dev, artifact provenance Phase 3/4 và freeze manifest Phase 5
 
 ## Mục tiêu

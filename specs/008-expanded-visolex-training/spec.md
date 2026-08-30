@@ -1,6 +1,6 @@
 # Đặc tả giai đoạn 8: Mở rộng LLM review và huấn luyện Model C
 
-**Trạng thái**: Hoàn thành workstream Model C Dev-only — T016 chờ nghiệm thu Phase 6
+**Trạng thái**: Hoàn thành — T016 historical boundary được Phase 10 thay thế
 **Lịch thực hiện**: Workstream nghiên cứu chạy song song với Phase 6
 **Phụ thuộc**: Candidate/cache Phase 3, checkpoint Model A và kết quả Phase 5
 **Môi trường**: Gemini review trên local; huấn luyện BARTpho trên Kaggle GPU
@@ -13,9 +13,9 @@ Phase 5 chọn Model B với F1 `0,742215`, cao hơn Model A (`0,718184`) trên 
 còn lại**, sau đó hợp nhất KEEP/EDIT hợp lệ với 18.970 weak label cũ và huấn luyện **Model C**.
 
 Đây là thí nghiệm hậu kiểm sau khi Test đã được mở. Test Phase 5 không được load, dùng chọn
-checkpoint hoặc dùng chỉnh prompt/filter/siêu tham số. Phase 6 tiếp tục dùng Model B được ghi
-trong `outputs/evaluation/best_model.json`; Model C chỉ có thể được promotion sau một cổng đánh
-giá độc lập đã freeze trước khi mở dữ liệu đánh giá.
+checkpoint hoặc dùng chỉnh prompt/filter/siêu tham số. Trong suốt Phase 8, app boundary vẫn là
+Model B. Phase 9 sau đó đánh giá A/B/C hậu kiểm và Phase 10 tạo app selection riêng chọn Model C
+với Model B rollback; historical Phase 5 selection không thay đổi.
 
 ## Kịch bản và nghiệm thu
 
@@ -81,9 +81,10 @@ inventory/notebook của Model C.
   hoặc Test metrics Phase 5.
 - **FR-010**: Export manifest review, stats/audit, weak-label pool, mixture manifest,
   config/runtime/checksum, Dev predictions/metrics, checkpoint và exit report trong namespace mới.
-- **FR-011**: Phase 6 vẫn dùng Model B trong `best_model.json`; Model C không tự động thay thế.
-- **FR-012**: Promotion Model C yêu cầu một đặc tả đánh giá mới với holdout độc lập chưa mở và
-  freeze contract trước inference; nếu chưa có holdout, Model C chỉ là checkpoint nghiên cứu Dev-only.
+- **FR-011**: Trong thời gian Phase 8 chạy, Phase 6 vẫn dùng Model B trong `best_model.json` và
+  Model C không được tự promotion. Quyết định app sau Phase 8 thuộc Phase 10.
+- **FR-012**: Phase 10 promotion dựa trên benchmark hậu kiểm Phase 9 phải công bố caveat. Một
+  holdout độc lập chưa mở vẫn cần thiết cho kết luận khoa học cuối cùng mạnh hơn.
 
 ## Tiêu chí thành công
 
@@ -92,9 +93,9 @@ inventory/notebook của Model C.
 - Pool mở rộng có checksum, không trùng, không có REJECT và không overlap Dev/Test.
 - Model C cover toàn bộ pseudo pool, checkpoint load lại được và có Dev artifacts đầy đủ.
 - Không code path/artifact input Model C nào đọc Test Phase 5.
-- Phase 6 chạy độc lập bằng Model B trong suốt workstream này.
+- Phase 6 giữ Model B trong suốt workstream Phase 8; Phase 10 mới thay đổi current app selection.
 
 ## Ngoài phạm vi
 
-Chỉnh prompt/policy/filter bằng Test, review lại 20.000 ID cũ, ghi đè Model B, tuyên bố Model C
-tốt hơn Model B trên Test cũ hoặc tự động đổi checkpoint Phase 6 sang Model C.
+Chỉnh prompt/policy/filter bằng Test, review lại 20.000 ID cũ, ghi đè Model B hoặc tự promotion
+Model C trong Phase 8. Benchmark/promotion hậu kiểm phải nằm trong Phase 9/10 và công bố caveat.

@@ -23,17 +23,18 @@ lịch sử Phase 3–5 và không nhân bản pipeline khi extension bằng con
 ## Luồng song song
 
 ```text
-Phase 5 ──→ Phase 6: app local dùng Model B ───────────────┐
+Phase 5 ──→ Phase 6: app boundary ban đầu dùng Model B ───┐
        └──→ Phase 8A: review 48.411 ID còn lại (local)     │
                        → pool weak label mở rộng           │
                        → Phase 8B: train Model C (Kaggle)  │
                        → Dev-only report                   │
-                                                          └→ Phase 7 đóng gói
+                        → Phase 9 hậu kiểm → Phase 10 app   │
+                                                           └→ Phase 6 hoàn tất → Phase 7 đóng gói
 ```
 
-Phase 6 không chờ Phase 8 và không import Gemini/training dependency. Phase 7 chỉ bắt đầu sau
-khi Phase 6 và 8 có exit report; checkpoint demo mặc định vẫn là Model B nếu Model C chưa qua
-cổng đánh giá độc lập.
+Phase 6 không chờ Phase 8 và không import Gemini/training dependency. Boundary Model B ở đây là
+quyết định trong thời gian Phase 8 chạy. Phase 9/10 về sau chọn Model C cho app với Model B
+rollback. Phase 7 bắt đầu sau khi Phase 6 hoàn tất real offline smoke và Gradio acceptance.
 
 ## Cấu trúc tối thiểu
 
@@ -84,8 +85,9 @@ khác biệt domain rõ ràng; không copy-paste pipeline Phase 3.
 - Model C là thí nghiệm exploratory hậu kiểm; không sửa hoặc diễn giải lại kết luận A/B frozen
   của Phase 5 thành kết quả Model C.
 - Không load ViLexNorm Test hoặc file `outputs/evaluation/` trong run Model C.
-- Muốn thay checkpoint app cần phase đánh giá mới: freeze holdout độc lập chưa mở, sau đó mới
-  inference và quyết định promotion. Không có holdout thì Model B tiếp tục dùng cho Phase 6.
+- Phase 8 không được tự thay checkpoint app. Phase 9/10 chịu trách nhiệm benchmark hậu kiểm,
+  công bố caveat và quyết định Model C mặc định/Model B rollback. Holdout độc lập vẫn là yêu cầu
+  nếu muốn kết luận khoa học cuối cùng mạnh hơn.
 
 ## Artifact bắt buộc
 

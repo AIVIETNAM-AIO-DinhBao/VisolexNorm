@@ -1,6 +1,6 @@
 # Đặc tả giai đoạn 7: Tái lập và đóng gói
 
-**Trạng thái**: Chờ Phase 6 và Phase 8 hoàn thành
+**Trạng thái**: Chưa thực hiện — bước tiếp theo sau khi Phase 6 hoàn tất
 **Môi trường**: Local; notebook GPU chỉ được xác minh từ artifact đã chạy
 
 ## Mục tiêu
@@ -30,8 +30,9 @@ Demo web bằng checkpoint local, trình bày A/B metrics và pipeline weak-labe
 - **FR-006**: `.env.example` chỉ chứa placeholder và mô tả nhiều key phân tách bằng dấu phẩy.
 - **FR-007**: Checkpoint lớn không commit Git; README chỉ rõ nơi tải và checksum.
 - **FR-008**: Kịch bản demo cố định gồm input, output, bảng A/B và giải thích KEEP/EDIT/REJECT.
-- **FR-009**: Release phân biệt rõ Model B là checkpoint dùng app đã chọn ở Phase 5 với Model C
-  là checkpoint Dev-only hậu kiểm, trừ khi có một cổng đánh giá độc lập đã được freeze.
+- **FR-009**: Release phân biệt rõ Model C là current app checkpoint theo Phase 10, Model B là
+  rollback và historical winner Phase 5; Phase 9 là hậu kiểm trên Test đã quan sát, không phải
+  holdout độc lập.
 
 ## Thành công
 

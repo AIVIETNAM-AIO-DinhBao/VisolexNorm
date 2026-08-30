@@ -1,35 +1,39 @@
-# Kế hoạch triển khai: Local inference và Gradio
+# Kế hoạch triển khai: Suy luận local và Gradio
 
 ## Cấu trúc
 
 ```text
-app/
-├── __init__.py
-├── inference.py
-├── model_loader.py
-└── web.py
-configs/inference_config.json
-tests/unit/test_inference_validation.py
-tests/integration/test_local_inference.py
+visolexnorm/app/
+├── __init__.py          # đã có
+├── inference.py         # đã có
+├── loader.py            # đã có
+├── selection.py         # đã có
+└── web.py               # còn triển khai
+configs/app_inference_config.json
+outputs/app/model_selection.json
+tests/app/
 ```
 
 ## Triển khai
 
-1. `model_loader.py` đọc best model/config, xác minh checksum, lazy-load tokenizer/model.
-2. `inference.py` validate bằng tokenizer trước generation và cung cấp CLI.
-3. `web.py` tạo Gradio Blocks, bind local, map exception sang thông báo tiếng Việt.
-4. Test dùng model stub cho validation/cache; smoke test thật dùng best checkpoint.
-5. Dependency inference local tách khỏi dependency training và Gemini.
+1. `selection.py` đọc app selection, xác minh inventory và fallback Model C → Model B — đã có.
+2. `loader.py` nạp tokenizer/model theo nhu cầu và cache theo checkpoint — đã có.
+3. `inference.py` kiểm tra input trước khi sinh kết quả và cung cấp CLI — đã có.
+4. `web.py` tạo Gradio Blocks, bind local, chuyển exception sang thông báo tiếng Việt — còn làm.
+5. Test dùng model stub cho validation/cache; smoke thật dùng Model C và kiểm tra rollback — còn làm.
+6. Dependency suy luận local tách khỏi dependency training và Gemini.
 
 ## Ranh giới với Phase 8
 
-Phase 6 dùng duy nhất Model B được ghi trong `outputs/evaluation/best_model.json` của Phase 5.
-Workstream Phase 8 có thể review/huấn luyện Model C song song, nhưng không được thay đổi file
-chọn model, checkpoint Phase 6, dependency inference hoặc tiêu chí nghiệm thu app. Model C chỉ
-có thể được cân nhắc cho một app/release sau một cổng đánh giá độc lập đã freeze trước inference.
+Trong thời gian Phase 8 chạy, Phase 6 dùng Model B và không cho Model C tự promotion. Sau đó
+Phase 9 thực hiện benchmark hậu kiểm và Phase 10 tạo `outputs/app/model_selection.json`. Runtime
+hiện dùng Model C mặc định, Model B rollback; `outputs/evaluation/best_model.json` vẫn là quyết
+định A/B lịch sử của Phase 5.
 
 ## Artifact
 
-- `configs/inference_config.json`
-- `outputs/inference_smoke_test.json`
-- lệnh chạy: `python -m app.web`
+- `configs/app_inference_config.json`
+- `outputs/app/model_selection.json`
+- `outputs/app/model_c_promotion_smoke_test.json`
+- lệnh CLI: `python -m visolexnorm.app.inference --text "..."`
+- lệnh web dự kiến: `python -m visolexnorm.app.web`

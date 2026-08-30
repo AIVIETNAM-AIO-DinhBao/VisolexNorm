@@ -506,15 +506,19 @@ Tập trung:
 # Phase 6 — Local inference và Web App
 **Ngày 11–12**
 
+**Trạng thái hiện hành**: Đang thực hiện. Phase 10 đã cung cấp app selection, inventory
+verification, lazy loader, CLI và rollback tests; còn real CPU smoke, Gradio và offline acceptance.
+
 ## Kết quả phải đạt
 
 Best checkpoint chạy hoàn toàn local và có web app demo.
 
 ## Các bước
 
-### 6.1. Chọn best checkpoint
-Khóa Model B đã được chọn trong `outputs/evaluation/best_model.json` Phase 5. Phase 6 không
-chờ checkpoint nghiên cứu mới và không tự động thay đổi checkpoint sau khi app đã nghiệm thu.
+### 6.1. Chọn application checkpoint
+Historical Phase 5 chọn Model B giữa A/B. Sau benchmark hậu kiểm Phase 9, Phase 10 tạo
+`outputs/app/model_selection.json`: Model C là current app checkpoint và Model B là rollback.
+Phase 6 dùng artifact này và verify inventory trước khi load.
 
 ### 6.2. Local inference module
 Implement:
@@ -565,10 +569,10 @@ huấn luyện Model C từ Model A. Không review lại ID cũ và không ghi �
 
 ## Ràng buộc hậu kiểm
 
-ViLexNorm Test đã được mở ở Phase 5. Vì vậy Model C chỉ được chọn bằng Dev; không load Test cũ,
-không dùng kết quả Test để đổi prompt/filter/siêu tham số và không tuyên bố Model C tốt hơn Model
-B trên Test cũ. Phase 6 tiếp tục dùng Model B. Promotion Model C cần một holdout độc lập, được
-freeze trước khi mở.
+ViLexNorm Test đã được mở ở Phase 5. Vì vậy Model C chỉ được chọn bằng Dev trong Phase 8; không
+load Test cũ hoặc dùng kết quả Test để đổi prompt/filter/siêu tham số. Phase 9 sau đó thực hiện
+benchmark hậu kiểm có caveat và Phase 10 chọn Model C cho app với Model B rollback. Một holdout
+độc lập vẫn cần thiết cho kết luận khoa học cuối cùng mạnh hơn.
 
 ## Các bước
 
@@ -585,12 +589,16 @@ freeze trước khi mở.
 - 68.411 candidate có trạng thái review cuối hoặc provider exclusion được phê duyệt.
 - Pool mở rộng không trùng, không chứa REJECT và không overlap Dev/Test.
 - Model C có full pseudo coverage, checkpoint load lại được và có Dev artifact.
-- Không có ảnh hưởng lên checkpoint/app Phase 6 hoặc artifact Test đã freeze ở Phase 5.
+- Phase 8 không tự thay đổi checkpoint app hoặc artifact Test đã freeze ở Phase 5; app chỉ đổi
+  sau quyết định riêng ở Phase 10.
 
 ---
 
 # Phase 7 — Reproducibility và đóng gói
 **Ngày 12–14**
+
+**Trạng thái hiện hành**: Chưa thực hiện; là bước tiếp theo sau khi Phase 6 hoàn tất real
+offline smoke và Gradio acceptance.
 
 ## Kết quả phải đạt
 
@@ -613,6 +621,8 @@ weak-label generation
 Model B
 Model C và review mở rộng (nếu Phase 8 hoàn thành)
 evaluation
+Phase 9 post-hoc benchmark
+Phase 10 app selection và rollback
 ```
 
 ### 7.3. README execution flow
@@ -626,9 +636,11 @@ prepare data
 → train B on Kaggle
 → evaluate
 → review ViSoLex còn lại
-→ train Model C trên Kaggle (Dev-only)
-→ download best checkpoint
-→ run local app
+→ train Model C trên Kaggle (Phase 8 Dev-only)
+→ benchmark hậu kiểm A/B/C (Phase 9)
+→ chọn Model C cho app, Model B rollback (Phase 10)
+→ hoàn tất local app/Gradio (Phase 6)
+→ đóng gói và release (Phase 7)
 ```
 
 ### 7.4. Submission artifacts
@@ -659,15 +671,15 @@ Demo tối thiểu:
 
 ---
 
-# Lịch sau Phase 5
+# Roadmap hiện hành sau Phase 5
 
 | Ngày | Mục tiêu chính |
 |---|---|
-| P5 hoàn thành | Giữ frozen A/B Test evaluation; Model B là checkpoint app |
-| Song song 1 | Phase 6: local inference và Gradio với Model B; Phase 8A: review 48.411 candidate còn lại |
-| Song song 2 | Phase 6: smoke/offline acceptance; Phase 8A: reconcile, build/audit weak-label pool mở rộng |
-| Sau 8A | Phase 8B: Kaggle train Model C và đánh giá Dev-only |
-| Sau 6 + 8 | Phase 7: reproducibility, packaging và phân biệt rõ Model B/Model C |
+| Đã hoàn thành | Phase 5 giữ frozen A/B Test evaluation; historical winner là Model B |
+| Đã hoàn thành | Phase 8 review 48.411 candidate còn lại, build pool mở rộng và train Model C Dev-only |
+| Đã hoàn thành | Phase 9 benchmark hậu kiểm A/B/C; Phase 10 chọn Model C cho app, Model B rollback |
+| Đang thực hiện | Phase 6 hoàn tất real CPU smoke, Gradio và offline acceptance |
+| Tiếp theo | Phase 7 reproducibility, packaging và release verification |
 
 ---
 
@@ -689,12 +701,12 @@ Demo tối thiểu:
 **Research milestone:** Có kết quả A vs B và error analysis.
 
 ## Sau Phase 6
-**Application milestone:** Model B chạy local/web, độc lập với Phase 8.
+**Application milestone:** Model C chạy local/web với Model B rollback, không gọi LLM API.
 
 ## Sau Phase 8
 **Expanded-data milestone:** 68.411 candidate được reconcile; Model C có Dev-only report và
 không làm thay đổi kết quả Test Phase 5.
 
 ## Đóng gói
-Chỉ bắt đầu Phase 7 sau khi Phase 6 và Phase 8 có exit report; checkpoint dùng demo mặc định vẫn
-là Model B nếu chưa có cổng đánh giá độc lập cho Model C.
+Phase 8–10 đã hoàn thành. Chỉ bắt đầu Phase 7 sau khi Phase 6 có real offline smoke và Gradio
+acceptance; checkpoint demo mặc định là Model C và rollback là Model B.

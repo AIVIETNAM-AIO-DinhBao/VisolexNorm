@@ -185,6 +185,25 @@ python -m scripts.training build-mixture --model model_b
 The active Kaggle workflow is `notebooks/train_model_b_kaggle.ipynb`. Model B
 uses all 18,970 accepted Phase 3 pseudo IDs across the frozen epoch rotation.
 
+## Current roadmap
+
+Phase numbers are historical provenance identifiers rather than a strictly
+serial execution queue. The completed Model C research branch ran in parallel
+with the still-open local-app workstream:
+
+```text
+001 → 002 → 003 → 004 → 005
+                         ├→ 008 → 009 → 010  completed
+                         └→ 006              in progress
+                               ↓
+                              007             next
+```
+
+Phase 6 already has the Phase 10 resolver, lazy loader, CLI and rollback tests.
+It still requires a real CPU model-load/generation smoke and Gradio acceptance.
+Phase 7 packaging/release follows Phase 6. See
+[`docs/roadmap.md`](docs/roadmap.md) for the authoritative current status.
+
 ## Phase 5: frozen Model A/B evaluation
 
 Create or verify the freeze manifest, then score already generated raw
@@ -201,8 +220,8 @@ not part of the immutable Phase 5 Test comparison.
 
 ## Phase 8: expanded Model C research
 
-Model C uses the expanded 64,813-record pseudo-label pool and remains a
-Dev-only exploratory checkpoint:
+Model C training used the expanded 64,813-record pseudo-label pool and was
+completed as a Dev-only exploratory run:
 
 ```bash
 python -m scripts.training build-mixture --model model_c
@@ -237,6 +256,9 @@ pip install -r requirements-inference.txt
 python -m visolexnorm.app.inference --smoke
 python -m visolexnorm.app.inference --text "toi muon dc sach"
 ```
+
+The real CPU load/generation smoke and Gradio UI remain Phase 6 work. The
+tracked promotion smoke artifact records this runtime limitation explicitly.
 
 ## Maintenance
 

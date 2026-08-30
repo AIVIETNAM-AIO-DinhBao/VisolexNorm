@@ -1,6 +1,6 @@
 # Đặc tả giai đoạn 4: Huấn luyện Model B
 
-**Trạng thái**: Sẵn sàng triển khai — Phase 3 đã đóng
+**Trạng thái**: Hoàn thành — checkpoint và exit report Model B đã nghiệm thu
 **Phụ thuộc**: `specs/003-weak-labeling-llm-review/`
 **Môi trường**: Kaggle Notebook có GPU
 

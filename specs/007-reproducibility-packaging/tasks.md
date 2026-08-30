@@ -1,8 +1,8 @@
 # Nhiệm vụ: Tái lập và đóng gói
 
-- [ ] T001 [US1] Viết lại `README.md` bằng tiếng Việt theo pipeline và số liệu thực tế, gồm Phase 8/Model C Dev-only
-- [ ] T002 [P] [US1] Viết `docs/reproducibility.md` với lệnh chạy Phase 1–8
-- [ ] T003 [P] [US1] Tạo `docs/artifact-catalog.md` mô tả input/output từng Phase, phân biệt Model B và Model C
+- [ ] T001 [US1] Viết lại `README.md` bằng tiếng Việt theo pipeline và trạng thái Phase 1–10.
+- [ ] T002 [P] [US1] Viết `docs/reproducibility.md` với lệnh chạy Phase 1–10 và execution graph thực tế.
+- [ ] T003 [P] [US1] Tạo `docs/artifact-catalog.md`, phân biệt Model C app, Model B rollback và historical Phase 5 selection.
 - [ ] T004 [US1] Tách và cố định `requirements.txt`, `requirements-kaggle.txt`, `requirements-dev.txt`
 - [ ] T005 [US2] Làm sạch toàn bộ notebook trong `notebooks/` và kiểm tra không có secret/path cá nhân
 - [ ] T006 [US2] Cài đặt manifest/checksum/secret scan trong `scripts/verify_release.py`
