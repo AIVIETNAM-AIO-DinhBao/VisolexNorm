@@ -9,7 +9,7 @@ ViSoLexNorm là hệ thống chuẩn hóa từ vựng tiếng Việt mạng xã 
 - **Kết quả khoa học lịch sử Phase 5:** Model B thắng Model A trên ViLexNorm Test đóng băng.
 - **Lưu ý Phase 9:** Model C dẫn đầu ở benchmark A/B/C hậu kiểm trên Test đã quan sát; đây không phải independent holdout và không thay đổi kết luận Phase 5.
 
-Phase 6 local app đã hoàn thành. Phase 7 tạo release candidate; tag `v1.0.0` chỉ được tạo sau khi Kaggle Dataset checkpoint version cố định được upload, tải lại và strict verification pass.
+Phase 6 local app và Phase 7 release đã hoàn thành. Checkpoint Kaggle Dataset version 1 đã được tải lại, checksum đã verify và strict release verification pass; release được đánh dấu bằng tag `v1.0.0`.
 
 ## Pipeline thực tế
 
@@ -142,4 +142,4 @@ Sau khi Kaggle Dataset có URL version cố định, chạy thêm:
 python scripts/verify_release.py --manifest release/manifest.json --strict-distribution
 ```
 
-Chỉ strict verification pass mới cho phép tạo tag `v1.0.0`. Kịch bản trình diễn offline nằm tại [`docs/demo-script.md`](docs/demo-script.md).
+Kịch bản trình diễn offline nằm tại [`docs/demo-script.md`](docs/demo-script.md).

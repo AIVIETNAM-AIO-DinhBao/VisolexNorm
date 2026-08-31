@@ -1,7 +1,9 @@
 {
   "schema_version": 1,
   "dataset_slug": "dinhbaobao/visolexnorm-app-checkpoints-v1",
-  "status": "pending_upload",
+  "status": "verified_download",
+  "dataset_version": 1,
+  "distribution_url": "https://www.kaggle.com/datasets/dinhbaobao/visolexnorm-app-checkpoints-v1/versions/1",
   "source_selection_path": "outputs/app/model_selection.json",
   "checkpoints": {
     "model_c": {

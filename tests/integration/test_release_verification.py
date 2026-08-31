@@ -132,13 +132,14 @@ def test_write_report_records_exit_code(tmp_path: Path) -> None:
     assert report["artifacts_passed"] == 2
 
 
-def test_release_candidate_manifest_matches_current_phase7_policy() -> None:
+def test_release_manifest_matches_current_phase7_policy() -> None:
     release = json.loads((ROOT / "release/manifest.json").read_text(encoding="utf-8"))
 
     assert verify_release.validate_manifest(release) == []
-    assert release["release_status"] == "candidate_pending_checkpoint_distribution"
+    assert release["release_status"] == "released"
     checkpoint_items = [item for item in release["artifacts"] if item["artifact_type"] == "checkpoint"]
     assert {item["path"] for item in checkpoint_items} == {"checkpoints/model_c", "checkpoints/model_b"}
-    assert all(item["distribution_url"] is None for item in checkpoint_items)
+    expected_url = "https://www.kaggle.com/datasets/dinhbaobao/visolexnorm-app-checkpoints-v1/versions/1"
+    assert {item["distribution_url"] for item in checkpoint_items} == {expected_url}
     assert verify_release.distribution_errors(release, strict_distribution=False) == []
-    assert verify_release.distribution_errors(release, strict_distribution=True)
+    assert verify_release.distribution_errors(release, strict_distribution=True) == []

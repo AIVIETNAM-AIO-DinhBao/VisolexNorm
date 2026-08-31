@@ -1,6 +1,6 @@
 # Đặc tả giai đoạn 7: Tái lập và đóng gói
 
-**Trạng thái**: Đang thực hiện — release candidate đã có; còn Kaggle checkpoint distribution, clean-room và tag
+**Trạng thái**: Hoàn thành — Kaggle Dataset v1, offline acceptance, strict verification và tag release
 **Môi trường**: Local; notebook GPU chỉ được xác minh từ artifact đã chạy
 
 ## Mục tiêu

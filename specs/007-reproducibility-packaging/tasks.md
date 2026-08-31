@@ -8,5 +8,5 @@
 - [x] T006 [US2] Cài đặt manifest/checksum/secret scan trong `scripts/verify_release.py`.
 - [x] T007 [US2] Tạo `release/manifest.json` theo contract, `release/checkpoint-inventory.json` và test tại `tests/integration/test_release_verification.py`. Candidate verifier pass; strict distribution chờ Kaggle URL version.
 - [x] T008 [US3] Viết kịch bản trình diễn cố định tại `docs/demo-script.md`.
-- [ ] T009 [US3] Chạy clean-room local setup và ghi kết quả demo offline vào `release/offline-demo-report.md`. Báo cáo candidate đã có; còn chờ Kaggle Dataset upload/download.
-- [ ] T010 [US3] Chạy verify strict cuối, gắn release 1.0.0 và lưu báo cáo tại `release/verification-report.json`. Chờ Kaggle Dataset URL version cố định.
+- [x] T009 [US3] Chạy clean-room local setup và ghi kết quả demo offline vào `release/offline-demo-report.md`. Kaggle Dataset v1 tải lại, inventory Model C/B khớp, CLI chạy với `HF_HUB_OFFLINE=1` và `TRANSFORMERS_OFFLINE=1`.
+- [x] T010 [US3] Chạy verify strict cuối, gắn release 1.0.0 và lưu báo cáo tại `release/verification-report.json`. Strict verifier pass với Kaggle Dataset v1.

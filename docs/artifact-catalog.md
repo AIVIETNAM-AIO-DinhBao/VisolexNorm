@@ -26,10 +26,10 @@ cho ứng dụng theo artifact Phase 10; điều đó không sửa historical Ph
 
 ## Kaggle Dataset checkpoint
 
-Slug dành cho release là `dinhbaobao/visolexnorm-app-checkpoints-v1`. Version URL phải có dạng:
+Slug release là `dinhbaobao/visolexnorm-app-checkpoints-v1`. Version đã verify là:
 
 ```text
-https://www.kaggle.com/datasets/dinhbaobao/visolexnorm-app-checkpoints-v1/versions/<N>
+https://www.kaggle.com/datasets/dinhbaobao/visolexnorm-app-checkpoints-v1/versions/1
 ```
 
 Dataset chứa `checkpoints/model_c/`, `checkpoints/model_b/`, `model_selection.json` và inventory

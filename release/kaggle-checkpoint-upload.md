@@ -39,14 +39,11 @@ dinhbaobao/visolexnorm-app-checkpoints-v1
 Khởi tạo private trước. Kaggle credential phải được cấu hình ngoài repository; không commit
 `kaggle.json` hoặc chạy lệnh upload với credential hiển thị trong log.
 
-## Sau upload
+## Upload đã verify
 
-1. Ghi URL version cố định, dạng
-   `https://www.kaggle.com/datasets/dinhbaobao/visolexnorm-app-checkpoints-v1/versions/<N>`.
-2. Tải lại chính version đó vào thư mục mới.
-3. So sánh inventory Model C/B với bảng trên.
-4. Đổi `release_status` trong `release/manifest.json` thành `released` và điền URL cho cả hai
-   checkpoint artifacts.
-5. Chạy `python scripts/verify_release.py --manifest release/manifest.json --strict-distribution`.
-6. Chạy clean-room offline demo, cập nhật `release/offline-demo-report.md`, rồi mới tạo tag
-   `v1.0.0`.
+Version đã upload và verify là
+`https://www.kaggle.com/datasets/dinhbaobao/visolexnorm-app-checkpoints-v1/versions/1`.
+
+Bundle version 1 đã được tải lại vào workspace, inventory Model C/B khớp bảng trên, strict
+verifier pass và release dùng tag `v1.0.0`. Kaggle version mới trong tương lai phải lặp lại đầy đủ
+download, inventory, offline demo và strict verification trước khi có release tag mới.

@@ -45,16 +45,17 @@ Phase 10 đã cung cấp phần lõi cho suy luận local, và Phase 006 đã ho
 - CPU smoke thật: Model C nạp 518 weights, tạo output không rỗng và tái sử dụng runtime ở lần gọi thứ hai;
 - nghiệm thu Gradio HTTP 200 cùng callback end-to-end trên loopback.
 
-### Đang thực hiện — Phase 007
+### Hoàn thành — Phase 007
 
-Phase 007 đã bắt đầu sau khi Phase 006 có smoke test offline thật và nghiệm thu Gradio. Phạm vi gồm:
+Phase 007 hoàn thành sau khi Phase 006 có smoke test offline thật và nghiệm thu Gradio. Kết quả gồm:
 
 - tài liệu tái lập và artifact catalog;
 - manifest/checksum bản phát hành và quét secret;
 - tách dependency;
 - làm sạch notebook;
-- cài đặt trên môi trường sạch;
-- báo cáo demo offline và xác minh bản phát hành.
+- Kaggle Dataset checkpoint Model C/B version cố định và inventory checksum;
+- demo CLI offline từ checkpoint đã tải lại;
+- strict release verification, secret scan và manifest/report phát hành.
 
 ## Đồ thị thực hiện thực tế
 
@@ -63,7 +64,7 @@ Phase 007 đã bắt đầu sau khi Phase 006 có smoke test offline thật và 
                          ├→ 008 → 009 → 010  (đã hoàn thành)
                           └→ 006              (đã hoàn thành)
                                ↓
-                               007             (đang thực hiện)
+                                007             (đã hoàn thành)
 ```
 
 Phase 008 được thiết kế chạy song song với Phase 006 nên có thể hoàn thành trước. Phase 009 và

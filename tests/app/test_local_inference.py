@@ -10,6 +10,7 @@ from types import SimpleNamespace
 import pytest
 
 from visolexnorm.app import inference
+from visolexnorm.app import loader
 from visolexnorm.app.selection import ResolvedCheckpoint
 
 
@@ -155,3 +156,10 @@ def test_normalize_rejects_empty_model_output(
 
     with pytest.raises(RuntimeError, match="không tạo được kết quả"):
         inference.normalize("t cx ko bik", config_path=config, root=tmp_path)
+
+
+def test_tokenizer_load_path_keeps_ascii_checkpoint_in_place(tmp_path: Path) -> None:
+    checkpoint = tmp_path / "checkpoint"
+    checkpoint.mkdir()
+
+    assert loader._tokenizer_load_path(checkpoint) == checkpoint

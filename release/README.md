@@ -1,13 +1,16 @@
-# ViSoLexNorm release candidate
+# ViSoLexNorm release 1.0.0
 
-`manifest.json` là inventory checksum cho source/docs/metrics của release candidate. Trạng thái
-candidate tồn tại cho đến khi checkpoint Model C và Model B được upload, download lại và xác minh
-từ Kaggle Dataset version cố định `dinhbaobao/visolexnorm-app-checkpoints-v1`.
+`manifest.json` là inventory checksum cho source/docs/metrics và checkpoint app release. Model C
+và Model B đã được upload, tải lại và xác minh từ Kaggle Dataset version cố định:
 
-Sau khi URL version được điền, chạy:
+```text
+https://www.kaggle.com/datasets/dinhbaobao/visolexnorm-app-checkpoints-v1/versions/1
+```
+
+Chạy strict verifier:
 
 ```powershell
 python scripts/verify_release.py --manifest release/manifest.json --strict-distribution
 ```
 
-Chỉ khi strict verification pass mới tạo Git tag `v1.0.0`.
+Tag Git tương ứng là `v1.0.0`.

@@ -2,8 +2,8 @@
   "project": "ViSoLexNorm",
   "version": "1.0.0",
   "created_at": "2026-08-30T18:31:09.555233+00:00",
-  "source_revision": "7196918b5ce2a4f192ddb347cce289bad21a9aaa",
-  "release_status": "candidate_pending_checkpoint_distribution",
+  "source_revision": "bdd63de584831c3a94d5cf711aa80d090c2b49c7",
+  "release_status": "released",
   "artifacts": [
     {
       "path": ".env.example",
@@ -35,8 +35,8 @@
       "artifact_type": "docs",
       "kind": "file",
       "location": "repository",
-      "sha256": "d2aa9b719aa9fd92a0676903e13e3becf871e95d532b61dffa70077fb7ef1dac",
-      "size_bytes": 5754,
+      "sha256": "7e0fcb4547780d241622701c01dea78f4d52c8e796f68fdda0e1d7e54dcabede",
+      "size_bytes": 5555,
       "required": true,
       "distribution_url": null,
       "contains_sensitive_data": false
@@ -227,8 +227,8 @@
       "artifact_type": "code",
       "kind": "file",
       "location": "repository",
-      "sha256": "293d1cbf2cb220d94bd331cc7db0e8ee66bda1bab570ec977568b9300d7f692a",
-      "size_bytes": 1559,
+      "sha256": "24c1bca2bcaf749e7de7bcbd6ed33b1568303559f53bd170d38486949efc4367",
+      "size_bytes": 2883,
       "required": true,
       "distribution_url": null,
       "contains_sensitive_data": false
@@ -287,8 +287,8 @@
       "artifact_type": "code",
       "kind": "file",
       "location": "repository",
-      "sha256": "dbe7432d3fa75a159464a730f31921340626a881d37431495be037d5c8a3b242",
-      "size_bytes": 5702,
+      "sha256": "29f03df89cd83a43b7d214516400d9c35327d0ead6224cd043085219b39c058c",
+      "size_bytes": 5955,
       "required": true,
       "distribution_url": null,
       "contains_sensitive_data": false
@@ -311,8 +311,8 @@
       "artifact_type": "code",
       "kind": "file",
       "location": "repository",
-      "sha256": "91c310ca8a9b653cd874972414522f0bcb694b9e97c550cbd43fc82ec8f02c8d",
-      "size_bytes": 5573,
+      "sha256": "62cf9fac81fcaedca4bea0019a4a8d101ff28324e68d28efc01a6e7934b7201e",
+      "size_bytes": 5649,
       "required": true,
       "distribution_url": null,
       "contains_sensitive_data": false
@@ -347,8 +347,8 @@
       "artifact_type": "docs",
       "kind": "file",
       "location": "repository",
-      "sha256": "ba7396bf2b7ffe81260dcb354b32f01ab865fc63a7b58e49f3c5a980fa894cd6",
-      "size_bytes": 2485,
+      "sha256": "78c9b7f452dc22fee09c1ba65c014a79146a1a62e2c16bc8e9f7b29975ccf4c9",
+      "size_bytes": 2469,
       "required": true,
       "distribution_url": null,
       "contains_sensitive_data": false
@@ -371,8 +371,8 @@
       "artifact_type": "docs",
       "kind": "file",
       "location": "repository",
-      "sha256": "7ca264e7af4eb475cadf2b982f4eedd4a5c022592e5dc36fade6d8cfe02cee2e",
-      "size_bytes": 1420,
+      "sha256": "ca2540805e7f8926efaf2493bb2cb09447c2453af320f90fc21be37dbdb317e8",
+      "size_bytes": 1471,
       "required": true,
       "distribution_url": null,
       "contains_sensitive_data": false
@@ -395,8 +395,8 @@
       "artifact_type": "docs",
       "kind": "file",
       "location": "repository",
-      "sha256": "f35aec97918a96c27d0c77aad0b1d52b6334793b78ba9dc968d40cfc6c270ce5",
-      "size_bytes": 2639,
+      "sha256": "66c41f59f97e6cf12ec2c8e6bd6d04ebeeb96d1aca2df9d7b8dde30834f015e8",
+      "size_bytes": 2573,
       "required": true,
       "distribution_url": null,
       "contains_sensitive_data": false
@@ -431,8 +431,8 @@
       "artifact_type": "docs",
       "kind": "file",
       "location": "repository",
-      "sha256": "ff90c2af4d65a5255a67cb298546086461cce78b9770ea755bbcdfd34436516e",
-      "size_bytes": 3760,
+      "sha256": "6745fc821264650b8ac15bcba5a58e5f823b43f9c0fa79b15e0130f356483eaf",
+      "size_bytes": 3860,
       "required": true,
       "distribution_url": null,
       "contains_sensitive_data": false
@@ -455,8 +455,8 @@
       "artifact_type": "docs",
       "kind": "file",
       "location": "repository",
-      "sha256": "d0263d59fe448aead69bc76aeebe0f3daf0c4d3db45f9e8cf945d76e3fadd00f",
-      "size_bytes": 566,
+      "sha256": "5135bd8fe0de4f2d31074dc9002136448fb81f5396609dbbe35d34a851966471",
+      "size_bytes": 496,
       "required": true,
       "distribution_url": null,
       "contains_sensitive_data": false
@@ -467,8 +467,8 @@
       "artifact_type": "docs",
       "kind": "file",
       "location": "repository",
-      "sha256": "150b000458b8166f5a2c2c6e3d51fb72313eb218703783cd0f1dd3c8e271967e",
-      "size_bytes": 1903,
+      "sha256": "190427485985fdd8bdccadc83a804fe342b25c9414b3eb7c50a6902f33c0d413",
+      "size_bytes": 1712,
       "required": true,
       "distribution_url": null,
       "contains_sensitive_data": false
@@ -479,8 +479,8 @@
       "artifact_type": "docs",
       "kind": "file",
       "location": "repository",
-      "sha256": "c7552b2e1df2f09855fbcb53562f88211f4ba46be92d1e99b76d6e6cafdb246a",
-      "size_bytes": 1782,
+      "sha256": "2305caac7cdf5aaf0d90e3211855bccc81d77723c813ee7c7c4b3520808fdb03",
+      "size_bytes": 3000,
       "required": true,
       "distribution_url": null,
       "contains_sensitive_data": false
@@ -491,8 +491,8 @@
       "artifact_type": "config",
       "kind": "file",
       "location": "repository",
-      "sha256": "807370622ad3538140c571beed3d02fb7b6281aae190bf653fb1302e54978aa4",
-      "size_bytes": 856,
+      "sha256": "a08c3ada16acee112fab3dc762d4716151d289a8992d9a456cf98274ff1ceb3a",
+      "size_bytes": 965,
       "required": true,
       "distribution_url": null,
       "contains_sensitive_data": false
@@ -710,7 +710,7 @@
       "sha256": "e2f4b33dae20b2ed86a2b51d163b3cbe2063fbc24dc9b4a4e0cfe774f69fa622",
       "size_bytes": 1916838714,
       "required": true,
-      "distribution_url": "https://www.kaggle.com/datasets/dinhbaobao/visolexnorm-app-checkpoints-v1",
+      "distribution_url": "https://www.kaggle.com/datasets/dinhbaobao/visolexnorm-app-checkpoints-v1/versions/1",
       "contains_sensitive_data": false
     },
     {
@@ -722,7 +722,7 @@
       "sha256": "0361cfab6bad4b6e4d95367f5125320fb61d6d3327b92481d0a31a937140d0b7",
       "size_bytes": 1916838714,
       "required": true,
-      "distribution_url": "https://www.kaggle.com/datasets/dinhbaobao/visolexnorm-app-checkpoints-v1",
+      "distribution_url": "https://www.kaggle.com/datasets/dinhbaobao/visolexnorm-app-checkpoints-v1/versions/1",
       "contains_sensitive_data": false
     }
   ]
