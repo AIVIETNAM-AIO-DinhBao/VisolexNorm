@@ -43,3 +43,11 @@ model_c_checkpoint.zip
 phase8_training_input.zip
 
 .env
+
+# Report
+main.aux
+main.bbl
+main.blg
+main.log
+main.out
+references.bib
