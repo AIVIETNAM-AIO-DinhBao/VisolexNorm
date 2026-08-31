@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "dataset_slug": "dinhbaobao/visolexnorm-app-checkpoints-v1",
+  "status": "pending_upload",
+  "source_selection_path": "outputs/app/model_selection.json",
+  "checkpoints": {
+    "model_c": {
+      "path": "checkpoints/model_c",
+      "role": "application_default",
+      "size_bytes": 1916838714,
+      "inventory_sha256": "e2f4b33dae20b2ed86a2b51d163b3cbe2063fbc24dc9b4a4e0cfe774f69fa622"
+    },
+    "model_b": {
+      "path": "checkpoints/model_b",
+      "role": "rollback_and_phase5_historical_winner",
+      "size_bytes": 1916838714,
+      "inventory_sha256": "0361cfab6bad4b6e4d95367f5125320fb61d6d3327b92481d0a31a937140d0b7"
+    }
+  },
+  "upload_exclusions": [
+    ".env",
+    ".git",
+    "data/raw",
+    "data/processed",
+    "data/intermediate",
+    "review caches",
+    "raw predictions"
+  ]
+}

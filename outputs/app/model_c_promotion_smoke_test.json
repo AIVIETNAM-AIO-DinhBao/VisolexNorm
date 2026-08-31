@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "phase": 10,
+  "phase": 6,
   "preflight_passed": true,
   "selected_model": "model_c",
   "rollback_model": "model_b",
@@ -10,9 +10,18 @@
   "checkpoint_inventory_verified": true,
   "rollback_resolution_covered_by_tests": true,
   "selection_sha256": "22005dcfc0cecb6aee1fb905c9117466bd565241f8fa9ee0a998c82c5277179f",
-  "runtime_model_loaded": false,
-  "tokenizer_loaded": false,
-  "nonempty_inference_verified": false,
-  "runtime_limitation": "The local .venv does not contain torch or transformers, so a truthful CPU model/tokenizer and generation smoke test could not run. Install the local inference dependencies and run `python -m visolexnorm.app.inference --text \"toi muon dc sach\"` to complete it.",
-  "command": "python -m visolexnorm.app.inference --smoke"
+  "runtime_model_loaded": true,
+  "tokenizer_loaded": true,
+  "nonempty_inference_verified": true,
+  "first_output": "mình không biết hôm nay đi học không",
+  "second_output": "tôi cũng không biết nữa",
+  "first_call_elapsed_seconds": 19.888,
+  "second_call_elapsed_seconds": 2.286,
+  "runtime_reused_on_second_call": true,
+  "gradio_http_status": 200,
+  "gradio_loopback_host": "127.0.0.1",
+  "gradio_public_share_enabled": false,
+  "gradio_callback_verified": true,
+  "runtime_limitation": null,
+  "command": ".venv\\Scripts\\python.exe -m visolexnorm.app.inference --text \"mik ko bt hnay đi hc ko\""
 }

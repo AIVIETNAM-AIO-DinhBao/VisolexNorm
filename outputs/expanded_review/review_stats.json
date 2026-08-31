@@ -1,0 +1,34 @@
+{
+  "phase": 8,
+  "completion_status": "completed_with_approved_provider_exclusions",
+  "manifest_review_count": 48411,
+  "valid_llm_review_count": 48406,
+  "provider_exclusion_count": 5,
+  "reconciled_count": 48411,
+  "decision_counts": {
+    "KEEP": 21973,
+    "EDIT": 23931,
+    "REJECT": 2502
+  },
+  "reject_reason_counts": {
+    "AMBIGUOUS": 718,
+    "CANDIDATE_UNUSABLE": 869,
+    "MEANING_UNCERTAIN": 478,
+    "NOT_LEXICAL_NORMALIZATION": 80,
+    "OTHER": 357
+  },
+  "batch_status_counts": {
+    "succeeded": 3239,
+    "superseded": 21
+  },
+  "attempt_outcome_counts": {
+    "failed:prompt_blocked": 21,
+    "succeeded:success": 321
+  },
+  "prompt_version": "lexical_norm_review_v1",
+  "review_identity_sha256": "54c63d3ca8fb448fe9930598e123b33584295c7e0db298f97f97df21317bae6a",
+  "llm_model": "gemini-3.5-flash-lite",
+  "cache_path": "data/intermediate/visolex_expanded_review_cache.sqlite3",
+  "approved_exclusions_path": "outputs/expanded_review/phase8_provider_exclusions.json",
+  "generated_at_utc": "2026-08-27T02:32:26.114496+00:00"
+}

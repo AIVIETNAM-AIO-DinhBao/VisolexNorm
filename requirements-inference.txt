@@ -1,5 +1,6 @@
-# Local offline BARTpho application inference (Phase 10).
-torch>=2.0
-transformers>=4.38
-sentencepiece>=0.1.99
-safetensors>=0.4
+# Local offline BARTpho application inference, verified on Windows / Python 3.13.
+torch==2.13.0
+transformers==5.16.1
+sentencepiece==0.2.2
+safetensors==0.8.0
+gradio==6.26.0

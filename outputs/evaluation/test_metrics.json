@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "phase": 5,
+  "evaluated_at_utc": "2026-08-23T17:03:49.383700+00:00",
+  "freeze_manifest_sha256": "b467eb6910b3af01d40f615f6bce12902d153ee59ca0c40401b5146b3730b134",
+  "metric_code_inventory": {
+    "kind": "file",
+    "bytes": 2735,
+    "sha256": "75998b6e36a4497ed77a4842f485300a4c29076bdcb848640c09938a5535cc11",
+    "line_endings_normalized": "LF"
+  },
+  "metric_reference": {
+    "repository": "https://github.com/ngxtnhi/ViLexNorm",
+    "commit": "1070c6b9b00830fad278f48d9797df9ae1c942ac",
+    "paper": "https://aclanthology.org/2024.eacl-long.85",
+    "protocol": "van der Goot (2019) ERR against Leave-As-Is; project token-edit port v1"
+  },
+  "source_commit": "c9d2996409c39452b1f2d34a3c14ca659b438554",
+  "models": {
+    "model_a": {
+      "sample_count": 1045,
+      "gold_edits": 1778,
+      "predicted_edits": 1703,
+      "correct_edits": 1250,
+      "ERR": 0.703037120359955,
+      "precision": 0.733998825601879,
+      "recall": 0.703037120359955,
+      "f1": 0.7181844297615628,
+      "prediction_sha256": "928375b73104f577a3395215fef905b8462eddcd3cff65b7f433fff4aa930adf",
+      "checkpoint_checksum": "31b3337870a0a8acb6e63f2dfb4aeaac67e86451e2a8fb18c5dbd6aba86432e5",
+      "generation_config_hash": "128bf6f4563fa821827d176a88c6239eaaa2f7dfe3f098ed8f098583e422ce78"
+    },
+    "model_b": {
+      "sample_count": 1045,
+      "gold_edits": 1778,
+      "predicted_edits": 1690,
+      "correct_edits": 1287,
+      "ERR": 0.7238470191226096,
+      "precision": 0.7615384615384615,
+      "recall": 0.7238470191226096,
+      "f1": 0.7422145328719723,
+      "prediction_sha256": "b3b4e8a82460b0109fc1de04dcd00e8192589ac274fa70ce9fcd019f4e2ee90e",
+      "checkpoint_checksum": "0361cfab6bad4b6e4d95367f5125320fb61d6d3327b92481d0a31a937140d0b7",
+      "generation_config_hash": "128bf6f4563fa821827d176a88c6239eaaa2f7dfe3f098ed8f098583e422ce78"
+    }
+  }
+}

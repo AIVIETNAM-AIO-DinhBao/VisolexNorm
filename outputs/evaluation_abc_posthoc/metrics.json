@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "phase": 9,
+  "evaluation_scope": "posthoc_previously_observed_vilexnorm_test",
+  "test_previously_observed": true,
+  "promotion_eligible": false,
+  "changes_phase5_selection": false,
+  "phase5_selected_model": "model_b",
+  "descriptive_leader": "model_c",
+  "benchmark_manifest_sha256": "b29cf856c61f4f190d6c4607f79b6a9b13b6d05be72f58d3eb8c0276610c240e",
+  "metric_code_inventory": {
+    "kind": "file",
+    "bytes": 2735,
+    "sha256": "75998b6e36a4497ed77a4842f485300a4c29076bdcb848640c09938a5535cc11",
+    "line_endings_normalized": "LF"
+  },
+  "metric_reference": {
+    "repository": "https://github.com/ngxtnhi/ViLexNorm",
+    "commit": "1070c6b9b00830fad278f48d9797df9ae1c942ac",
+    "paper": "https://aclanthology.org/2024.eacl-long.85",
+    "protocol": "van der Goot (2019) ERR against Leave-As-Is; project token-edit port v1"
+  },
+  "source_revision": "cbe794e37f4a00c159744065e76750262cb681ec",
+  "models": {
+    "model_a": {
+      "sample_count": 1045,
+      "gold_edits": 1778,
+      "predicted_edits": 1703,
+      "correct_edits": 1250,
+      "ERR": 0.703037120359955,
+      "precision": 0.733998825601879,
+      "recall": 0.703037120359955,
+      "f1": 0.7181844297615628,
+      "exact_sentence_match": 0.5033492822966508,
+      "prediction_sha256": "928375b73104f577a3395215fef905b8462eddcd3cff65b7f433fff4aa930adf",
+      "checkpoint_checksum": "31b3337870a0a8acb6e63f2dfb4aeaac67e86451e2a8fb18c5dbd6aba86432e5",
+      "generation_config_hash": "128bf6f4563fa821827d176a88c6239eaaa2f7dfe3f098ed8f098583e422ce78"
+    },
+    "model_b": {
+      "sample_count": 1045,
+      "gold_edits": 1778,
+      "predicted_edits": 1690,
+      "correct_edits": 1287,
+      "ERR": 0.7238470191226096,
+      "precision": 0.7615384615384615,
+      "recall": 0.7238470191226096,
+      "f1": 0.7422145328719723,
+      "exact_sentence_match": 0.5291866028708134,
+      "prediction_sha256": "b3b4e8a82460b0109fc1de04dcd00e8192589ac274fa70ce9fcd019f4e2ee90e",
+      "checkpoint_checksum": "0361cfab6bad4b6e4d95367f5125320fb61d6d3327b92481d0a31a937140d0b7",
+      "generation_config_hash": "128bf6f4563fa821827d176a88c6239eaaa2f7dfe3f098ed8f098583e422ce78"
+    },
+    "model_c": {
+      "sample_count": 1045,
+      "gold_edits": 1778,
+      "predicted_edits": 1707,
+      "correct_edits": 1333,
+      "ERR": 0.749718785151856,
+      "precision": 0.7809021675454013,
+      "recall": 0.749718785151856,
+      "f1": 0.7649928263988521,
+      "exact_sentence_match": 0.5665071770334928,
+      "prediction_sha256": "ed646c6d40e01098c3bbce5e8597642c90e9efbf2fc33634c8b2afe75ab799a5",
+      "checkpoint_checksum": "e2f4b33dae20b2ed86a2b51d163b3cbe2063fbc24dc9b4a4e0cfe774f69fa622",
+      "generation_config_hash": "128bf6f4563fa821827d176a88c6239eaaa2f7dfe3f098ed8f098583e422ce78"
+    }
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "phase": 8,
+  "status": "completed",
+  "evaluation_scope": "dev_only_exploratory",
+  "source_revision": "2c7646bb97e939b1a6b6cfe0112d5fe0a8688c8d",
+  "review": {
+    "manifest_count": 48411,
+    "valid_llm_review_count": 48406,
+    "provider_exclusion_count": 5,
+    "reconciled_count": 48411,
+    "decision_counts": {
+      "KEEP": 21973,
+      "EDIT": 23931,
+      "REJECT": 2502
+    }
+  },
+  "weak_label_pool": {
+    "phase3_count": 18970,
+    "phase8_count": 45843,
+    "expanded_count": 64813,
+    "sha256": "8d0d7fda61fef5805d1d79c3ec9a7a09bf38c875123f21bdd1dad8d120d79386"
+  },
+  "training": {
+    "epochs": 8,
+    "gold_per_epoch": 8372,
+    "pseudo_per_epoch": 8372,
+    "pseudo_union_count": 64813,
+    "pseudo_usage_distribution": {
+      "1": 62650,
+      "2": 2163
+    },
+    "best_epoch": 8
+  },
+  "dev_evaluation": {
+    "examples": 1050,
+    "best_dev_loss": 0.1937415313688248,
+    "exact_sentence_match": 0.5619047619047619,
+    "model_b_dev_loss": 0.2051412629966349,
+    "model_b_exact_sentence_match": 0.5571428571428572,
+    "dev_loss_delta_model_c_minus_b": -0.011399731627810106,
+    "exact_match_delta_model_c_minus_b": 0.004761904761904745,
+    "final_comparison_available": false,
+    "final_comparison_blocker": "Model C requires a new independently frozen holdout; ViLexNorm Test Phase 5 is already observed."
+  },
+  "provenance": {
+    "model_a_inventory_sha256": "31b3337870a0a8acb6e63f2dfb4aeaac67e86451e2a8fb18c5dbd6aba86432e5",
+    "model_c_checkpoint_inventory_sha256": "df2c92289dcca009dc0b4119bbc4dc42c784483e71acd6f00370a071f94bd480",
+    "model_c_weights_sha256": "63c52a3bee6a5e59f394a490452d9d39f425b51870538997c524b1c09755d37a",
+    "expanded_artifact_manifest_sha256": "8b5267f4bec6b8c32606e96901708794ada34879c91616d93af6f787e295da1f",
+    "training_mixture_manifest_sha256": "277757256f3aaf3c86217569ac98360b6ad963e781f535ea7c77489a2f07e7cb",
+    "artifact_manifest_sha256": "9c6fb65ce2228448fe07fa1f49205812b226bc14e876a6063add09b70d29dd69"
+  },
+  "acceptance": {
+    "smoke_test_passed": true,
+    "checkpoint_reload": true,
+    "dev_predictions": 1050,
+    "unique_dev_ids": 1050,
+    "artifact_checksums_verified": true
+  },
+  "test_inputs_loaded": false,
+  "app_checkpoint_changed": false,
+  "promotion_status": "blocked_pending_independent_frozen_holdout"
+}

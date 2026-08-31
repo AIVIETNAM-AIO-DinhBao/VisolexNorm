@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "project": "ViSoLexNorm",
+  "release_version": "1.0.0",
+  "manifest_sha256": "395f859e8d46b49d92b0f61e683bfeac5edd6a0ca5a466f84437772685e83eb1",
+  "verified_at_utc": "2026-08-30T18:32:05.472025+00:00",
+  "python_version": "3.13.7",
+  "git_revision": "7196918b5ce2a4f192ddb347cce289bad21a9aaa",
+  "artifacts_passed": 60,
+  "errors": [],
+  "warnings": [
+    "Release candidate is not taggable until Kaggle checkpoint URLs are frozen and strict verification passes"
+  ],
+  "secret_scan_passed": true,
+  "exit_code": 0
+}

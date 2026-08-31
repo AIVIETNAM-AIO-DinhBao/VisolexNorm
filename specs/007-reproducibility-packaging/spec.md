@@ -1,6 +1,6 @@
 # Đặc tả giai đoạn 7: Tái lập và đóng gói
 
-**Trạng thái**: Chưa thực hiện — bước tiếp theo sau khi Phase 6 hoàn tất
+**Trạng thái**: Đang thực hiện — release candidate đã có; còn Kaggle checkpoint distribution, clean-room và tag
 **Môi trường**: Local; notebook GPU chỉ được xác minh từ artifact đã chạy
 
 ## Mục tiêu

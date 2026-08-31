@@ -1,0 +1,166 @@
+{
+  "schema_version": 1,
+  "phase": 5,
+  "status": "frozen",
+  "frozen_at_utc": "2026-08-23T10:35:15.064663+00:00",
+  "seed": 2026,
+  "expected_test_count": 1045,
+  "test_order_sha256": "50401be9a7ded66351b205e133add1570aedf3d80dfe0d0763c9fb20152de647",
+  "model_selection_rule": [
+    "higher_f1",
+    "lower_ERR",
+    "model_a"
+  ],
+  "metric_reference": {
+    "repository": "https://github.com/ngxtnhi/ViLexNorm",
+    "commit": "1070c6b9b00830fad278f48d9797df9ae1c942ac",
+    "paper": "https://aclanthology.org/2024.eacl-long.85",
+    "protocol": "van der Goot (2019) ERR against Leave-As-Is; project token-edit port v1",
+    "official_evaluator_available_in_repository": false,
+    "port_status": "provisional: deterministic fixture passes, but independent official/reference fixture is still required before Test evaluation"
+  },
+  "tokenizer_contract": {
+    "files": [
+      {
+        "path": "dict.txt",
+        "bytes": 360025,
+        "sha256": "4af19721ccc7a2bf2ef9fa63344377659e5b7a2652b764bc964edd8ed86827ae"
+      },
+      {
+        "path": "sentencepiece.bpe.model",
+        "bytes": 5069051,
+        "sha256": "cfc8146abe2a0488e9e2a0c56de7952f7c11ab059eca145a0a727afce0db2865"
+      }
+    ],
+    "sha256": "a71ff2ed5757aa1bb6564f17197a37037a74a90c935b218df1dcaafb90d6281b"
+  },
+  "inputs": {
+    "model_a_checkpoint": {
+      "declared_path": "checkpoints/model_a",
+      "inventory": {
+        "kind": "directory",
+        "files": [
+          {
+            "path": "config.json",
+            "bytes": 936,
+            "sha256": "c45e916cee69b0c7b02940c53155c894b241cc18a64fabeed27e76ca5607cfa7"
+          },
+          {
+            "path": "dict.txt",
+            "bytes": 360025,
+            "sha256": "4af19721ccc7a2bf2ef9fa63344377659e5b7a2652b764bc964edd8ed86827ae"
+          },
+          {
+            "path": "generation_config.json",
+            "bytes": 956,
+            "sha256": "c078c8c89a74dd7a7169492f0f56301683930d38ee3ccd2f610f588ae3b7dbe9"
+          },
+          {
+            "path": "model.safetensors",
+            "bytes": 1911406472,
+            "sha256": "7a662905ae62a10191d9a0b193b245cfa9a560419cd15e849da075dbef8ba6ba"
+          },
+          {
+            "path": "sentencepiece.bpe.model",
+            "bytes": 5069051,
+            "sha256": "cfc8146abe2a0488e9e2a0c56de7952f7c11ab059eca145a0a727afce0db2865"
+          },
+          {
+            "path": "tokenizer_config.json",
+            "bytes": 1245,
+            "sha256": "ff351108b17eac51dd7b720711ebdc9db032b42bb4e15edafd1a3cae41c870aa"
+          },
+          {
+            "path": "training_args.bin",
+            "bytes": 5393,
+            "sha256": "aa57e41ba7525cbc70c0954138da116ec2fb8a6b00b0297eefd8ebbf30f1d698"
+          }
+        ],
+        "file_count": 7,
+        "sha256": "31b3337870a0a8acb6e63f2dfb4aeaac67e86451e2a8fb18c5dbd6aba86432e5"
+      }
+    },
+    "model_b_checkpoint": {
+      "declared_path": "checkpoints/model_b",
+      "inventory": {
+        "kind": "directory",
+        "files": [
+          {
+            "path": "config.json",
+            "bytes": 936,
+            "sha256": "c45e916cee69b0c7b02940c53155c894b241cc18a64fabeed27e76ca5607cfa7"
+          },
+          {
+            "path": "dict.txt",
+            "bytes": 360025,
+            "sha256": "4af19721ccc7a2bf2ef9fa63344377659e5b7a2652b764bc964edd8ed86827ae"
+          },
+          {
+            "path": "generation_config.json",
+            "bytes": 956,
+            "sha256": "c078c8c89a74dd7a7169492f0f56301683930d38ee3ccd2f610f588ae3b7dbe9"
+          },
+          {
+            "path": "model.safetensors",
+            "bytes": 1911406472,
+            "sha256": "cadd3f14c118da4fcad8d5d2bc2f8ca579dc62c312ed0ac43e50d407372ac7f4"
+          },
+          {
+            "path": "sentencepiece.bpe.model",
+            "bytes": 5069051,
+            "sha256": "cfc8146abe2a0488e9e2a0c56de7952f7c11ab059eca145a0a727afce0db2865"
+          },
+          {
+            "path": "tokenizer_config.json",
+            "bytes": 1274,
+            "sha256": "c7f9343ae82f912e7376053afa486e99e0b9215185a7ff287b19e44cb6006e30"
+          }
+        ],
+        "file_count": 6,
+        "sha256": "0361cfab6bad4b6e4d95367f5125320fb61d6d3327b92481d0a31a937140d0b7"
+      }
+    },
+    "test": {
+      "declared_path": "data/processed/vilexnorm_test.jsonl",
+      "inventory": {
+        "kind": "file",
+        "bytes": 283880,
+        "sha256": "9fe7ad1d22cac67fa06e3f3b30b19b63381addb1ec418c77509b4a89610855eb"
+      }
+    },
+    "generation_config": {
+      "declared_path": "configs/evaluation_generation_config.json",
+      "inventory": {
+        "kind": "file",
+        "bytes": 195,
+        "sha256": "3d14ff0afe407f5742135d3ee1281d175cab90b3997e74d02599530736184105",
+        "line_endings_normalized": "LF"
+      }
+    },
+    "metric_code": {
+      "declared_path": "scripts/evaluation_metrics.py",
+      "inventory": {
+        "kind": "file",
+        "bytes": 2735,
+        "sha256": "75998b6e36a4497ed77a4842f485300a4c29076bdcb848640c09938a5535cc11",
+        "line_endings_normalized": "LF"
+      }
+    },
+    "phase3_manifest": {
+      "declared_path": "outputs/phase3_manifest.json",
+      "inventory": {
+        "kind": "file",
+        "bytes": 4408,
+        "sha256": "d197b272a066f3f593212b875b3984a2690c1e2ffedc5781274894db38226649"
+      }
+    },
+    "phase4_exit_report": {
+      "declared_path": "outputs/model_b/phase4_exit_report.json",
+      "inventory": {
+        "kind": "file",
+        "bytes": 1207,
+        "sha256": "80edf57b07127c5555a4e810e1ab8f7df2e915d14c39f38ca1ae2646256ae8af"
+      }
+    }
+  }
+}

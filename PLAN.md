@@ -597,8 +597,8 @@ benchmark hậu kiểm có caveat và Phase 10 chọn Model C cho app với Mode
 # Phase 7 — Reproducibility và đóng gói
 **Ngày 12–14**
 
-**Trạng thái hiện hành**: Chưa thực hiện; là bước tiếp theo sau khi Phase 6 hoàn tất real
-offline smoke và Gradio acceptance.
+**Trạng thái hiện hành**: Đang thực hiện. Release candidate, verifier, manifest, notebook cleanup
+và tài liệu đã có; còn upload/download checkpoint Kaggle, clean-room offline và tag `v1.0.0`.
 
 ## Kết quả phải đạt
 
@@ -678,8 +678,8 @@ Demo tối thiểu:
 | Đã hoàn thành | Phase 5 giữ frozen A/B Test evaluation; historical winner là Model B |
 | Đã hoàn thành | Phase 8 review 48.411 candidate còn lại, build pool mở rộng và train Model C Dev-only |
 | Đã hoàn thành | Phase 9 benchmark hậu kiểm A/B/C; Phase 10 chọn Model C cho app, Model B rollback |
-| Đang thực hiện | Phase 6 hoàn tất real CPU smoke, Gradio và offline acceptance |
-| Tiếp theo | Phase 7 reproducibility, packaging và release verification |
+| Đã hoàn thành | Phase 6 real CPU smoke, Gradio và offline acceptance |
+| Đang thực hiện | Phase 7 reproducibility, packaging và release candidate verification |
 
 ---
 

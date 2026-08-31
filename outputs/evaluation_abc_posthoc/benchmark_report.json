@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "phase": 9,
+  "evaluation_scope": "posthoc_previously_observed_vilexnorm_test",
+  "test_previously_observed": true,
+  "promotion_eligible": false,
+  "changes_phase5_selection": false,
+  "phase5_selected_model": "model_b",
+  "descriptive_leader": "model_c",
+  "disclaimer": "Post-hoc benchmark on previously observed ViLexNorm Test; not eligible for model promotion."
+}

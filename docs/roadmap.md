@@ -30,9 +30,9 @@ tự. Không đổi số một Phase đã sinh artifact đóng băng.
 | 009 | Benchmark A/B/C hậu kiểm | Hoàn thành; Model C dẫn đầu về mặt mô tả |
 | 010 | Quyết định checkpoint ứng dụng | Hoàn thành; Model C mặc định, Model B rollback |
 
-### Đang thực hiện — Phase 006
+### Hoàn thành — Phase 006
 
-Phase 10 đã cung cấp phần lõi cho suy luận local:
+Phase 10 đã cung cấp phần lõi cho suy luận local, và Phase 006 đã hoàn thiện nghiệm thu runtime/web:
 
 - artifact chọn checkpoint ứng dụng;
 - kiểm tra inventory checkpoint;
@@ -40,18 +40,14 @@ Phase 10 đã cung cấp phần lõi cho suy luận local:
 - CLI `normalize(text)`;
 - chuyển dự phòng từ Model C về Model B;
 - kiểm thử đơn vị cho bộ phân giải và rollback.
+- Gradio responsive chỉ bind `127.0.0.1`, không public share và không gọi LLM API;
+- kiểm thử callback/tích hợp cho validation, cache, Model C/Model B rollback và UI;
+- CPU smoke thật: Model C nạp 518 weights, tạo output không rỗng và tái sử dụng runtime ở lần gọi thứ hai;
+- nghiệm thu Gradio HTTP 200 cùng callback end-to-end trên loopback.
 
-Phase 006 còn phải hoàn tất:
+### Đang thực hiện — Phase 007
 
-1. cài dependency suy luận trên môi trường local;
-2. nạp tokenizer/model và chạy suy luận CPU thật với kết quả không rỗng;
-3. triển khai Gradio chỉ bind local;
-4. viết kiểm thử callback và tích hợp;
-5. chạy quickstart và nghiệm thu offline từ đầu đến cuối.
-
-### Tiếp theo — Phase 007
-
-Phase 007 bắt đầu sau khi Phase 006 có smoke test offline thật và nghiệm thu Gradio. Phạm vi gồm:
+Phase 007 đã bắt đầu sau khi Phase 006 có smoke test offline thật và nghiệm thu Gradio. Phạm vi gồm:
 
 - tài liệu tái lập và artifact catalog;
 - manifest/checksum bản phát hành và quét secret;
@@ -65,9 +61,9 @@ Phase 007 bắt đầu sau khi Phase 006 có smoke test offline thật và nghi�
 ```text
 001 → 002 → 003 → 004 → 005
                          ├→ 008 → 009 → 010  (đã hoàn thành)
-                         └→ 006              (đang thực hiện)
+                          └→ 006              (đã hoàn thành)
                                ↓
-                              007             (tiếp theo)
+                               007             (đang thực hiện)
 ```
 
 Phase 008 được thiết kế chạy song song với Phase 006 nên có thể hoàn thành trước. Phase 009 và

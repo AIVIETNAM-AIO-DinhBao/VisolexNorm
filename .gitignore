@@ -14,6 +14,24 @@ outputs/*
 outputs/app/*
 !outputs/app/model_selection.json
 !outputs/app/model_c_promotion_smoke_test.json
+!outputs/evaluation/
+outputs/evaluation/*
+!outputs/evaluation/best_model.json
+!outputs/evaluation/test_metrics.json
+!outputs/evaluation/freeze_manifest.json
+!outputs/evaluation/comparison.md
+!outputs/evaluation_abc_posthoc/
+outputs/evaluation_abc_posthoc/*
+!outputs/evaluation_abc_posthoc/metrics.json
+!outputs/evaluation_abc_posthoc/pairwise_deltas.json
+!outputs/evaluation_abc_posthoc/benchmark_report.json
+!outputs/weak_label_stats.json
+!outputs/expanded_review/
+outputs/expanded_review/*
+!outputs/expanded_review/review_stats.json
+!outputs/model_c/
+outputs/model_c/*
+!outputs/model_c/phase8_exit_report.json
 
 # Large reproducibility bundles are stored outside Git; checksums live in the Phase 3 exit report.
 model_a_artifacts.zip

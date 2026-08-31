@@ -1,0 +1,4 @@
+# Development and release verification dependencies.
+-r requirements.txt
+-r requirements-inference.txt
+pytest==9.1.1

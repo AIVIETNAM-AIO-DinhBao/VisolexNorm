@@ -1,0 +1,71 @@
+{
+  "manifest_review_count": 20000,
+  "valid_llm_review_count": 19997,
+  "keep_count": 9043,
+  "edit_count": 9952,
+  "reject_count": 1002,
+  "keep_rate": 0.45221783267490123,
+  "edit_rate": 0.4976746511976797,
+  "reject_rate": 0.050107516127419115,
+  "validation_drop_count": 28,
+  "drop_counts": {
+    "edit_ratio": 6,
+    "length_ratio": 7,
+    "llm_reject": 1002,
+    "llm_unreviewable_invalid_json": 3,
+    "response_artifact": 12
+  },
+  "final_accepted_count": 18970,
+  "counts_by_generation_status": {
+    "empty_after_special_token_decode": 71,
+    "generated_text": 19926
+  },
+  "counts_by_original_source": {
+    "UIT-VSMEC": {
+      "EDIT": 942,
+      "accepted": 1933,
+      "KEEP": 991,
+      "REJECT": 88
+    },
+    "UIT-ViSFD": {
+      "EDIT": 1847,
+      "accepted": 3179,
+      "KEEP": 1332,
+      "REJECT": 69
+    },
+    "ViHSD": {
+      "EDIT": 4471,
+      "accepted": 8460,
+      "KEEP": 3996,
+      "REJECT": 471
+    },
+    "ViSpamReviews": {
+      "EDIT": 2692,
+      "accepted": 5398,
+      "REJECT": 374,
+      "KEEP": 2724
+    }
+  },
+  "counts_by_confidence_band": {
+    "high": {
+      "EDIT": 1773,
+      "accepted": 6623,
+      "KEEP": 4851,
+      "REJECT": 41
+    },
+    "low": {
+      "EDIT": 4545,
+      "accepted": 5843,
+      "KEEP": 1312,
+      "REJECT": 810
+    },
+    "medium": {
+      "EDIT": 3634,
+      "accepted": 6504,
+      "KEEP": 2880,
+      "REJECT": 151
+    }
+  },
+  "prompt_version": "lexical_norm_review_v1",
+  "llm_model": "gemini-3.5-flash-lite"
+}
