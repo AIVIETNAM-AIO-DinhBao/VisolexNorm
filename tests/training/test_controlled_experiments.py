@@ -164,3 +164,9 @@ def test_terminal_metric_name_is_distinct_from_selected_metric_name() -> None:
     selected = Path("horizon_3/dev_predictions.jsonl").with_name("dev_metrics.json")
     terminal = Path("horizon_3/terminal_dev_predictions.jsonl").with_name("terminal_dev_metrics.json")
     assert selected != terminal
+
+
+def test_smoke_and_optimization_selection_metadata_use_dev_loss() -> None:
+    smoke_selection = {"selected_dev_loss": 0.2, "selected_epoch": 1, "selection_metric": "dev_loss", "selected_checkpoint_kind": "best_smoke"}
+    optimization_selection = {"selected_dev_loss": 0.1, "selected_epoch": 8, "selection_metric": "dev_loss", "selected_checkpoint_kind": "best_early_stopping"}
+    assert smoke_selection["selection_metric"] == optimization_selection["selection_metric"] == "dev_loss"

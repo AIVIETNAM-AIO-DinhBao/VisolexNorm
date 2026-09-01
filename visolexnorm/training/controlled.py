@@ -438,7 +438,7 @@ def run_controlled_training(args: Any, *, optimization: bool = False) -> None:
                 generated = model_to_generate.generate(**encoded, num_beams=config["generation_num_beams"], max_length=config["generation_max_length"])
                 predictions.extend(tokenizer.batch_decode(generated, skip_special_tokens=True))
         write_jsonl(({"id": row["id"], "input_text": row["input_text"], "target_text": row["target_text"], "prediction": prediction.strip()} for row, prediction in zip(dev_records, predictions)), output)
-        _write_json(output.with_name(metrics_name), {"history": history, "initial_dev_loss": initial_dev_loss, "selected_dev_loss": selection["selected_dev_loss"], "selected_epoch": selection["selected_epoch"], "selection_metric": selection["selection_metric"], "checkpoint_kind": selection.get("selected_checkpoint_kind", "best"), "dev_examples": len(dev_records), "exact_sentence_match": sum(prediction.strip() == row["target_text"] for row, prediction in zip(dev_records, predictions)) / len(dev_records), "test_inputs_loaded": False})
+        _write_json(output.with_name(metrics_name), {"history": history, "initial_dev_loss": initial_dev_loss, "selected_dev_loss": selection["selected_dev_loss"], "selected_epoch": selection["selected_epoch"], "selection_metric": selection.get("selection_metric", "dev_loss"), "checkpoint_kind": selection.get("selected_checkpoint_kind", "best"), "dev_examples": len(dev_records), "exact_sentence_match": sum(prediction.strip() == row["target_text"] for row, prediction in zip(dev_records, predictions)) / len(dev_records), "test_inputs_loaded": False})
 
     def write_predictions(checkpoint: Path, output: Path, selection: dict[str, Any]) -> None:
         checkpoint_model = AutoModelForSeq2SeqLM.from_pretrained(checkpoint).to(device)
@@ -478,10 +478,10 @@ def run_controlled_training(args: Any, *, optimization: bool = False) -> None:
         raise RuntimeError("No best checkpoint was saved")
 
     if args.smoke_test:
-        write_predictions(best_dir, run_root / "dev_predictions.jsonl", {"selected_dev_loss": best_loss, "selected_epoch": best_epoch})
+        write_predictions(best_dir, run_root / "dev_predictions.jsonl", {"selected_dev_loss": best_loss, "selected_epoch": best_epoch, "selection_metric": "dev_loss", "selected_checkpoint_kind": "best_smoke"})
         _write_json(run_root / "smoke_test.json", {"passed": True, "composition": {"gold": 200, "pseudo": 200}, "checkpoint_reload": True, "generation_nonempty": True, "test_inputs_loaded": False, "best_dev_loss": best_loss})
     elif optimization:
-        selection = {"selected_dev_loss": best_loss, "selected_epoch": best_epoch}
+        selection = {"selected_dev_loss": best_loss, "selected_epoch": best_epoch, "selection_metric": "dev_loss", "selected_checkpoint_kind": "best_early_stopping"}
         write_predictions(best_dir, run_root / "dev_predictions.jsonl", selection)
         _write_json(run_root / "early_stopping_report.json", {"max_epochs": len(manifest["epochs"]), "completed_epochs": len(history), "stopped_early": len(history) < len(manifest["epochs"]), "best_epoch": best_epoch, "best_dev_loss": best_loss, "rule": stopping, "test_inputs_loaded": False})
     _write_json(run_root / "train_config.json", {"schema_version": 1, "experiment": manifest["experiment"], "arm": manifest["arm"], "seed": manifest["seed"], "manifest_sha256": sha256_file(args.manifest), "config_sha256": sha256_file(args.config), "model_a_inventory_sha256": inventory_sha, "best_dev_loss": best_loss, "best_epoch": best_epoch, "completed_epochs": len(history), "total_optimizer_steps": total_steps, "test_inputs_loaded": False, "runtime": {"torch_version": torch.__version__, "device": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "cpu"}, "source_revision": source_revision()})
