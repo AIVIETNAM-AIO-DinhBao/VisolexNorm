@@ -3,4 +3,6 @@ torch==2.13.0
 transformers==5.16.1
 sentencepiece==0.2.2
 safetensors==0.8.0
-gradio==6.26.0
+# jsonschema==4.26.0
+fastapi>=0.110.0
+uvicorn>=0.29.0

@@ -1,8 +1,17 @@
+# Environment, caches, and runtime
 __pycache__/
 *.py[cod]
 .pytest_cache/
 .venv/
 .tmp/
+.vscode/
+.idea/
+.DS_Store
+
+# AI agent & spec tool metadata
+.clinerules/
+.specify/
+archive/
 
 # Raw and processed datasets can be large or have redistribution restrictions.
 data/raw/
@@ -42,12 +51,14 @@ model_c_artifacts/
 model_c_checkpoint.zip
 phase8_training_input.zip
 
+# Secrets
 .env
 
-# Report
+# Report LaTeX temp files
 main.aux
 main.bbl
 main.blg
 main.log
 main.out
 references.bib
+
