@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "source": "outputs/evaluation_abc_posthoc/pairwise_error_analysis.jsonl",
+  "sample_count": 1045,
+  "category_counts": {
+    "model_a": {
+      "correct": 526,
+      "many-to-one": 2,
+      "missed": 54,
+      "one-to-many": 113,
+      "wrong": 350
+    },
+    "model_b": {
+      "correct": 553,
+      "many-to-one": 2,
+      "missed": 64,
+      "one-to-many": 99,
+      "wrong": 327
+    },
+    "model_c": {
+      "correct": 592,
+      "many-to-one": 2,
+      "missed": 59,
+      "one-to-many": 90,
+      "wrong": 302
+    }
+  },
+  "pairwise_exact": {
+    "model_c_vs_model_a": {
+      "model_a": 25,
+      "model_c": 91,
+      "tie": 929
+    },
+    "model_c_vs_model_b": {
+      "model_b": 18,
+      "model_c": 57,
+      "tie": 970
+    }
+  },
+  "selected_examples": [
+    {
+      "id": "vilexnorm_test_000003",
+      "input_text": "giống khẩu phần hồi covid của t ha m ha",
+      "target_text": "giống khẩu phần hồi covid của tao ha mày ha",
+      "model_a_prediction": "giống khẩu phần hồi covid của tôi ha mày ha",
+      "model_b_prediction": "giống khẩu phần hồi covid của tao ha mày ha",
+      "model_c_prediction": "giống khẩu phần hồi covid của tao ha mày ha",
+      "model_a_category": "wrong",
+      "model_b_category": "correct",
+      "model_c_category": "correct",
+      "model_c_vs_a": "model_c",
+      "model_c_vs_b": "tie"
+    },
+    {
+      "id": "vilexnorm_test_000054",
+      "input_text": "nhìu khi teo tưởng con mèo nó biết nói thật ạ",
+      "target_text": "nhiều khi tao tưởng con mèo nó biết nói thật ạ",
+      "model_a_prediction": "nhiều khi tôi tưởng con mèo nó biết nói thật ạ",
+      "model_b_prediction": "nhiều khi tôi tưởng con mèo nó biết nói thật ạ",
+      "model_c_prediction": "nhiều khi tao tưởng con mèo nó biết nói thật ạ",
+      "model_a_category": "wrong",
+      "model_b_category": "wrong",
+      "model_c_category": "correct",
+      "model_c_vs_a": "model_c",
+      "model_c_vs_b": "model_c"
+    },
+    {
+      "id": "vilexnorm_test_000654",
+      "input_text": "AE mà sao kỳ vậy.",
+      "target_text": "Anh em mà sao kỳ vậy.",
+      "model_a_prediction": "AE mà sao kỳ vậy.",
+      "model_b_prediction": "AE mà sao kỳ vậy.",
+      "model_c_prediction": "AE mà sao kỳ vậy.",
+      "model_a_category": "missed",
+      "model_b_category": "missed",
+      "model_c_category": "missed",
+      "model_c_vs_a": "tie",
+      "model_c_vs_b": "tie"
+    },
+    {
+      "id": "vilexnorm_test_000021",
+      "input_text": "Cũng sợ ngta giận mà nhớ ra mình có tiền đâu mà cho ngta vay :((",
+      "target_text": "Cũng sợ người ta giận mà nhớ ra mình có tiền đâu mà cho người ta vay :((",
+      "model_a_prediction": "Cũng sợ người ta giận mà nhớ ra mình có tiền đâu mà cho người ta vay(",
+      "model_b_prediction": "Cũng sợ người ta giận mà nhớ ra mình có tiền đâu mà cho người ta vay(",
+      "model_c_prediction": "Cũng sợ người ta giận mà nhớ ra mình có tiền đâu mà cho người ta vay(",
+      "model_a_category": "one-to-many",
+      "model_b_category": "one-to-many",
+      "model_c_category": "one-to-many",
+      "model_c_vs_a": "tie",
+      "model_c_vs_b": "tie"
+    },
+    {
+      "id": "vilexnorm_test_000033",
+      "input_text": "Nhìn nóa lại nghĩ đến con ngỗng nhà toy",
+      "target_text": "Nhìn nó lại nghĩ đến con ngỗng nhà tôi",
+      "model_a_prediction": "Nhìn nó lại nghĩ đến con ngỗng nhà tôi",
+      "model_b_prediction": "Nhìn nó lại nghĩ đến con ngỗng nhà tôi",
+      "model_c_prediction": "Nhìn nóa lại nghĩ đến con ngỗng nhà tôi",
+      "model_a_category": "correct",
+      "model_b_category": "correct",
+      "model_c_category": "wrong",
+      "model_c_vs_a": "model_a",
+      "model_c_vs_b": "model_b"
+    }
+  ],
+  "note": "Primary categories are deterministic heuristics; zero over-normalization categories do not imply zero false-positive edits."
+}

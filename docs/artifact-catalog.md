@@ -4,15 +4,16 @@
 
 | Artifact | Vai trò | Trạng thái release |
 |---|---|---|
-| `checkpoints/model_c/` | Checkpoint app mặc định theo Phase 10 | Bắt buộc, Kaggle Dataset |
-| `checkpoints/model_b/` | Rollback app và historical winner Phase 5 | Bắt buộc, Kaggle Dataset |
+| `checkpoints/model_c/` | Checkpoint app mặc định theo common Dev selection | Bắt buộc, Kaggle Dataset |
+| `checkpoints/model_b/` | Fallback app theo common Dev ranking | Bắt buộc, Kaggle Dataset |
 | `checkpoints/model_a/` | Candidate generator và provenance train | Local/external, không cần demo app |
 | `outputs/evaluation/best_model.json` | Lựa chọn A/B bất biến: Model B | Bắt buộc |
 | `outputs/evaluation_abc_posthoc/metrics.json` | Benchmark A/B/C hậu kiểm: Model C descriptive leader | Bắt buộc, có caveat |
-| `outputs/app/model_selection.json` | Quyết định app: Model C + Model B rollback | Bắt buộc |
+| `outputs/evaluation_dev/model_metrics.json` | Common Dev metrics và ranking A/B/C | Bắt buộc |
+| `outputs/app/model_selection.json` | Dev-based selection: Model C + Model B fallback | Bắt buộc |
 
-Phase 9 dùng ViLexNorm Test đã quan sát, nên không phải independent holdout. Model C được chọn
-cho ứng dụng theo artifact Phase 10; điều đó không sửa historical Phase 5 selection của Model B.
+Model C được chọn cho ứng dụng từ common Dev ERR, F1 và exact match. Artifact selection ghi rõ
+`selection_split=dev` và `test_metrics_used_for_selection=false`; Test metrics chỉ dùng báo cáo kết quả.
 
 ## Phân phối
 

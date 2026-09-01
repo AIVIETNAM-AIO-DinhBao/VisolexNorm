@@ -11,7 +11,8 @@ from visolexnorm.evaluation.errors import write_error_analysis
 from visolexnorm.evaluation.freeze import build_manifest, verify_manifest
 from visolexnorm.evaluation.predictions import generate_predictions
 from visolexnorm.evaluation.scoring import evaluate
-from visolexnorm.app.selection import build_model_c_selection
+from visolexnorm.app.selection import build_dev_selection
+from visolexnorm.evaluation.dev_selection import score_dev_predictions, write_dev_metrics
 
 
 def freeze_paths(args: argparse.Namespace) -> dict[str, Path]:
@@ -63,13 +64,23 @@ def run_posthoc_errors(args: argparse.Namespace) -> None:
     print(json.dumps({"records": count, "output": str(args.output), "promotion_eligible": False}))
 
 
-def run_posthoc_promote(args: argparse.Namespace) -> None:
-    if args.output.exists():
-        raise FileExistsError(f"Application selection already exists: {args.output}; review it instead of overwriting it")
+def run_dev_score(args: argparse.Namespace) -> None:
+    from scripts.evaluation_metrics import evaluate_records
+
+    payload = score_dev_predictions({
+        "model_a": args.model_a_prediction,
+        "model_b": args.model_b_prediction,
+        "model_c": args.model_c_prediction,
+    }, evaluate_records=evaluate_records)
+    write_dev_metrics(payload, args.output)
+    print(json.dumps({"selected_model": payload["selected_model"], "output": str(args.output)}))
+
+
+def run_dev_select(args: argparse.Namespace) -> None:
+    selection = build_dev_selection(args)
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    selection = build_model_c_selection(args)
     args.output.write_text(json.dumps(selection, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps({"selected_model": selection["selected_model"], "rollback_model": selection["rollback_model"], "output": str(args.output)}))
+    print(json.dumps({"selected_model": selection["selected_model"], "fallback_model": selection["fallback_model"], "output": str(args.output)}))
 
 
 def add_frozen_inputs(parser: argparse.ArgumentParser, *, required: bool = False) -> None:
@@ -114,6 +125,19 @@ def add_posthoc_inputs(parser: argparse.ArgumentParser) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
+    dev_score = commands.add_parser("dev-score", help="Score aligned Model A/B/C Dev predictions")
+    dev_score.add_argument("--model-a-prediction", type=Path, default=Path("outputs/model_a/dev_predictions.jsonl"))
+    dev_score.add_argument("--model-b-prediction", type=Path, default=Path("outputs/model_b/dev_predictions.jsonl"))
+    dev_score.add_argument("--model-c-prediction", type=Path, default=Path("outputs/model_c/dev_predictions.jsonl"))
+    dev_score.add_argument("--output", type=Path, default=Path("outputs/evaluation_dev/model_metrics.json"))
+    dev_score.set_defaults(handler=run_dev_score)
+    dev_select = commands.add_parser("dev-select", help="Select the application checkpoint from Dev metrics")
+    dev_select.add_argument("--dev-metrics", type=Path, default=Path("outputs/evaluation_dev/model_metrics.json"))
+    dev_select.add_argument("--model-a-checkpoint", type=Path, default=Path("checkpoints/model_a"))
+    dev_select.add_argument("--model-b-checkpoint", type=Path, default=Path("checkpoints/model_b"))
+    dev_select.add_argument("--model-c-checkpoint", type=Path, default=Path("checkpoints/model_c"))
+    dev_select.add_argument("--output", type=Path, default=Path("outputs/app/model_selection.json"))
+    dev_select.set_defaults(handler=run_dev_select)
     freeze = commands.add_parser("freeze")
     freeze.add_argument("--output", type=Path, default=Path("outputs/evaluation/freeze_manifest.json"))
     add_freeze_inputs(freeze)
@@ -174,15 +198,6 @@ def main() -> None:
     posthoc_errors.add_argument("--model-c-prediction", type=Path, default=Path("outputs/evaluation_abc_posthoc/model_c_test_predictions.jsonl"))
     posthoc_errors.add_argument("--output", type=Path, default=Path("outputs/evaluation_abc_posthoc/pairwise_error_analysis.jsonl"))
     posthoc_errors.set_defaults(handler=run_posthoc_errors)
-    posthoc_promote = commands.add_parser("posthoc-promote", help="Create a Model C application selection with Model B rollback")
-    posthoc_promote.add_argument("--benchmark-manifest", type=Path, default=Path("outputs/evaluation_abc_posthoc/benchmark_manifest.json"))
-    posthoc_promote.add_argument("--benchmark-metrics", type=Path, default=Path("outputs/evaluation_abc_posthoc/metrics.json"))
-    posthoc_promote.add_argument("--benchmark-deltas", type=Path, default=Path("outputs/evaluation_abc_posthoc/pairwise_deltas.json"))
-    posthoc_promote.add_argument("--benchmark-report", type=Path, default=Path("outputs/evaluation_abc_posthoc/benchmark_report.json"))
-    posthoc_promote.add_argument("--phase5-best-model", type=Path, default=Path("outputs/evaluation/best_model.json"))
-    posthoc_promote.add_argument("--output", type=Path, default=Path("outputs/app/model_selection.json"))
-    add_posthoc_inputs(posthoc_promote)
-    posthoc_promote.set_defaults(handler=run_posthoc_promote)
     args = parser.parse_args()
     args.handler(args)
 

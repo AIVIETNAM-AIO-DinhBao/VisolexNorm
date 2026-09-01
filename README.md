@@ -49,11 +49,12 @@ ViHOS trùng exact với ViHSD đã được nạp trước nên global deduplic
 
 | Giai đoạn | Phạm vi | Kết quả |
 |---|---:|---:|
-| Phase 3 | 20.000 candidate | 18.970 weak labels accepted |
-| Phase 8 | 48.411 candidate còn lại | 45.843 weak labels accepted |
-| Pool Model C | union Phase 3 + 8 | 64.813 weak labels |
+| Phase 3 | 20.000 candidate | 18.970 LLM-reviewed weak labels accepted |
+| Phase 8 | 48.411 candidate còn lại | 45.843 LLM-reviewed weak labels accepted |
+| Pool Model C | union Phase 3 + 8 | 64.813 LLM-reviewed weak labels |
 
 Mỗi candidate phải qua một trong ba quyết định: **KEEP** dùng candidate, **EDIT** dùng corrected text tối thiểu, **REJECT** bị loại khỏi training.
+Reviewer là `gemini-3.5-flash-lite`, prompt `lexical_norm_review_v1`, temperature 0 và structured JSON schema. Đây không phải nhãn đã được con người xác minh toàn bộ.
 
 ## Kết quả
 
@@ -61,20 +62,20 @@ Mỗi candidate phải qua một trong ba quyết định: **KEEP** dùng candid
 
 | Model | ERR | Precision | Recall | F1 |
 |---|---:|---:|---:|---:|
-| Model A | 0.703037 | 0.733999 | 0.703037 | 0.718184 |
-| Model B | 0.723847 | 0.761538 | 0.723847 | 0.742215 |
+| Model A | 0.600250 | 0.733999 | 0.703037 | 0.718184 |
+| Model B | 0.633111 | 0.761538 | 0.723847 | 0.742215 |
 
 Model B là historical winner theo F1 cao hơn. Artifact bất biến là `outputs/evaluation/best_model.json`.
 
-### Phase 9 — A/B/C hậu kiểm mô tả
+### A/B/C trên common Test
 
-| Model | F1 |
-|---|---:|
-| Model A | 0.718184 |
-| Model B | 0.742215 |
-| Model C | 0.764993 |
+| Model | ERR | F1 |
+|---|---:|---:|
+| Model A | 0.600250 | 0.718184 |
+| Model B | 0.633111 | 0.742215 |
+| Model C | 0.664725 | 0.764993 |
 
-Model C cao hơn Model B `+0.022778` F1, bootstrap CI95 `[0.012063, 0.033228]`. Kết quả này dùng ViLexNorm Test đã quan sát nên không phải bằng chứng holdout độc lập. Phase 10 tạo selection artifact cho app: Model C mặc định, Model B rollback.
+Model C được chọn trước bằng common Dev ERR (`0.670380`), Dev F1 (`0.759233`) và Dev exact match (`0.561905`). Test không tham gia model selection. Trên Test, Model C cao hơn Model B `+0.022778` F1, bootstrap CI95 `[0.012063, 0.033228]`. Model C là checkpoint app mặc định và Model B là fallback.
 
 ## Cài đặt theo môi trường
 

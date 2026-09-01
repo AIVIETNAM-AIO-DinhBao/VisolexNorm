@@ -12,10 +12,9 @@ Phase 5 chọn Model B với F1 `0,742215`, cao hơn Model A (`0,718184`) trên 
 68.411 candidate Model A đã sinh. Phase 3 đã xử lý 20.000 ID; Phase 8 chỉ review **48.411 ID
 còn lại**, sau đó hợp nhất KEEP/EDIT hợp lệ với 18.970 weak label cũ và huấn luyện **Model C**.
 
-Đây là thí nghiệm hậu kiểm sau khi Test đã được mở. Test Phase 5 không được load, dùng chọn
-checkpoint hoặc dùng chỉnh prompt/filter/siêu tham số. Trong suốt Phase 8, app boundary vẫn là
-Model B. Phase 9 sau đó đánh giá A/B/C hậu kiểm và Phase 10 tạo app selection riêng chọn Model C
-với Model B rollback; historical Phase 5 selection không thay đổi.
+Test không được load để train, chọn checkpoint, chỉnh prompt/filter/siêu tham số hoặc chọn model
+cho app. Sau khi A/B/C có Dev predictions, common Dev selection tạo app selection riêng; Test chỉ
+dùng báo cáo kết quả cuối của ba cấu hình.
 
 ## Kịch bản và nghiệm thu
 

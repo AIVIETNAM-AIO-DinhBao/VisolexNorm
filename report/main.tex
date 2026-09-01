@@ -20,16 +20,31 @@
 \setlist[itemize]{noitemsep,topsep=0pt}
 \renewcommand{\arraystretch}{1.15}
 
-\title{Vietnamese Social Media Lexical Normalization with BARTpho:\\
-A Comparative Study of Gold and Reviewed Weak-Label Training}
-\author{}
-\date{}
-
 \begin{document}
-\maketitle
+\begin{titlepage}
+\thispagestyle{empty}
+\begin{center}
+{\large \textbf{UNIVERSITY:} \rule{8cm}{0.4pt}}\\[1em]
+{\large \textbf{FACULTY / DEPARTMENT:} \rule{6cm}{0.4pt}}\\[3em]
+{\Large \textbf{FINAL PROJECT REPORT}}\\[2em]
+{\LARGE \textbf{Vietnamese Social Media Lexical Normalization with BARTpho}}\\[1em]
+{\large A Comparative Study of Gold and LLM-Reviewed Weak-Label Training}\\[3em]
+\begin{tabular}{ll}
+\textbf{Course:} & Statistical Learning \\[1em]
+\textbf{Instructor:} & \rule{8cm}{0.4pt} \\[2em]
+\textbf{Student 1:} & \rule{5cm}{0.4pt}\quad \textbf{ID:} \rule{3cm}{0.4pt} \\[1em]
+\textbf{Student 2:} & \rule{5cm}{0.4pt}\quad \textbf{ID:} \rule{3cm}{0.4pt} \\[1em]
+\textbf{Student 3:} & \rule{5cm}{0.4pt}\quad \textbf{ID:} \rule{3cm}{0.4pt} \\[1em]
+\textbf{Student 4:} & \rule{5cm}{0.4pt}\quad \textbf{ID:} \rule{3cm}{0.4pt}
+\end{tabular}
+\vfill
+\textbf{Submission date:} \rule{5cm}{0.4pt}
+\end{center}
+\end{titlepage}
+\setcounter{page}{1}
 
 \begin{abstract}
-Vietnamese social media text frequently contains abbreviations, informal spellings, omitted diacritics, and other non-standard lexical forms. This study formulates their normalization as a sequence-to-sequence task and compares three BARTpho-syllable configurations. Model~A was fine-tuned on 8,372 human-annotated ViLexNorm training pairs. Model~B was initialized from Model~A and trained with a balanced mixture of gold data and an initial pool of 18,970 reviewed weak labels. Model~C was also initialized from Model~A but used an expanded pool of 64,813 reviewed weak labels. The weak labels were constructed by generating candidate normalizations for ViSoLex sentences, reviewing candidates under a \textsc{Keep}, \textsc{Edit}, or \textsc{Reject} protocol, and applying deterministic validation rules. Under a common 1,045-sentence ViLexNorm Test evaluation, Models~A, B, and C obtained F1 scores of 0.7182, 0.7422, and 0.7650, respectively. Model~C achieved the highest result and was selected for a local Gradio application, while Model~B was retained as an available fallback checkpoint. The application performs BARTpho inference locally and does not use the review model at runtime.
+Vietnamese social media text frequently contains abbreviations, informal spellings, omitted diacritics, and other non-standard lexical forms. This study formulates their normalization as a sequence-to-sequence task and compares three BARTpho-syllable configurations. Model~A was fine-tuned on 8,372 human-annotated ViLexNorm training pairs. Model~B was initialized from Model~A and trained with a balanced mixture of gold data and an initial pool of 18,970 LLM-reviewed weak labels. Model~C was also initialized from Model~A but used an expanded pool of 64,813 LLM-reviewed weak labels. Candidate normalizations for ViSoLex were reviewed by Gemini under a \textsc{Keep}, \textsc{Edit}, or \textsc{Reject} protocol and then subjected to deterministic validation. A common Dev evaluation selected Model~C before final Test scoring. On the 1,045-sentence ViLexNorm Test split, Models~A, B, and C obtained F1 scores of 0.7182, 0.7422, and 0.7650, and Error Reduction Rates of 0.6002, 0.6331, and 0.6647, respectively. Model~C was used for a local Gradio application, with Model~B retained as a fallback checkpoint. The application performs BARTpho inference locally and does not use the review model at runtime.
 \end{abstract}
 
 \section{Introduction}
@@ -38,9 +53,9 @@ Vietnamese social media messages often depart from conventional written forms. U
 
 The present work treats this problem as lexical normalization rather than unrestricted rewriting. The intended output is a more canonical lexical realization of the input, not a paraphrase, a stylistic reformulation, a full grammatical correction, or an alteration of sentiment and content. This distinction matters because a system that rewrites a sentence fluently may still be unsuitable for lexical normalization if it changes information that was not expressed in the source text.
 
-The available supervised resource, ViLexNorm, provides human-annotated pairs of noisy and normalized Vietnamese social media sentences \citep{nguyen2024vilexnorm}. Its 8,372-example training split provides a direct basis for supervised fine-tuning, but social media language is diverse and its lexical variation is not fully represented by a moderate-sized gold corpus. In contrast, the processed ViSoLex corpus used in this project contains 68,411 unlabeled social media sentences. The central question of this study is therefore whether reviewed labels constructed from this unlabeled corpus can provide additional training signal for a BARTpho model.
+The available supervised resource, ViLexNorm, provides human-annotated pairs of noisy and normalized Vietnamese social media sentences \citep{nguyen2024vilexnorm}. Its 8,372-example training split provides a direct basis for supervised fine-tuning, but social media language is diverse and its lexical variation is not fully represented by a moderate-sized gold corpus. In contrast, the processed ViSoLex corpus used in this project contains 68,411 unlabeled social media sentences. The central question of this study is therefore whether LLM-reviewed labels constructed from this unlabeled corpus can provide additional training signal for a BARTpho model.
 
-The study compares three configurations of the same BARTpho-syllable architecture. Model~A uses only ViLexNorm gold training data. Model~B continues from Model~A with an initial reviewed weak-label pool of 18,970 examples. Model~C also continues from Model~A but uses an expanded reviewed weak-label pool of 64,813 examples. The comparison is designed to examine how the composition and coverage of reviewed weak-label data are associated with lexical-normalization performance. The project further implements a local Gradio application using the selected checkpoint, so that inference does not require the training corpus or an external review API.
+The study compares three configurations of the same BARTpho-syllable architecture. Model~A uses only ViLexNorm gold training data. Model~B continues from Model~A with an initial LLM-reviewed weak-label pool of 18,970 examples. Model~C also continues from Model~A but uses an expanded LLM-reviewed weak-label pool of 64,813 examples. The comparison is designed to examine how the composition and coverage of LLM-reviewed weak-label data are associated with lexical-normalization performance. The project further implements a local Gradio application using the model selected on Dev, so that inference does not require the training corpus or an external review API.
 
 \section{Background and Related Work}
 
@@ -112,23 +127,23 @@ Test & 1,045 & Comparative evaluation \\
 \end{tabular}
 \end{table}
 
-The additional unlabeled corpus was built from ViSoLex sources. After whitespace normalization, removal of empty records, exact deduplication, and leakage filtering, the canonical corpus contains 68,411 sentences. Provenance is retained through an \texttt{original\_source} field. ViHOS has zero retained examples because its records were exact duplicates of ViHSD records loaded earlier in the pipeline; this value does not mean that the original ViHOS source was empty.
+The additional unlabeled corpus follows the source composition released with ViSoLex \citep{nguyen2025visolex}. The initial specification expected approximately 121,087 sentences; this is a planning estimate, not an observed raw count for the implemented run. The available inputs produced 68,411 canonical unique sentences after empty-record removal, protected-set filtering, and source-order deduplication. A complete numerical decomposition from 121,087 to 68,411 cannot be reconstructed from retained artifacts. The confirmed source-level effect is that ViHOS records duplicated ViHSD records loaded earlier and therefore contributed no additional unique sentence.
 
 \begin{table}[t]
 \centering
 \caption{Canonical ViSoLex corpus after preprocessing and global deduplication.}
 \label{tab:visolex-sources}
-\begin{tabular}{lr}
+\begin{tabular}{llr}
 \toprule
-Source & Retained sentences \\
+Source & Original task & Retained \\
 \midrule
-ViHSD & 30,579 \\
-UIT-VSMEC & 6,916 \\
-ViHOS & 0 \\
-ViSpamReviews & 19,805 \\
-UIT-ViSFD & 11,111 \\
+ViHSD \citep{luu2021vihsd} & Hate-speech classification & 30,579 \\
+UIT-VSMEC \citep{ho2020vsmec} & Emotion recognition & 6,916 \\
+ViHOS \citep{hoang2023vihos} & Offensive-span detection & 0 \\
+ViSpamReviews \citep{vandinh2022vispam} & Spam-review detection & 19,805 \\
+UIT-ViSFD \citep{phan2021visfd} & Aspect/sentiment analysis & 11,111 \\
 \midrule
-Total & 68,411 \\
+Total & & 68,411 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -139,7 +154,7 @@ Leakage prevention is applied before weak-label construction and again when acce
 
 Model~A generated one candidate normalization for every ViSoLex sentence. Generation used a batch size of 16, four beams, a maximum source length of 128 tokens, and at most 128 generated tokens. The process was divided into chunks of 1,000 records so that completed chunks could be verified and resumed. Each candidate preserves its source identifier and provenance, records the generation-configuration hash, and stores a confidence value defined as the mean generated-token log probability, including the end-of-sequence token. Confidence is used to stratify review and audit samples; it is not itself a sufficient condition for accepting a weak label.
 
-Each candidate was reviewed under a frozen instruction and a fixed structured response schema. A \textsc{Keep} decision accepts the Model~A candidate as the target. An \textsc{Edit} decision replaces it with a minimally corrected target supplied by the reviewer. A \textsc{Reject} decision excludes the record because a reliable lexical target cannot be determined or because the transformation lies outside lexical normalization. The reviewer is used only in offline data preparation. It is not loaded or called by the deployed application.
+Each candidate was reviewed by Gemini 3.5 Flash-Lite using the frozen lexical-normalization review prompt (version~1), temperature 0, batches of at most 15 records, and a structured JSON response schema. Automatic function calling was disabled. A \textsc{Keep} decision accepts the Model~A candidate as the target. An \textsc{Edit} decision replaces it with a complete, minimally corrected target supplied by the LLM reviewer. A \textsc{Reject} decision excludes the record because a reliable lexical target cannot be determined or because the transformation lies outside lexical normalization. The reviewer is used only in offline data preparation. It is not loaded or called by the deployed application.
 
 Review decisions alone do not determine training membership. Accepted \textsc{Keep} and \textsc{Edit} records are filtered for empty targets, serialized-response artifacts, duplicate input text, protected-set overlap, implausible target length, and excessive character-level change. The accepted target-to-input length ratio must lie between 0.5 and 2.0, and the character edit ratio computed from \texttt{SequenceMatcher} must not exceed 0.8. These checks remove obvious failures and large rewrites that are inconsistent with the task scope. They do not establish that every remaining weak label is semantically perfect.
 
@@ -158,7 +173,7 @@ Combined pool & -- & -- & 30,983 & 33,830 & -- & 64,813 \\
 \end{tabular}
 \end{table}
 
-The initial accepted pool defines the additional data available to Model~B. The union of the initial and expanded accepted pools defines the additional data available to Model~C. Model~A uses neither pool during its supervised fine-tuning. The three data conditions thus differ in reviewed weak-label coverage while preserving a common human-labeled ViLexNorm training source.
+The initial accepted pool contains 52.38\% \textsc{Edit} and 47.62\% \textsc{Keep} records; the combined pool contains 52.20\% \textsc{Edit} and 47.80\% \textsc{Keep} records. Slightly more than half of the accepted targets therefore required LLM correction rather than direct candidate acceptance. The initial pool defines the additional data available to Model~B, and the union of the initial and expanded pools defines the additional data available to Model~C. Model~A uses neither pool during supervised fine-tuning. These targets are referred to as LLM-reviewed weak labels, not human-verified annotations.
 
 \section{Model Architecture and Configurations}
 
@@ -249,13 +264,13 @@ F_1=\frac{2\cdot\operatorname{Precision}\cdot\operatorname{Recall}}
 {\operatorname{Precision}+\operatorname{Recall}}.
 \end{equation}
 
-The project also reports ERR using the Leave-As-Is interpretation,
+The project reports Error Reduction Rate (ERR) relative to a Leave-As-Is (LAI) baseline. Let $E_{LAI}$ be the aggregate whitespace-token Levenshtein distance from input to reference and $E_{system}$ the corresponding distance from model prediction to reference. The published token-accuracy reduction formula is equivalently computed as
 \begin{equation}
-ERR=\frac{C}{G}.
+ERR=\frac{E_{LAI}-E_{system}}{E_{LAI}}.
 \end{equation}
-Under this token-edit implementation, Leave-As-Is resolves no gold edits, so ERR is numerically equal to edit recall. This equality is a property of the current implementation and should not be generalized to every ERR definition. Exact sentence match is additionally reported as the proportion of sentences whose generated output equals the reference target exactly.
+ERR equals one for perfect normalization, zero for Leave-As-Is behavior, and may become negative when a system introduces more token errors than the baseline. Unlike edit recall, it penalizes unnecessary or incorrect output changes through $E_{system}$. Exact sentence match is additionally reported as the proportion of sentences whose generated output equals the reference target exactly.
 
-All three configurations are evaluated on the same ViLexNorm Test split containing 1,045 sentences. The tokenizer contract, generation settings, prediction schema, and edit-based scoring procedure are held constant across Models~A, B, and C. This common protocol compares the three training configurations under consistent inference and evaluation conditions. Bootstrap intervals for pairwise metric differences use 2,000 resamples and seed 2026.
+All three configurations are first scored on the same 1,050-example Dev split with one common metric implementation. Model~C is selected because it obtains the highest Dev ERR (0.670380), edit F1 (0.759233), and exact sentence match (0.561905); the selection artifact explicitly records that Test metrics are not used. The three selected checkpoints are then evaluated on the same 1,045-example ViLexNorm Test split. The tokenizer contract, generation settings, prediction schema, and scoring procedure are held constant across Models~A, B, and C. Bootstrap intervals for pairwise metric differences use 2,000 resamples and seed 2026.
 
 \section{Results and Discussion}
 
@@ -293,34 +308,79 @@ Table~\ref{tab:benchmark-results} presents the three models under the same 1,045
 \toprule
 Model & Gold edits & Predicted edits & Correct edits & ERR & Precision & F1 & Exact match \\
 \midrule
-Model A & 1,778 & 1,703 & 1,250 & 0.703037 & 0.733999 & 0.718184 & 0.503349 \\
-Model B & 1,778 & 1,690 & 1,287 & 0.723847 & 0.761538 & 0.742215 & 0.529187 \\
-Model C & 1,778 & 1,707 & 1,333 & 0.749719 & 0.780902 & 0.764993 & 0.566507 \\
+Model A & 1,778 & 1,703 & 1,250 & 0.600250 & 0.733999 & 0.718184 & 0.503349 \\
+Model B & 1,778 & 1,690 & 1,287 & 0.633111 & 0.761538 & 0.742215 & 0.529187 \\
+Model C & 1,778 & 1,707 & 1,333 & 0.664725 & 0.780902 & 0.764993 & 0.566507 \\
 \bottomrule
 \end{tabular}}
 \end{table*}
 
-Relative to Model~A, Model~B increased F1 by 0.024030. Relative to Model~B, Model~C increased F1 by 0.022778 and increased ERR by 0.025872. For the Model~C--Model~B comparison, the bootstrap 95\% interval for the F1 difference is $[0.012063, 0.033228]$, while the corresponding ERR interval is $[0.013296, 0.038206]$. These intervals are positive under the stated resampling procedure and support the higher performance of Model~C in the common evaluation.
+Relative to Model~A, Model~B increased F1 by 0.024030. Relative to Model~B, Model~C increased F1 by 0.022778 and increased ERR by 0.031614. For the Model~C--Model~B comparison, the bootstrap 95\% interval for the F1 difference is $[0.012063, 0.033228]$, while the corresponding ERR interval is $[0.015893, 0.046803]$. These intervals are positive under the stated resampling procedure and support the higher performance of Model~C in the common evaluation.
 
 The common Test results show a progressive increase in performance across the three configurations. Model~B improves on the gold-only configuration in precision, recall, ERR, F1, and exact sentence match. Model~C records the highest value for each reported metric, indicating that the expanded reviewed weak-label configuration is the strongest of the three evaluated settings. The application therefore uses Model~C as its default checkpoint.
 
-\subsection{Error-oriented interpretation}
+\subsection{Error Analysis}
 
-The edit formulation makes it possible to distinguish several failure patterns. A missed normalization occurs when the prediction remains identical to the noisy input although the reference contains a lexical change. Over-normalization occurs when the input already equals the reference but the model changes it anyway. Other cases involve one-to-many and many-to-one transformations, which are particularly relevant to abbreviations and compressed social-media forms. The project error-analysis code also retains a suspected weak-label-noise category, but it assigns that category only when explicit supporting evidence is available; uncertain examples are otherwise counted as wrong.
+Each Test prediction was assigned one deterministic primary category. These labels are heuristic outcomes rather than causal explanations: in particular, one-to-many and many-to-one are determined from source/reference lengths, and zero sentence-level over-normalization labels do not imply zero false-positive edits.
 
-The aggregate results suggest that the progression from Model~A to Model~C is not merely a consequence of producing more edits. Model~B predicts slightly fewer edits than Model~A while obtaining more correct edits, which is reflected in higher precision. Model~C predicts slightly more edits than Model~B but also increases the number of correct edits by 46, raising both precision and recall. A qualitative appendix can provide aligned input, reference, and three-model outputs for individual examples, but such examples should be interpreted as illustrations rather than as substitutes for aggregate evaluation.
+\begin{table}[t]
+\centering
+\caption{Primary error-analysis categories, shown as count (percentage) over 1,045 Test sentences.}
+\label{tab:error-categories}
+\begin{tabular}{lrrr}
+\toprule
+Category & Model A & Model B & Model C \\
+\midrule
+Correct & 526 (50.3\%) & 553 (52.9\%) & 592 (56.7\%) \\
+Wrong & 350 (33.5\%) & 327 (31.3\%) & 302 (28.9\%) \\
+Missed & 54 (5.2\%) & 64 (6.1\%) & 59 (5.6\%) \\
+One-to-many & 113 (10.8\%) & 99 (9.5\%) & 90 (8.6\%) \\
+Many-to-one & 2 (0.2\%) & 2 (0.2\%) & 2 (0.2\%) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Paired exact outcomes show that Model~C was correct while Model~A was wrong on 91 sentences, whereas the reverse occurred on 25. Against Model~B, the corresponding counts were 57 and 18. Four compact examples illustrate both improvements and remaining failures.
+
+\begin{table*}[t]
+\centering
+\caption{Selected qualitative examples from the deterministic error-analysis artifact.}
+\label{tab:error-examples}
+\small
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+Case & Text \\
+\midrule
+A wrong; B/C correct & Input: \textit{giống khẩu phần hồi covid của t ha m ha}. Reference/B/C: \textit{... của tao ha mày ha}. A: \textit{... của tôi ha mày ha}. \\
+C only correct & Input: \textit{nhìu khi teo tưởng con mèo...}. Reference/C: \textit{nhiều khi tao tưởng...}. A/B use \textit{tôi}. \\
+All missed & Input: \textit{AE mà sao kỳ vậy.} Reference: \textit{Anh em mà sao kỳ vậy.} All models keep \textit{AE}. \\
+C regression & Input: \textit{Nhìn nóa lại nghĩ đến con ngỗng nhà toy}. A/B normalize both \textit{nóa} and \textit{toy}; C leaves \textit{nóa}. \\
+\bottomrule
+\end{tabularx}
+\end{table*}
+
+The aggregate and qualitative results indicate that additional training data improved several ambiguous abbreviations, but errors remain for omitted diacritics, short forms such as \textit{AE}, and preservation of every source token. The examples are illustrations rather than substitutes for aggregate evaluation.
 
 \section{Local Web Application}
 
-The application is implemented with Gradio and runs on the local loopback address \texttt{127.0.0.1}. The deployed default checkpoint is Model~C because it achieved the highest values in the common Test comparison. Model~B is retained as an available fallback checkpoint.
+The application is implemented with Gradio and runs on the local loopback address \texttt{127.0.0.1}. The deployed default checkpoint is Model~C because it achieved the highest values in the common Dev comparison. Model~B is retained as an available fallback checkpoint. Test results are reported only after this selection.
 
 At runtime, the application validates the user input, tokenizes it with the local BARTpho tokenizer, performs CPU generation with four beams and maximum source and output lengths of 128, and displays the normalized text. The runtime is cached after the first load. Gemini is used only in offline weak-label construction; the web application neither imports nor calls the review provider. The model can therefore run after the checkpoint and inference dependencies have been installed locally, including under \texttt{HF\_HUB\_OFFLINE=1} and \texttt{TRANSFORMERS\_OFFLINE=1}.
 
 The recorded local smoke test normalized \textit{mik ko bt hnay đi hc ko} to \textit{mình không biết hôm nay đi học không}. The first request, including model loading and generation, took 19.888 seconds. A second request using the cached runtime took 2.286 seconds. A clean offline check using the released checkpoint recorded 15.989 seconds for model loading and inference. These values demonstrate functional local execution on the tested machine; they are not a general multi-user latency benchmark.
 
+The application is started with \texttt{python -m visolexnorm.app.web -{}-port 7860} and opened at \texttt{http://127.0.0.1:7860}. Figure~\ref{fig:gradio-app} records the verified local input/output example.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.9\linewidth]{figures/gradio_model_c.png}
+\caption{Local Gradio application using the Dev-selected Model~C checkpoint. The displayed normalization runs locally without a Gemini API call.}
+\label{fig:gradio-app}
+\end{figure}
+
 \section{Limitations}
 
-The reviewed weak labels are not equivalent to human annotations. The review protocol, fixed prompt, schema validation, and deterministic filters reduce identifiable problems, but they do not guarantee that every accepted target is semantically optimal. Some lexical variants are context-dependent, and an automated reviewer may select a plausible target that differs from the preferred annotation in ViLexNorm-style evaluation.
+The LLM-reviewed weak labels are not equivalent to human annotations and were not human-verified at full scale. Temperature 0, a fixed prompt, structured schema validation, and deterministic filters improve reproducibility and reduce identifiable problems, but they do not guarantee that every accepted target is semantically optimal. Some lexical variants are context-dependent, and the LLM reviewer may select a plausible target that differs from the preferred annotation in ViLexNorm-style evaluation.
 
 The comparison also changes more than one factor at a time. Model~A begins from the public BARTpho checkpoint, whereas Models~B and C begin from Model~A. Model~B and Model~C further differ in the size of their weak-label pools and in their number of epochs. The observed differences should therefore be described as properties of the three complete training configurations, not as a causal estimate of weak-label count alone.
 
@@ -328,9 +388,9 @@ The edit-based metric implementation is a deterministic project scorer rather th
 
 \section{Conclusion}
 
-This study compared three BARTpho-syllable configurations for Vietnamese social media lexical normalization. Model~A used only human-annotated ViLexNorm data, Model~B added an initial pool of 18,970 reviewed weak labels, and Model~C used an expanded pool of 64,813 reviewed weak labels. Development loss decreased from Model~A to Model~C, and the common benchmark produced F1 values of 0.718184, 0.742215, and 0.764993 for Models~A, B, and C, respectively. The results are consistent with reviewed social-media examples providing useful additional training variation.
+This study compared three BARTpho-syllable configurations for Vietnamese social media lexical normalization. Model~A used only human-annotated ViLexNorm data, Model~B added an initial pool of 18,970 LLM-reviewed weak labels, and Model~C used an expanded pool of 64,813 LLM-reviewed weak labels. The common Test evaluation produced F1 values of 0.718184, 0.742215, and 0.764993 and ERR values of 0.600250, 0.633111, and 0.664725 for Models~A, B, and C, respectively. The results are consistent with LLM-reviewed social-media examples providing useful additional training variation.
 
-Model~C achieved the highest values in the common Test evaluation and is used as the default local application checkpoint, while Model~B remains available as a fallback. Future work should expand human auditing of accepted weak labels and separate the effects of training duration, initialization, and weak-label coverage more directly.
+Model~C was selected using the common Dev evaluation and is used as the default local application checkpoint, while Model~B remains available as a fallback. It subsequently achieved the highest values in the common Test evaluation. Future work should expand human auditing of accepted weak labels and separate the effects of training duration, initialization, and weak-label coverage more directly.
 
 \bibliographystyle{plainnat}
 \bibliography{references}

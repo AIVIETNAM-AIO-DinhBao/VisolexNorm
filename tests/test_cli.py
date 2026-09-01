@@ -61,6 +61,8 @@ def test_evaluation_cli_has_package_backed_subcommands() -> None:
         "generate",
         "score",
         "analyze-errors",
+        "dev-score",
+        "dev-select",
         "posthoc-freeze",
         "posthoc-verify",
         "posthoc-generate",

@@ -83,9 +83,10 @@ Maintenance changes must preserve all of the following:
 
 1. `outputs/evaluation/best_model.json` remains the historical Phase 5 A/B
    selection artifact and names Model B. Do not rewrite it.
-2. `outputs/app/model_selection.json` is the current application selection
-   artifact. It names Model C after the verified Phase 9 post-hoc benchmark and
-   retains Model B as verified rollback.
+2. `outputs/evaluation_dev/model_metrics.json` ranks A/B/C by common Dev ERR,
+   F1 and exact match. `outputs/app/model_selection.json` names Model C from
+   this Dev ranking and retains Model B as verified fallback; Test metrics are
+   not selection inputs.
 3. No maintenance task calls Gemini, trains a model, or runs GPU prediction
    generation unless explicitly approved as a new research run.
 4. Frozen prompts, lexical policy, configs, schemas, and historical manifests
@@ -132,7 +133,8 @@ This benchmark is intentionally marked
 Phase 10 app decision is created from its verified evidence:
 
 ```text
-python -m scripts.evaluation posthoc-promote
+python -m scripts.evaluation dev-score
+python -m scripts.evaluation dev-select
 python -m visolexnorm.app.inference --smoke
 ```
 

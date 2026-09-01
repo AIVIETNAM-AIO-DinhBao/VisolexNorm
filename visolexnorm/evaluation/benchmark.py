@@ -339,7 +339,10 @@ def _metrics_from_counts(counts: dict[str, int]) -> dict[str, float]:
     recall = counts["correct_edits"] / counts["gold_edits"] if counts["gold_edits"] else 0.0
     return {
         "f1": 2 * precision * recall / (precision + recall) if precision + recall else 0.0,
-        "ERR": recall,
+        "ERR": (
+            (counts["lai_token_errors"] - counts["system_token_errors"]) / counts["lai_token_errors"]
+            if counts["lai_token_errors"] else 0.0
+        ),
     }
 
 
@@ -351,8 +354,11 @@ def _bootstrap_pairwise_metrics(
     seed: int,
     samples: int,
 ) -> dict[str, dict[str, float]]:
-    """Bootstrap F1/ERR deltas from precomputed single-record edit counts."""
-    fields = ("gold_edits", "predicted_edits", "correct_edits")
+    """Bootstrap F1/ERR deltas from precomputed per-record sufficient statistics."""
+    fields = (
+        "gold_edits", "predicted_edits", "correct_edits",
+        "lai_token_errors", "system_token_errors",
+    )
     left_counts = [evaluate_records([row]) for row in left]
     right_counts = [evaluate_records([row]) for row in right]
     rng = random.Random(seed)

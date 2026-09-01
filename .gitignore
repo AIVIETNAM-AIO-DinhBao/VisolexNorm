@@ -20,6 +20,9 @@ outputs/evaluation/*
 !outputs/evaluation/test_metrics.json
 !outputs/evaluation/freeze_manifest.json
 !outputs/evaluation/comparison.md
+!outputs/evaluation_dev/
+outputs/evaluation_dev/*
+!outputs/evaluation_dev/model_metrics.json
 !outputs/evaluation_abc_posthoc/
 outputs/evaluation_abc_posthoc/*
 !outputs/evaluation_abc_posthoc/metrics.json
@@ -44,10 +47,9 @@ phase8_training_input.zip
 
 .env
 
-# Report
-main.aux
-main.bbl
-main.blg
-main.log
-main.out
-references.bib
+# LaTeX build intermediates; report source, bibliography, and PDF remain distributable.
+*.aux
+*.bbl
+*.blg
+*.log
+*.out

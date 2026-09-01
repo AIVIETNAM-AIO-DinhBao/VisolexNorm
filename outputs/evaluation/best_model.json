@@ -5,11 +5,11 @@
   "deciding_criterion": "higher_f1",
   "frozen_selection_rule": [
     "higher_f1",
-    "lower_ERR",
+    "higher_ERR",
     "model_a"
   ],
   "selected_checkpoint_checksum": "0361cfab6bad4b6e4d95367f5125320fb61d6d3327b92481d0a31a937140d0b7",
   "selected_prediction_sha256": "b3b4e8a82460b0109fc1de04dcd00e8192589ac274fa70ce9fcd019f4e2ee90e",
-  "freeze_manifest_sha256": "b467eb6910b3af01d40f615f6bce12902d153ee59ca0c40401b5146b3730b134",
-  "evaluated_at_utc": "2026-08-23T17:03:49.383700+00:00"
+  "freeze_manifest_sha256": "1d1aba34dccc29292d5a79a6979748feab57e345d3f7d4e5153945ad86d12a46",
+  "evaluated_at_utc": "2026-09-01T08:18:50.834760+00:00"
 }

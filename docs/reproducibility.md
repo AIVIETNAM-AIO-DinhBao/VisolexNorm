@@ -73,8 +73,9 @@ Không sửa `outputs/evaluation/best_model.json`, `freeze_manifest.json`, raw p
 Phase 8 review 48.411 ID còn lại, có 5 approved provider exclusions và tạo pool 64.813 weak
 labels. `notebooks/train_model_c_kaggle.ipynb` chạy Dev-only, không nhận Test làm input.
 
-Phase 9 sinh một prediction Model C trên Test đã quan sát và score hậu kiểm. Phase 10 dùng
-artifact này để tạo `outputs/app/model_selection.json`; app dùng Model C, Model B giữ rollback.
+Sau khi có Dev predictions của A/B/C, chạy `python -m scripts.evaluation dev-score` rồi
+`python -m scripts.evaluation dev-select`. Common Dev ERR chọn Model C và Model B làm fallback;
+Test metrics không tham gia selection. Test predictions sau đó chỉ dùng báo cáo kết quả A/B/C.
 
 ### Phase 6 — local app
 

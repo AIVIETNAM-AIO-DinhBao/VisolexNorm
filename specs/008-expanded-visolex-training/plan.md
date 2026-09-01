@@ -32,9 +32,9 @@ Phase 5 ──→ Phase 6: app boundary ban đầu dùng Model B ───┐
                                                            └→ Phase 6 hoàn tất → Phase 7 đóng gói
 ```
 
-Phase 6 không chờ Phase 8 và không import Gemini/training dependency. Boundary Model B ở đây là
-quyết định trong thời gian Phase 8 chạy. Phase 9/10 về sau chọn Model C cho app với Model B
-rollback. Phase 7 bắt đầu sau khi Phase 6 hoàn tất real offline smoke và Gradio acceptance.
+Phase 6 không chờ Phase 8 và không import Gemini/training dependency. Sau khi A/B/C có Dev
+predictions, common Dev selection chọn checkpoint app và fallback mà không dùng Test metrics.
+Phase 7 bắt đầu sau khi Phase 6 hoàn tất real offline smoke và Gradio acceptance.
 
 ## Cấu trúc tối thiểu
 

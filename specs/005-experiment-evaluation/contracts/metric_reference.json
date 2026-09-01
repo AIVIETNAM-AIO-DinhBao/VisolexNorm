@@ -2,7 +2,7 @@
   "repository": "https://github.com/ngxtnhi/ViLexNorm",
   "commit": "1070c6b9b00830fad278f48d9797df9ae1c942ac",
   "paper": "https://aclanthology.org/2024.eacl-long.85",
-  "protocol": "van der Goot (2019) ERR against Leave-As-Is; project token-edit port v1",
+  "protocol": "ViLexNorm token-accuracy ERR against Leave-As-Is plus project edit P/R/F1 v2",
   "official_evaluator_available_in_repository": false,
-  "port_status": "provisional: deterministic fixture passes, but independent official/reference fixture is still required before Test evaluation"
+  "port_status": "implemented from the published ViLexNorm ERR formula with deterministic regression fixtures"
 }

@@ -677,7 +677,7 @@ Demo tối thiểu:
 |---|---|
 | Đã hoàn thành | Phase 5 giữ frozen A/B Test evaluation; historical winner là Model B |
 | Đã hoàn thành | Phase 8 review 48.411 candidate còn lại, build pool mở rộng và train Model C Dev-only |
-| Đã hoàn thành | Phase 9 benchmark hậu kiểm A/B/C; Phase 10 chọn Model C cho app, Model B rollback |
+| Đã hoàn thành | Common Dev selection chọn Model C cho app, Model B fallback; Test báo cáo A/B/C |
 | Đã hoàn thành | Phase 6 real CPU smoke, Gradio và offline acceptance |
 | Đã hoàn thành | Phase 7 reproducibility, packaging và release verification `v1.0.0` |
 

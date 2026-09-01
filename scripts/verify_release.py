@@ -210,18 +210,15 @@ def verify_policy(root: Path) -> list[str]:
     errors: list[str] = []
     try:
         app = load_json(root / "outputs/app/model_selection.json")
-        phase5 = load_json(root / "outputs/evaluation/best_model.json")
-        phase9 = load_json(root / "outputs/evaluation_abc_posthoc/metrics.json")
+        dev = load_json(root / "outputs/evaluation_dev/model_metrics.json")
     except (FileNotFoundError, ValueError, json.JSONDecodeError) as error:
         return [f"Cannot verify model-selection policy: {error}"]
-    if app.get("selected_model") != "model_c" or app.get("rollback_model") != "model_b":
-        errors.append("Application selection must use Model C with Model B rollback")
-    if phase5.get("selected_model") != "model_b":
-        errors.append("Historical Phase 5 selection must remain Model B")
-    if phase9.get("evaluation_scope") != "posthoc_previously_observed_vilexnorm_test":
-        errors.append("Phase 9 evaluation scope is invalid")
-    if phase9.get("changes_phase5_selection") is not False or phase9.get("promotion_eligible") is not False:
-        errors.append("Phase 9 must preserve the historical Phase 5 selection")
+    if app.get("selected_model") != dev.get("selected_model") or app.get("fallback_model") != dev.get("ranking", [None, None])[1]:
+        errors.append("Application selection must match the common Dev ranking")
+    if app.get("selection_split") != "dev" or app.get("test_metrics_used_for_selection") is not False:
+        errors.append("Application selection must be Dev-only and exclude Test metrics")
+    if app.get("selection_metric") != "ERR" or dev.get("selection_metric") != "ERR":
+        errors.append("Application selection must use corrected Dev ERR")
     return errors
 
 

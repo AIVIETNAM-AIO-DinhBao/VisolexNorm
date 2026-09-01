@@ -1,27 +1,30 @@
 {
-  "schema_version": 1,
-  "phase": 10,
+  "schema_version": 2,
   "selected_model": "model_c",
   "selected_checkpoint": "checkpoints/model_c",
   "selected_checkpoint_inventory_sha256": "e2f4b33dae20b2ed86a2b51d163b3cbe2063fbc24dc9b4a4e0cfe774f69fa622",
-  "rollback_model": "model_b",
-  "rollback_checkpoint": "checkpoints/model_b",
-  "rollback_checkpoint_inventory_sha256": "0361cfab6bad4b6e4d95367f5125320fb61d6d3327b92481d0a31a937140d0b7",
-  "selection_scope": "production_candidate_posthoc_abc_benchmark",
-  "promotion_approved": true,
-  "rollback_available": true,
-  "phase5_historical_selected_model": "model_b",
-  "benchmark_manifest_sha256": "b29cf856c61f4f190d6c4607f79b6a9b13b6d05be72f58d3eb8c0276610c240e",
-  "benchmark_metrics_sha256": "aee88cb80749fecdc8dc8dc2f0dc36a9745c5f06790c930fa3ce3b43d34fdbf9",
-  "benchmark_deltas_sha256": "d76108d6acf69f9f57f42a44b15158c037fb36360e870b316757aca7f5448ca1",
-  "benchmark_report_sha256": "3c85d364849140cdc2729e25a4ae0e8204aa5b06e18c07eec1be3875253fbc28",
-  "model_c_prediction_sha256": "ed646c6d40e01098c3bbce5e8597642c90e9efbf2fc33634c8b2afe75ab799a5",
-  "model_c_f1": 0.7649928263988521,
-  "model_b_f1": 0.7422145328719723,
-  "f1_delta_c_minus_b": 0.022778293526879878,
-  "f1_delta_bootstrap_ci95": [
-    0.012063470298296575,
-    0.03322807721199306
+  "fallback_model": "model_b",
+  "fallback_checkpoint": "checkpoints/model_b",
+  "fallback_checkpoint_inventory_sha256": "0361cfab6bad4b6e4d95367f5125320fb61d6d3327b92481d0a31a937140d0b7",
+  "selection_split": "dev",
+  "selection_metric": "ERR",
+  "selection_rule": [
+    "higher_ERR",
+    "higher_f1",
+    "higher_exact_sentence_match",
+    "model_a"
   ],
-  "scientific_caveat": "Selected for application use from a post-hoc A/B/C benchmark on a previously observed test; an independently frozen holdout remains desirable for final scientific confirmation."
+  "selected_dev_metrics": {
+    "ERR": 0.6703795379537953,
+    "f1": 0.7592327512167192,
+    "exact_sentence_match": 0.5619047619047619
+  },
+  "dev_metrics_sha256": "bbd94f2e7e515c712820ff284cf0b6e9f9d9c221bd56d86de8821576932dc3e1",
+  "test_metrics_used_for_selection": false,
+  "selection_approved": true,
+  "ranking": [
+    "model_c",
+    "model_b",
+    "model_a"
+  ]
 }

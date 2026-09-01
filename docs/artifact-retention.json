@@ -155,10 +155,11 @@
       "kind": "directory",
       "bytes": 1916838714,
       "inventory_sha256": "e2f4b33dae20b2ed86a2b51d163b3cbe2063fbc24dc9b4a4e0cfe774f69fa622",
-      "authority": "Phase 9 benchmark and Phase 10 app selection",
+      "authority": "common Dev evaluation and app selection",
       "retention": "keep-local",
       "referenced_by": [
         "outputs/model_c/artifact_manifest.json",
+        "outputs/evaluation_dev/model_metrics.json",
         "outputs/app/model_selection.json"
       ],
       "external_location": null

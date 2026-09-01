@@ -41,7 +41,13 @@ def test_bootstrap_delta_is_deterministic() -> None:
 def test_precomputed_bootstrap_is_deterministic() -> None:
     def count_evaluator(records: list[dict]) -> dict[str, int]:
         correct = sum(row["prediction_text"] == row["target_text"] for row in records)
-        return {"gold_edits": len(records), "predicted_edits": len(records), "correct_edits": correct}
+        return {
+            "gold_edits": len(records),
+            "predicted_edits": len(records),
+            "correct_edits": correct,
+            "lai_token_errors": len(records),
+            "system_token_errors": len(records) - correct,
+        }
 
     left = rows(["a", "b", "c"])
     right = rows(["a", "x", "x"])

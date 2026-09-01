@@ -73,8 +73,8 @@ Phase 008 được thiết kế chạy song song với Phase 006 nên có thể 
 
 ## Vai trò checkpoint hiện tại
 
-- **Ứng dụng hiện tại**: Model C, theo `outputs/app/model_selection.json`.
-- **Rollback**: Model B, với inventory được xác minh.
+- **Ứng dụng hiện tại**: Model C, được chọn từ common Dev metrics theo `outputs/app/model_selection.json`.
+- **Fallback**: Model B, đứng thứ hai trong common Dev ranking và có inventory được xác minh.
 - **Lịch sử Phase 005**: `outputs/evaluation/best_model.json` vẫn chọn Model B giữa A và B.
 - **Giới hạn khoa học**: Phase 009 dùng Test đã được quan sát; một holdout độc lập vẫn cần thiết
   nếu muốn đưa ra kết luận khoa học cuối cùng mạnh hơn.

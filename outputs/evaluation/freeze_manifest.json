@@ -2,22 +2,22 @@
   "schema_version": 1,
   "phase": 5,
   "status": "frozen",
-  "frozen_at_utc": "2026-08-23T10:35:15.064663+00:00",
+  "frozen_at_utc": "2026-09-01T08:18:46.350408+00:00",
   "seed": 2026,
   "expected_test_count": 1045,
   "test_order_sha256": "50401be9a7ded66351b205e133add1570aedf3d80dfe0d0763c9fb20152de647",
   "model_selection_rule": [
     "higher_f1",
-    "lower_ERR",
+    "higher_ERR",
     "model_a"
   ],
   "metric_reference": {
     "repository": "https://github.com/ngxtnhi/ViLexNorm",
     "commit": "1070c6b9b00830fad278f48d9797df9ae1c942ac",
     "paper": "https://aclanthology.org/2024.eacl-long.85",
-    "protocol": "van der Goot (2019) ERR against Leave-As-Is; project token-edit port v1",
+    "protocol": "ViLexNorm token-accuracy ERR against Leave-As-Is plus project edit P/R/F1 v2",
     "official_evaluator_available_in_repository": false,
-    "port_status": "provisional: deterministic fixture passes, but independent official/reference fixture is still required before Test evaluation"
+    "port_status": "implemented from the published ViLexNorm ERR formula with deterministic regression fixtures"
   },
   "tokenizer_contract": {
     "files": [
@@ -141,8 +141,8 @@
       "declared_path": "scripts/evaluation_metrics.py",
       "inventory": {
         "kind": "file",
-        "bytes": 2735,
-        "sha256": "75998b6e36a4497ed77a4842f485300a4c29076bdcb848640c09938a5535cc11",
+        "bytes": 3939,
+        "sha256": "f6f566104be0f78778261b826882d2176b646887b356adde60669b3aa89f5d37",
         "line_endings_normalized": "LF"
       }
     },

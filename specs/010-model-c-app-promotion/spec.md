@@ -18,10 +18,9 @@ post-hoc benchmark. Model B remains a verified rollback checkpoint.
 
 - `outputs/evaluation/best_model.json` remains the historical Phase 5 A/B
   selection artifact and continues to name Model B.
-- `outputs/app/model_selection.json` is the current application selection
-  artifact and names Model C with Model B rollback metadata.
-- App selection does not modify Phase 5 provenance or claim that Phase 9 was
-  an independently unseen evaluation.
+- `outputs/evaluation_dev/model_metrics.json` is the common A/B/C Dev ranking.
+- `outputs/app/model_selection.json` names Model C with Model B fallback from
+  that Dev ranking and records `test_metrics_used_for_selection=false`.
 - Runtime inference must verify the selected checkpoint inventory. If Model C
   is missing or differs from its approved inventory, it must fall back to the
   verified Model B checkpoint.

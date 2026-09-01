@@ -1,4 +1,4 @@
-"""Validate the tracked Phase 10 application-selection evidence."""
+"""Validate the tracked Dev-based application-selection evidence."""
 
 from __future__ import annotations
 
@@ -9,15 +9,16 @@ from pathlib import Path
 ROOT = Path(__file__).parents[2]
 
 
-def test_model_c_application_selection_preserves_phase5_and_rollback() -> None:
+def test_model_c_application_selection_uses_dev_and_preserves_fallback() -> None:
     selection = json.loads((ROOT / "outputs/app/model_selection.json").read_text(encoding="utf-8"))
-    phase5 = json.loads((ROOT / "outputs/evaluation/best_model.json").read_text(encoding="utf-8"))
+    dev = json.loads((ROOT / "outputs/evaluation_dev/model_metrics.json").read_text(encoding="utf-8"))
 
-    assert selection["selected_model"] == "model_c"
-    assert selection["rollback_model"] == phase5["selected_model"] == "model_b"
-    assert selection["benchmark_manifest_sha256"] == "b29cf856c61f4f190d6c4607f79b6a9b13b6d05be72f58d3eb8c0276610c240e"
-    assert selection["model_c_f1"] > selection["model_b_f1"]
-    assert selection["f1_delta_bootstrap_ci95"][0] > 0
+    assert selection["selected_model"] == dev["selected_model"] == "model_c"
+    assert selection["fallback_model"] == dev["ranking"][1] == "model_b"
+    assert selection["selection_split"] == "dev"
+    assert selection["selection_metric"] == "ERR"
+    assert selection["test_metrics_used_for_selection"] is False
+    assert selection["selected_dev_metrics"]["ERR"] == dev["models"]["model_c"]["ERR"]
 
 
 def test_phase6_smoke_records_verified_local_runtime_and_gradio_acceptance() -> None:
@@ -25,7 +26,7 @@ def test_phase6_smoke_records_verified_local_runtime_and_gradio_acceptance() -> 
 
     assert smoke["preflight_passed"] is True
     assert smoke["selected_model"] == "model_c"
-    assert smoke["rollback_model"] == "model_b"
+    assert smoke["fallback_model"] == "model_b"
     assert smoke["checkpoint_inventory_verified"] is True
     assert smoke["runtime_model_loaded"] is True
     assert smoke["tokenizer_loaded"] is True
