@@ -264,15 +264,21 @@ def validate_controlled_manifest(manifest: dict[str, Any], config: dict[str, Any
         raise ValueError("Controlled manifest must be Dev-only")
 
 
-def freeze_protocol(root: Path, config_path: Path, cmax_config_path: Path, output: Path) -> Path:
-    """Write a non-overwritable, checksum-bound protocol before GPU execution."""
+def freeze_protocol(source_root: Path, data_root: Path, config_path: Path, cmax_config_path: Path, output: Path) -> Path:
+    """Freeze committed source provenance and immutable data input checksums.
+
+    Kaggle keeps the committed source checkout under ``/kaggle/working`` but
+    mounts private training data read-only under ``/kaggle/input``.  These are
+    intentionally separate roots: only ``source_root`` must be a clean Git
+    checkout; all model/data checksums are read from ``data_root``.
+    """
     if output.exists():
         raise FileExistsError(f"Protocol already exists: {output}")
-    revision = _require_clean_source_revision(root)
+    revision = _require_clean_source_revision(source_root)
     config, cmax_config = _read_config(config_path), _read_config(cmax_config_path)
-    paths = {key: root / value for key, value in config["input_paths"].items()}
+    paths = {key: data_root / value for key, value in config["input_paths"].items()}
     _assert_safe_paths(*paths.values(), config_path)
-    _, inventory_sha = checkpoint_inventory(root / config["initial_checkpoint"])
+    _, inventory_sha = checkpoint_inventory(data_root / config["initial_checkpoint"])
     payload = {
         "schema_version": 1,
         "experiment": "controlled_factorial_2x2",

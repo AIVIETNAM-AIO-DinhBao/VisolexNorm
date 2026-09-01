@@ -19,12 +19,12 @@ def _root(value: Path) -> Path:
 
 
 def freeze(args: argparse.Namespace) -> None:
-    output = freeze_protocol(_root(args.repo_root), args.config.resolve(), args.cmax_config.resolve(), args.output.resolve())
+    output = freeze_protocol(args.source_root.resolve(), args.data_root.resolve(), args.config.resolve(), args.cmax_config.resolve(), args.output.resolve())
     print(json.dumps({"protocol": str(output), "test_inputs_loaded": False}))
 
 
 def build_factorial(args: argparse.Namespace) -> None:
-    manifests = build_factorial_manifests(_root(args.repo_root), args.config.resolve(), args.protocol.resolve(), args.seed)
+    manifests = build_factorial_manifests(args.data_root.resolve(), args.config.resolve(), args.protocol.resolve(), args.seed)
     for arm, manifest in manifests.items():
         path = args.output_dir.resolve() / f"seed_{args.seed}" / arm / "mixture_manifest.json"
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -33,7 +33,7 @@ def build_factorial(args: argparse.Namespace) -> None:
 
 
 def build_cmax(args: argparse.Namespace) -> None:
-    manifest = build_c_max20_manifest(_root(args.repo_root), args.config.resolve(), args.protocol.resolve(), args.seed)
+    manifest = build_c_max20_manifest(args.data_root.resolve(), args.config.resolve(), args.protocol.resolve(), args.seed)
     output = args.output.resolve(); output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({"seed": args.seed, "output": str(output), "test_inputs_loaded": False}))
@@ -63,20 +63,21 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
     protocol = commands.add_parser("freeze-protocol")
-    protocol.add_argument("--repo-root", type=Path, default=Path("."))
+    protocol.add_argument("--source-root", type=Path, default=Path("."), help="Clean committed Git checkout used for source provenance")
+    protocol.add_argument("--data-root", type=Path, required=True, help="Dev-only training Dataset root containing checkpoints/model_a and data/processed")
     protocol.add_argument("--config", type=Path, default=Path("configs/controlled_factorial_config.json"))
     protocol.add_argument("--cmax-config", type=Path, default=Path("configs/c_max20_early_stopping_config.json"))
     protocol.add_argument("--output", type=Path, default=Path("outputs/controlled_factorial/protocol.json"))
     protocol.set_defaults(handler=freeze)
     factorial = commands.add_parser("build-factorial")
-    factorial.add_argument("--repo-root", type=Path, default=Path("."))
+    factorial.add_argument("--data-root", type=Path, required=True, help="Dev-only training Dataset root")
     factorial.add_argument("--config", type=Path, default=Path("configs/controlled_factorial_config.json"))
     factorial.add_argument("--protocol", type=Path, default=Path("outputs/controlled_factorial/protocol.json"))
     factorial.add_argument("--seed", type=int, required=True)
     factorial.add_argument("--output-dir", type=Path, default=Path("outputs/controlled_factorial"))
     factorial.set_defaults(handler=build_factorial)
     cmax = commands.add_parser("build-c-max20")
-    cmax.add_argument("--repo-root", type=Path, default=Path("."))
+    cmax.add_argument("--data-root", type=Path, required=True, help="Dev-only training Dataset root")
     cmax.add_argument("--config", type=Path, default=Path("configs/c_max20_early_stopping_config.json"))
     cmax.add_argument("--protocol", type=Path, default=Path("outputs/controlled_factorial/protocol.json"))
     cmax.add_argument("--seed", type=int, default=2026)
