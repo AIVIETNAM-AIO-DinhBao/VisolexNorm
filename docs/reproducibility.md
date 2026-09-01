@@ -77,6 +77,44 @@ Sau khi có Dev predictions của A/B/C, chạy `python -m scripts.evaluation de
 `python -m scripts.evaluation dev-select`. Common Dev ERR chọn Model C và Model B làm fallback;
 Test metrics không tham gia selection. Test predictions sau đó chỉ dùng báo cáo kết quả A/B/C.
 
+### Controlled factorial and C-max20-ES — Dev-only follow-up
+
+The historical Model B/C artifacts remain immutable. The controlled follow-up uses a separate
+namespace and never receives ViLexNorm Test or `outputs/evaluation/` as an input.
+
+1. Create a private Kaggle Dataset (or `controlled_training_input.zip`) with exactly:
+
+   ```text
+   checkpoints/model_a/
+   data/processed/vilexnorm_train.jsonl
+   data/processed/vilexnorm_dev.jsonl
+   data/processed/visolex_weak_labeled.jsonl
+   data/processed/visolex_weak_labeled_expanded.jsonl
+   ```
+
+   Do not include `vilexnorm_test.jsonl`, raw data, or `outputs/evaluation/`.
+
+2. Commit the controlled-experiment source, then run
+   `notebooks/controlled_factorial_kaggle.ipynb` on a Kaggle GPU. It freezes a protocol and
+   executes the small/expanded paired trajectories for seeds `2026`, `2126`, and `2226` to a
+   fixed eight-epoch horizon without early stopping. It exports Dev predictions for horizon 3
+   and horizon 8 and a Dev-only factorial summary.
+
+3. Download `controlled_factorial_protocol.json`, `controlled_factorial_summary.json`, and
+   `controlled_factorial_artifacts.zip`. The factorial archive intentionally excludes large
+   model weights and resumable optimizer states; the frozen source revision, Model A inventory,
+   input checksums, and mixture manifests make a trajectory reconstructible.
+
+4. Freeze the factorial conclusion before running
+   `notebooks/c_max20_early_stopping_kaggle.ipynb`. This fresh exploratory run starts again from
+   Model A on the expanded pool, has a maximum of 20 epochs, requires at least 8 epochs, and
+   stops only after four non-improving Dev-loss epochs with `min_delta=1e-4`. It is not a
+   factorial cell and must not be used to revise the causal factorial conclusion.
+
+For both notebooks, a Kaggle interruption is resumed only with the same run directory and the
+`--resume` option. Resume state includes model, optimizer, scheduler, and RNG state; do not
+rebuild a manifest or restart an interrupted run in a different directory.
+
 ### Phase 6 — local app
 
 ```powershell

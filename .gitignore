@@ -35,6 +35,10 @@ outputs/expanded_review/*
 !outputs/model_c/
 outputs/model_c/*
 !outputs/model_c/phase8_exit_report.json
+!outputs/controlled_factorial/
+outputs/controlled_factorial/*
+!outputs/controlled_factorial/protocol.json
+!outputs/controlled_factorial/factorial_summary.json
 
 # Large reproducibility bundles are stored outside Git; checksums live in the Phase 3 exit report.
 model_a_artifacts.zip

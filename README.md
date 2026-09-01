@@ -126,6 +126,7 @@ App bind `127.0.0.1`, không public share. Sau khi dependency/checkpoint đã lo
 - Review: `python -m scripts.reviews ...`
 - Weak labels: `python -m scripts.weak_labels ...`
 - Train: `python -m scripts.training ...`
+- Controlled factorial/optimization: `python -m scripts.controlled_experiments ...`
 - Evaluation: `python -m scripts.evaluation ...`
 
 Notebook Kaggle nằm trong [`notebooks/`](notebooks/). Các checkpoint lớn không nằm trong Git; xem [`docs/artifact-catalog.md`](docs/artifact-catalog.md) và [`docs/artifact-retention.json`](docs/artifact-retention.json).

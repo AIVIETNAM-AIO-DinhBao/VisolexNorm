@@ -1,0 +1,34 @@
+{
+  "seeds": [2026, 2126, 2226],
+  "initial_checkpoint": "checkpoints/model_a",
+  "expected_initial_checkpoint_inventory_sha256": "31b3337870a0a8acb6e63f2dfb4aeaac67e86451e2a8fb18c5dbd6aba86432e5",
+  "input_paths": {
+    "gold": "data/processed/vilexnorm_train.jsonl",
+    "dev": "data/processed/vilexnorm_dev.jsonl",
+    "initial": "data/processed/visolex_weak_labeled.jsonl",
+    "expanded": "data/processed/visolex_weak_labeled_expanded.jsonl"
+  },
+  "expected_initial_pool_count": 18970,
+  "expected_expanded_pool_count": 64813,
+  "max_epochs": 8,
+  "horizons": [3, 8],
+  "pseudo_per_epoch": 8372,
+  "learning_rate": 2e-05,
+  "per_device_train_batch_size": 8,
+  "per_device_eval_batch_size": 8,
+  "gradient_accumulation_steps": 2,
+  "weight_decay": 0.01,
+  "warmup_ratio": 0.1,
+  "max_source_length": 128,
+  "max_target_length": 128,
+  "generation_num_beams": 4,
+  "generation_max_length": 128,
+  "prompt_version": "lexical_norm_review_v1",
+  "c_max20_es": {
+    "max_epochs": 20,
+    "min_epochs": 8,
+    "patience": 4,
+    "min_delta": 0.0001,
+    "monitor": "dev_loss"
+  }
+}
