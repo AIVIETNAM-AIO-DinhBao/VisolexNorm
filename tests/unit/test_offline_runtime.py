@@ -90,6 +90,18 @@ def test_controlled_notebooks_have_no_network_bootstrap() -> None:
         assert "PIP_NO_INDEX" in text
 
 
+def test_factorial_notebook_is_non_interactive_save_version_workflow() -> None:
+    root = Path(__file__).parents[2]
+    text = (root / "notebooks" / "controlled_factorial_kaggle.ipynb").read_text(encoding="utf-8")
+    assert "TARGET_SEED" not in text
+    assert "TARGET_ARM" not in text
+    assert "RESET_INTERRUPTED_RUN" not in text
+    assert "TRAJECTORIES = [(seed, arm) for seed in (2026, 2126, 2226)" in text
+    assert "for seed, arm in TRAJECTORIES" in text
+    assert "cleanup-factorial-run" in text
+    assert "Controlled factorial failed at {run_id}" in text
+
+
 def test_offline_builder_covers_sentencepiece_and_legacy_manylinux_tags() -> None:
     assert DEFAULT_PLATFORMS == (
         "manylinux_2_27_x86_64",
