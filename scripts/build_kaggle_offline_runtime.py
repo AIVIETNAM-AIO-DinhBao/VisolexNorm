@@ -18,6 +18,11 @@ from pathlib import Path
 
 
 FORBIDDEN_WHEEL_PREFIXES = ("torch-", "nvidia_", "triton-")
+DEFAULT_PLATFORMS = (
+    "manylinux_2_27_x86_64",
+    "manylinux2014_x86_64",
+    "manylinux_2_17_x86_64",
+)
 
 
 def sha256_file(path: Path) -> str:
@@ -51,7 +56,7 @@ def build_runtime(
     requirements: Path,
     *,
     python_version: str,
-    platform: str,
+    platforms: tuple[str, ...],
 ) -> Path:
     """Create an unpacked Kaggle Dataset directory and integrity manifest."""
     revision = require_clean_commit(root)
@@ -67,6 +72,7 @@ def build_runtime(
     )
     locked_requirements = output / "requirements-kaggle-offline.txt"
     shutil.copy2(requirements, locked_requirements)
+    platform_arguments = [value for platform in platforms for value in ("--platform", platform)]
     subprocess.run(
         [
             sys.executable,
@@ -77,8 +83,7 @@ def build_runtime(
             str(wheelhouse),
             "--requirement",
             str(requirements),
-            "--platform",
-            platform,
+            *platform_arguments,
             "--python-version",
             python_version.replace(".", ""),
             "--implementation",
@@ -117,7 +122,7 @@ def build_runtime(
             "os": "linux",
             "architecture": "x86_64",
             "python": python_version,
-            "platform_tag": platform,
+            "platform_tags": list(platforms),
             "torch_source": "preinstalled_kaggle_gpu_image",
         },
         "requirements_path": locked_requirements.relative_to(output).as_posix(),
@@ -139,7 +144,12 @@ def main() -> None:
         "--requirements", type=Path, default=Path("requirements-kaggle-offline.txt")
     )
     parser.add_argument("--python-version", default="3.12")
-    parser.add_argument("--platform", default="manylinux2014_x86_64")
+    parser.add_argument(
+        "--platform",
+        dest="platforms",
+        action="append",
+        help="Repeatable compatible Linux wheel tag; defaults cover glibc 2.27 and manylinux2014/2.17",
+    )
     args = parser.parse_args()
     root = args.repo_root.resolve()
     requirements = args.requirements if args.requirements.is_absolute() else root / args.requirements
@@ -148,7 +158,7 @@ def main() -> None:
         args.output.resolve(),
         requirements.resolve(),
         python_version=args.python_version,
-        platform=args.platform,
+        platforms=tuple(args.platforms or DEFAULT_PLATFORMS),
     )
     payload = json.loads(manifest.read_text(encoding="utf-8"))
     print(

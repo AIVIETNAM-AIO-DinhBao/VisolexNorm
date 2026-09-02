@@ -128,8 +128,7 @@ from a clean committed checkout on a machine with Internet access:
 python -m scripts.build_kaggle_offline_runtime `
   --repo-root . `
   --output .tmp/kaggle_offline_runtime `
-  --python-version 3.12 `
-  --platform manylinux2014_x86_64
+  --python-version 3.12
 ```
 
 Upload the contents of `.tmp/kaggle_offline_runtime/` as an **unpacked private Kaggle Dataset**
@@ -148,6 +147,11 @@ the checksum-verified wheelhouse using pip `--no-index --no-cache-dir`. PyTorch,
 and Triton wheels are deliberately excluded: the notebook uses the driver-compatible PyTorch
 already supplied by the Kaggle GPU image. Both Hugging Face offline flags are set before any
 model is loaded, and Model A is loaded only from `/kaggle/input`.
+
+The builder resolves CPython 3.12 binary wheels against the compatible Linux tags
+`manylinux_2_27_x86_64`, `manylinux2014_x86_64`, and `manylinux_2_17_x86_64`. The first tag is
+needed by SentencePiece 0.2.2, while several other binary packages publish the older compatible
+manylinux tags. Do not replace the wheelhouse with wheels downloaded for Windows or Python 3.13.
 
 ### Phase 6 — local app
 

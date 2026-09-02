@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.build_kaggle_offline_runtime import FORBIDDEN_WHEEL_PREFIXES, require_clean_commit
+from scripts.build_kaggle_offline_runtime import DEFAULT_PLATFORMS, FORBIDDEN_WHEEL_PREFIXES, require_clean_commit
 from visolexnorm.common.offline_runtime import verify_runtime
 
 
@@ -88,3 +88,11 @@ def test_controlled_notebooks_have_no_network_bootstrap() -> None:
         assert "source/visolexnorm.bundle" in text
         assert "install_runtime(RUNTIME" in text
         assert "PIP_NO_INDEX" in text
+
+
+def test_offline_builder_covers_sentencepiece_and_legacy_manylinux_tags() -> None:
+    assert DEFAULT_PLATFORMS == (
+        "manylinux_2_27_x86_64",
+        "manylinux2014_x86_64",
+        "manylinux_2_17_x86_64",
+    )
