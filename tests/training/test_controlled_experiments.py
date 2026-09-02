@@ -78,16 +78,23 @@ def _prediction(value: str) -> str:
 
 
 def test_factorial_summary_is_dev_only_and_computes_interaction(tmp_path: Path) -> None:
-    for seed in (2026, 2126):
+    for seed in (2026, 2126, 2226):
         for arm, outputs in (("small", {3: "không", 8: "sai"}), ("expanded", {3: "sai", 8: "không"})):
             for horizon, prediction in outputs.items():
                 path = tmp_path / f"seed_{seed}" / arm / f"horizon_{horizon}" / "dev_predictions.jsonl"
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text(_prediction(prediction), encoding="utf-8")
+            (tmp_path / f"seed_{seed}" / arm / "cleanup_report.json").write_text("{}\n", encoding="utf-8")
     result = summarize_factorial(tmp_path, tmp_path / "summary.json")
-    assert result["seeds"] == 2
+    assert result["seeds"] == 3
+    assert result["seed_values"] == [2026, 2126, 2226]
     assert result["test_metrics_used"] is False
     assert "interaction" in result["effects"]["f1"]
+
+
+def test_factorial_summary_reports_all_unfinished_trajectories(tmp_path: Path) -> None:
+    with pytest.raises(RuntimeError, match=r"unfinished trajectories: seed_2026/small, seed_2026/expanded"):
+        summarize_factorial(tmp_path, tmp_path / "summary.json")
 
 
 def test_cmax_manifest_requires_frozen_dev_loss_monitor() -> None:

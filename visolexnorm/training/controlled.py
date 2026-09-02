@@ -23,6 +23,9 @@ from visolexnorm.training.reports import checkpoint_inventory, source_revision
 
 
 PROHIBITED_PARTS = ("vilexnorm_test", "outputs/evaluation")
+FACTORIAL_SEEDS = (2026, 2126, 2226)
+FACTORIAL_ARMS = ("small", "expanded")
+FACTORIAL_HORIZONS = (3, 8)
 
 
 def _read_config(path: Path) -> dict[str, Any]:
@@ -305,20 +308,39 @@ def freeze_protocol(source_root: Path, data_root: Path, config_path: Path, cmax_
 def summarize_factorial(root: Path, output: Path) -> dict[str, Any]:
     """Aggregate uploaded Dev-only factorial metrics without model selection or Test use."""
     from scripts.evaluation_metrics import evaluate_records
-    records: dict[str, list[dict[str, Any]]] = {cell: [] for cell in ("S3", "S8", "L3", "L8")}
-    for seed_dir in sorted(root.glob("seed_*")):
-        for arm, prefix in (("small", "S"), ("expanded", "L")):
-            for horizon in (3, 8):
-                prediction = seed_dir / arm / f"horizon_{horizon}" / "dev_predictions.jsonl"
+    missing_runs: list[str] = []
+    missing_predictions: list[str] = []
+    for seed in FACTORIAL_SEEDS:
+        for arm in FACTORIAL_ARMS:
+            run_dir = root / f"seed_{seed}" / arm
+            if not (run_dir / "cleanup_report.json").is_file():
+                missing_runs.append(f"seed_{seed}/{arm}")
+            for horizon in FACTORIAL_HORIZONS:
+                prediction = run_dir / f"horizon_{horizon}" / "dev_predictions.jsonl"
                 if not prediction.is_file():
-                    raise FileNotFoundError(prediction)
+                    missing_predictions.append(prediction.relative_to(root).as_posix())
+    if missing_runs or missing_predictions:
+        details = []
+        if missing_runs:
+            details.append("unfinished trajectories: " + ", ".join(missing_runs))
+        if missing_predictions:
+            details.append("missing selected Dev predictions: " + ", ".join(missing_predictions))
+        raise RuntimeError(
+            "Factorial summary requires all six cleaned trajectories. " + "; ".join(details)
+        )
+    records: dict[str, list[dict[str, Any]]] = {cell: [] for cell in ("S3", "S8", "L3", "L8")}
+    for seed in FACTORIAL_SEEDS:
+        seed_dir = root / f"seed_{seed}"
+        for arm, prefix in (("small", "S"), ("expanded", "L")):
+            for horizon in FACTORIAL_HORIZONS:
+                prediction = seed_dir / arm / f"horizon_{horizon}" / "dev_predictions.jsonl"
                 rows = read_jsonl(prediction)
                 metric = evaluate_records([{"input_text": row["input_text"], "target_text": row["target_text"], "prediction_text": row.get("prediction_text", row.get("prediction", ""))} for row in rows])
                 metric["exact_sentence_match"] = sum(row.get("prediction_text", row.get("prediction")) == row["target_text"] for row in rows) / len(rows)
                 records[f"{prefix}{horizon}"].append(metric)
     means = {cell: {metric: sum(row[metric] for row in values) / len(values) for metric in ("ERR", "f1", "exact_sentence_match")} for cell, values in records.items()}
     effects = {metric: {"pool_at_3": means["L3"][metric] - means["S3"][metric], "pool_at_8": means["L8"][metric] - means["S8"][metric], "duration_small": means["S8"][metric] - means["S3"][metric], "duration_expanded": means["L8"][metric] - means["L3"][metric], "interaction": (means["L8"][metric] - means["L3"][metric]) - (means["S8"][metric] - means["S3"][metric])} for metric in means["S3"]}
-    payload = {"schema_version": 1, "experiment": "controlled_factorial_2x2", "split": "dev", "seeds": len(next(iter(records.values()))), "cell_metrics_by_seed": records, "mean_metrics": means, "effects": effects, "test_metrics_used": False}
+    payload = {"schema_version": 1, "experiment": "controlled_factorial_2x2", "split": "dev", "seeds": len(next(iter(records.values()))), "seed_values": list(FACTORIAL_SEEDS), "cell_metrics_by_seed": records, "mean_metrics": means, "effects": effects, "test_metrics_used": False}
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return payload
