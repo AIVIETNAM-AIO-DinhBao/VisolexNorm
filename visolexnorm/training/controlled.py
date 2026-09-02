@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import math
 import random
+import shutil
 import subprocess
 from collections import Counter
 from datetime import datetime, timezone
@@ -328,12 +329,63 @@ def _write_json(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
+def cleanup_completed_factorial_run(run_root: Path) -> dict[str, Any]:
+    """Remove only large resumable artifacts after a verified factorial run.
+
+    The retained manifest, selected/terminal Dev predictions, metrics, and run
+    configuration are sufficient for the factorial summary and reconstruction.
+    Cleanup is deliberately unavailable until both frozen horizons completed.
+    """
+    manifest_path = run_root / "mixture_manifest.json"
+    train_config_path = run_root / "train_config.json"
+    if not manifest_path.is_file() or not train_config_path.is_file():
+        raise FileNotFoundError("Cleanup requires a completed run manifest and train_config.json")
+    manifest, train_config = _read_config(manifest_path), _read_config(train_config_path)
+    if manifest.get("experiment") != "controlled_factorial_2x2" or train_config.get("experiment") != "controlled_factorial_2x2":
+        raise ValueError("Cleanup is limited to completed controlled factorial runs")
+    if train_config.get("completed_epochs") != manifest.get("num_train_epochs"):
+        raise ValueError("Cleanup refuses an incomplete factorial trajectory")
+    required: list[Path] = []
+    for horizon in manifest.get("horizons", []):
+        horizon_dir = run_root / f"horizon_{horizon}"
+        required.extend((
+            horizon_dir / "selection.json",
+            horizon_dir / "dev_predictions.jsonl",
+            horizon_dir / "dev_metrics.json",
+            horizon_dir / "terminal_dev_predictions.jsonl",
+            horizon_dir / "terminal_dev_metrics.json",
+        ))
+    missing = [str(path) for path in required if not path.is_file()]
+    if missing:
+        raise FileNotFoundError("Cleanup refuses to remove checkpoints before horizon artifacts exist: " + ", ".join(missing))
+    removed: dict[str, int] = {}
+    for name in ("state", "best"):
+        path = run_root / name
+        if path.exists():
+            bytes_removed = sum(item.stat().st_size for item in path.rglob("*") if item.is_file())
+            shutil.rmtree(path)
+            removed[name] = bytes_removed
+    report = {
+        "schema_version": 1,
+        "experiment": "controlled_factorial_2x2",
+        "safe_cleanup_completed": True,
+        "removed_bytes": sum(removed.values()),
+        "removed": removed,
+        "retained_horizons": manifest["horizons"],
+        "test_inputs_loaded": False,
+    }
+    _write_json(run_root / "cleanup_report.json", report)
+    return report
+
+
 def run_controlled_training(args: Any, *, optimization: bool = False) -> None:
     """Run one Dev-only controlled trajectory on Kaggle, with exact resume state.
 
     ``args.work_dir`` is a dedicated run directory, e.g.
     ``/kaggle/working/factorial/seed_2026/small``.  A run may be resumed by
-    supplying ``--resume`` after a Kaggle interruption.
+    supplying ``--resume`` after a Kaggle interruption.  For constrained
+    Kaggle disks, ``--no-resume-state`` omits the large AdamW state; that run
+    must be restarted from epoch 1 if interrupted.
     """
     try:
         import torch
@@ -369,9 +421,11 @@ def run_controlled_training(args: Any, *, optimization: bool = False) -> None:
     state_dir, best_dir = run_root / "state", run_root / "best"
     state_path = state_dir / "latest.pt"
     run_root.mkdir(parents=True, exist_ok=True)
+    if args.resume and args.no_resume_state:
+        raise ValueError("--resume cannot be combined with --no-resume-state")
     if args.resume and not state_path.is_file():
         raise FileNotFoundError(f"No resumable state: {state_path}")
-    if not args.resume and state_path.exists():
+    if not args.resume and (state_path.exists() or (args.no_resume_state and best_dir.exists())):
         raise FileExistsError(f"Run state already exists: {state_path}; use --resume or a new --work-dir")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -470,8 +524,9 @@ def run_controlled_training(args: Any, *, optimization: bool = False) -> None:
             write_predictions(best_dir, horizon_dir / "dev_predictions.jsonl", selection)
             terminal = {"horizon_epochs": epoch_number, "selected_epoch": epoch_number, "selected_dev_loss": dev_loss, "selection_metric": "terminal_epoch", "selected_checkpoint_kind": "terminal_at_horizon", "test_metrics_used": False}
             write_model_predictions(model, horizon_dir / "terminal_dev_predictions.jsonl", terminal, metrics_name="terminal_dev_metrics.json")
-        state_dir.mkdir(parents=True, exist_ok=True)
-        torch.save({"manifest_sha256": sha256_file(args.manifest), "config_sha256": sha256_file(args.config), "model_state": model.state_dict(), "optimizer_state": optimizer.state_dict(), "scheduler_state": scheduler.state_dict(), "torch_rng_state": torch.get_rng_state(), "cuda_rng_state": torch.cuda.get_rng_state() if torch.cuda.is_available() else None, "python_rng_state": random.getstate(), "history": history, "best_loss": best_loss, "best_epoch": best_epoch, "bad_epochs": bad_epochs, "next_epoch_index": spec["epoch_index"] + 1}, state_path)
+        if not args.no_resume_state:
+            state_dir.mkdir(parents=True, exist_ok=True)
+            torch.save({"manifest_sha256": sha256_file(args.manifest), "config_sha256": sha256_file(args.config), "model_state": model.state_dict(), "optimizer_state": optimizer.state_dict(), "scheduler_state": scheduler.state_dict(), "torch_rng_state": torch.get_rng_state(), "cuda_rng_state": torch.cuda.get_rng_state() if torch.cuda.is_available() else None, "python_rng_state": random.getstate(), "history": history, "best_loss": best_loss, "best_epoch": best_epoch, "bad_epochs": bad_epochs, "next_epoch_index": spec["epoch_index"] + 1}, state_path)
         if stopping and epoch_number >= int(stopping["min_epochs"]) and bad_epochs >= int(stopping["patience"]):
             break
     if best_epoch is None:
@@ -484,4 +539,4 @@ def run_controlled_training(args: Any, *, optimization: bool = False) -> None:
         selection = {"selected_dev_loss": best_loss, "selected_epoch": best_epoch, "selection_metric": "dev_loss", "selected_checkpoint_kind": "best_early_stopping"}
         write_predictions(best_dir, run_root / "dev_predictions.jsonl", selection)
         _write_json(run_root / "early_stopping_report.json", {"max_epochs": len(manifest["epochs"]), "completed_epochs": len(history), "stopped_early": len(history) < len(manifest["epochs"]), "best_epoch": best_epoch, "best_dev_loss": best_loss, "rule": stopping, "test_inputs_loaded": False})
-    _write_json(run_root / "train_config.json", {"schema_version": 1, "experiment": manifest["experiment"], "arm": manifest["arm"], "seed": manifest["seed"], "manifest_sha256": sha256_file(args.manifest), "config_sha256": sha256_file(args.config), "model_a_inventory_sha256": inventory_sha, "best_dev_loss": best_loss, "best_epoch": best_epoch, "completed_epochs": len(history), "total_optimizer_steps": total_steps, "test_inputs_loaded": False, "runtime": {"torch_version": torch.__version__, "device": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "cpu"}, "source_revision": source_revision()})
+    _write_json(run_root / "train_config.json", {"schema_version": 1, "experiment": manifest["experiment"], "arm": manifest["arm"], "seed": manifest["seed"], "manifest_sha256": sha256_file(args.manifest), "config_sha256": sha256_file(args.config), "model_a_inventory_sha256": inventory_sha, "best_dev_loss": best_loss, "best_epoch": best_epoch, "completed_epochs": len(history), "total_optimizer_steps": total_steps, "resume_state_saved": not args.no_resume_state, "test_inputs_loaded": False, "runtime": {"torch_version": torch.__version__, "device": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "cpu"}, "source_revision": source_revision()})

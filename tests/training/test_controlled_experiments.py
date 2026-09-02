@@ -10,6 +10,7 @@ import pytest
 
 from visolexnorm.training.controlled import (
     _require_clean_source_revision,
+    cleanup_completed_factorial_run,
     freeze_protocol,
     sample_balanced_epochs,
     sample_factorial_epochs,
@@ -170,3 +171,45 @@ def test_smoke_and_optimization_selection_metadata_use_dev_loss() -> None:
     smoke_selection = {"selected_dev_loss": 0.2, "selected_epoch": 1, "selection_metric": "dev_loss", "selected_checkpoint_kind": "best_smoke"}
     optimization_selection = {"selected_dev_loss": 0.1, "selected_epoch": 8, "selection_metric": "dev_loss", "selected_checkpoint_kind": "best_early_stopping"}
     assert smoke_selection["selection_metric"] == optimization_selection["selection_metric"] == "dev_loss"
+
+
+def _completed_factorial_run(root: Path) -> Path:
+    run = root / "seed_2026" / "small"
+    run.mkdir(parents=True)
+    (run / "mixture_manifest.json").write_text(json.dumps({
+        "experiment": "controlled_factorial_2x2", "num_train_epochs": 8, "horizons": [3, 8],
+    }), encoding="utf-8")
+    (run / "train_config.json").write_text(json.dumps({
+        "experiment": "controlled_factorial_2x2", "completed_epochs": 8,
+    }), encoding="utf-8")
+    for horizon in (3, 8):
+        directory = run / f"horizon_{horizon}"
+        directory.mkdir()
+        for name in ("selection.json", "dev_predictions.jsonl", "dev_metrics.json", "terminal_dev_predictions.jsonl", "terminal_dev_metrics.json"):
+            (directory / name).write_text("{}\n", encoding="utf-8")
+    for directory, name in ((run / "state", "latest.pt"), (run / "best", "model.safetensors")):
+        directory.mkdir()
+        (directory / name).write_bytes(b"large-artifact")
+    return run
+
+
+def test_cleanup_completed_factorial_run_preserves_scientific_artifacts(tmp_path: Path) -> None:
+    run = _completed_factorial_run(tmp_path)
+    result = cleanup_completed_factorial_run(run)
+    assert result["safe_cleanup_completed"] is True
+    assert result["removed_bytes"] > 0
+    assert not (run / "state").exists()
+    assert not (run / "best").exists()
+    assert (run / "mixture_manifest.json").is_file()
+    assert (run / "horizon_3" / "dev_predictions.jsonl").is_file()
+    assert (run / "horizon_8" / "terminal_dev_metrics.json").is_file()
+    assert (run / "cleanup_report.json").is_file()
+
+
+def test_cleanup_refuses_incomplete_or_missing_horizon_artifacts(tmp_path: Path) -> None:
+    run = _completed_factorial_run(tmp_path)
+    (run / "horizon_8" / "terminal_dev_metrics.json").unlink()
+    with pytest.raises(FileNotFoundError, match="horizon artifacts"):
+        cleanup_completed_factorial_run(run)
+    assert (run / "state").exists()
+    assert (run / "best").exists()

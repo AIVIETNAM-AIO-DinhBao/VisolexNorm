@@ -8,6 +8,7 @@ from pathlib import Path
 from visolexnorm.training.controlled import (
     build_c_max20_manifest,
     build_factorial_manifests,
+    cleanup_completed_factorial_run,
     freeze_protocol,
     run_controlled_training,
     summarize_factorial,
@@ -48,6 +49,11 @@ def summarize(args: argparse.Namespace) -> None:
     print(json.dumps({"output": str(args.output.resolve()), "seeds": payload["seeds"], "test_metrics_used": False}))
 
 
+def cleanup(args: argparse.Namespace) -> None:
+    report = cleanup_completed_factorial_run(args.work_dir.resolve())
+    print(json.dumps({"work_dir": str(args.work_dir.resolve()), **report}))
+
+
 def _training_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--model-a-checkpoint", required=True, type=Path)
     parser.add_argument("--data-dir", required=True, type=Path)
@@ -55,6 +61,7 @@ def _training_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--config", required=True, type=Path)
     parser.add_argument("--work-dir", required=True, type=Path)
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--no-resume-state", action="store_true", help="Do not save large model/optimizer resume state; interrupted run must restart")
     parser.add_argument("--smoke-test", action="store_true")
     parser.add_argument("--allow-cpu", action="store_true")
 
@@ -87,6 +94,9 @@ def main() -> None:
     _training_arguments(factorial_train); factorial_train.set_defaults(handler=train, optimization=False)
     optimization_train = commands.add_parser("train-c-max20")
     _training_arguments(optimization_train); optimization_train.set_defaults(handler=train, optimization=True)
+    cleanup_run = commands.add_parser("cleanup-factorial-run", help="Safely remove best/state only after a completed factorial trajectory")
+    cleanup_run.add_argument("--work-dir", required=True, type=Path)
+    cleanup_run.set_defaults(handler=cleanup)
     summary = commands.add_parser("summarize-factorial")
     summary.add_argument("--input-root", type=Path, default=Path("outputs/controlled_factorial"))
     summary.add_argument("--output", type=Path, default=Path("outputs/controlled_factorial/factorial_summary.json"))

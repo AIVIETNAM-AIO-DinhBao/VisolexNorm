@@ -111,9 +111,13 @@ namespace and never receives ViLexNorm Test or `outputs/evaluation/` as an input
    stops only after four non-improving Dev-loss epochs with `min_delta=1e-4`. It is not a
    factorial cell and must not be used to revise the causal factorial conclusion.
 
-For both notebooks, a Kaggle interruption is resumed only with the same run directory and the
-`--resume` option. Resume state includes model, optimizer, scheduler, and RNG state; do not
-rebuild a manifest or restart an interrupted run in a different directory.
+The factorial notebook uses disk-safe `--no-resume-state`: it runs one trajectory at a time,
+exports the required Dev artifacts, then safely removes its large checkpoint and AdamW state.
+Attach the Kaggle Dataset as an unpacked directory rather than a ZIP, so Model A and data remain
+under `/kaggle/input` and are never duplicated into `/kaggle/working`. If a disk-safe trajectory
+is interrupted, reset only that incomplete trajectory and restart it from epoch 1; do not use
+`--resume`. The C-max20 notebook retains resumable state by default because it is a single run;
+if disk is constrained, use the same no-resume trade-off deliberately.
 
 ### Phase 6 — local app
 
