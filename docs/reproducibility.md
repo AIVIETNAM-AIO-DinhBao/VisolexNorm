@@ -119,6 +119,36 @@ is interrupted, reset only that incomplete trajectory and restart it from epoch 
 `--resume`. The C-max20 notebook retains resumable state by default because it is a single run;
 if disk is constrained, use the same no-resume trade-off deliberately.
 
+#### RTX Pro 6000 offline runtime Dataset
+
+The RTX Pro 6000 Kaggle environment is run with Internet disabled. Build the runtime Dataset
+from a clean committed checkout on a machine with Internet access:
+
+```powershell
+python -m scripts.build_kaggle_offline_runtime `
+  --repo-root . `
+  --output .tmp/kaggle_offline_runtime `
+  --python-version 3.12 `
+  --platform manylinux2014_x86_64
+```
+
+Upload the contents of `.tmp/kaggle_offline_runtime/` as an **unpacked private Kaggle Dataset**
+named `visolexnorm-offline-runtime`. It contains:
+
+```text
+offline-runtime-manifest.json
+requirements-kaggle-offline.txt
+source/visolexnorm.bundle
+wheelhouse/*.whl
+```
+
+Keep it separate from `visolexnorm-controlled-input`, which contains Model A and Dev-only data.
+The notebooks clone the exact committed source from the local Git bundle and install only from
+the checksum-verified wheelhouse using pip `--no-index --no-cache-dir`. PyTorch, CUDA, NVIDIA,
+and Triton wheels are deliberately excluded: the notebook uses the driver-compatible PyTorch
+already supplied by the Kaggle GPU image. Both Hugging Face offline flags are set before any
+model is loaded, and Model A is loaded only from `/kaggle/input`.
+
 ### Phase 6 — local app
 
 ```powershell

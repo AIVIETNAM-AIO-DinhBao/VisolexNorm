@@ -1,0 +1,8 @@
+# Minimal offline runtime for controlled_factorial_kaggle.ipynb and
+# c_max20_early_stopping_kaggle.ipynb. PyTorch/CUDA is supplied by the Kaggle
+# GPU image and MUST NOT be bundled or replaced.
+transformers==5.0.0
+datasets==3.6.0
+sentencepiece==0.2.2
+safetensors==0.8.0
+pytest==9.1.1
