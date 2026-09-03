@@ -7,7 +7,7 @@ export const AboutPage: React.FC = () => {
         {/* Header / Intro */}
         <header className="space-y-3">
           <h1 className="font-serif text-3xl font-normal tracking-tight text-ink sm:text-4xl">
-            Giới thiệu VietNorm
+            Giới thiệu VisolexNorm
           </h1>
           <p className="text-base leading-relaxed text-muted sm:text-lg">
             Hệ thống chuẩn hóa từ vựng tiếng Việt mạng xã hội (*ViSoLexNorm*) dựa trên kiến trúc mô hình ngôn ngữ BARTpho.
@@ -23,7 +23,7 @@ export const AboutPage: React.FC = () => {
             1. Bài toán chuẩn hóa từ vựng
           </h2>
           <p className="text-sm leading-relaxed text-body sm:text-base">
-            Văn bản trên mạng xã hội tiếng Việt thường chứa nhiều dạng viết tắt, teencode, từ lóng (slang), thiếu dấu thanh và lỗi chính tả từ vựng. <strong>VietNorm</strong> được thiết kế nhằm chuẩn hóa tự động các từ ngữ này về dạng tiếng Việt chuẩn mực, giúp cải thiện chất lượng cho các tác vụ xử lý ngôn ngữ tự nhiên phía sau như phân tích cảm xúc, dịch máy hay trích xuất thông tin.
+            Văn bản trên mạng xã hội tiếng Việt thường chứa nhiều dạng viết tắt, teencode, từ lóng (slang), thiếu dấu thanh và lỗi chính tả từ vựng. <strong>VisolexNorm</strong> được thiết kế nhằm chuẩn hóa tự động các từ ngữ này về dạng tiếng Việt chuẩn mực, giúp cải thiện chất lượng cho các tác vụ xử lý ngôn ngữ tự nhiên phía sau như phân tích cảm xúc, dịch máy hay trích xuất thông tin.
           </p>
           <div className="rounded-lg border border-hairline bg-surface-card p-4 text-sm text-body">
             <p className="font-medium text-ink mb-1.5">Nguyên tắc chuẩn hóa:</p>
@@ -224,7 +224,7 @@ export const AboutPage: React.FC = () => {
         {/* 7. Thông tin dự án */}
         <section aria-labelledby="team-heading" className="space-y-3 pt-4 border-t border-hairline text-xs text-muted">
           <p>
-            Dự án nghiên cứu & phát triển hệ thống chuẩn hóa từ vựng tiếng Việt ViSoLexNorm / VietNorm.
+            Dự án nghiên cứu & phát triển hệ thống chuẩn hóa từ vựng tiếng Việt VisolexNorm.
           </p>
           <p>
             Mã nguồn & Checkpoint: Phiên bản Release v1.0.0 (Copyright &copy; 2026 AIVIETNAM-AIO-DinhBao).

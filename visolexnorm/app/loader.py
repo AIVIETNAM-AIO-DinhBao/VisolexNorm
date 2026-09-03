@@ -50,7 +50,7 @@ def load_tokenizer(checkpoint: str) -> Any:
         from transformers import AutoTokenizer
     except ImportError as error:
         raise RuntimeError(
-            "Chưa cài đủ thư viện suy luận. Hãy cài requirements-inference.txt rồi thử lại."
+            "Chưa cài đủ thư viện suy luận. Hãy cài requirements-app.txt rồi thử lại."
         ) from error
     return AutoTokenizer.from_pretrained(_tokenizer_load_path(Path(checkpoint)), local_files_only=True)
 
@@ -67,7 +67,7 @@ def load_model(checkpoint: str) -> Any:
         from transformers import AutoModelForSeq2SeqLM
     except ImportError as error:
         raise RuntimeError(
-            "Chưa cài đủ thư viện suy luận. Hãy cài requirements-inference.txt rồi thử lại."
+            "Chưa cài đủ thư viện suy luận. Hãy cài requirements-app.txt rồi thử lại."
         ) from error
     model = AutoModelForSeq2SeqLM.from_pretrained(Path(checkpoint), local_files_only=True)
     model.eval()

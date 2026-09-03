@@ -11,7 +11,7 @@ export const Header: React.FC = () => {
           to="/"
           className="font-serif text-2xl font-medium tracking-tight text-ink transition-colors hover:text-primary"
         >
-          VietNorm
+          VisolexNorm
         </Link>
         <nav className="flex items-center gap-6">
           <Link

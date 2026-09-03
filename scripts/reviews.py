@@ -57,7 +57,7 @@ def load_runtime_model(model: str | None = None) -> str:
     try:
         from dotenv import load_dotenv
     except ImportError as error:
-        raise RuntimeError("Install requirements.txt before Gemini review.") from error
+        raise RuntimeError("Install requirements-review.txt before Gemini review.") from error
     load_dotenv()
     value = model or os.getenv("GEMINI_MODEL", "").strip()
     if not value:
@@ -70,7 +70,7 @@ def run_review(args: argparse.Namespace) -> None:
         from dotenv import load_dotenv
         import google.genai  # noqa: F401
     except ImportError as error:
-        raise RuntimeError("Install requirements.txt before Gemini review.") from error
+        raise RuntimeError("Install requirements-review.txt before Gemini review.") from error
     load_dotenv()
     keys = [key.strip() for key in os.getenv("GEMINI_API_KEYS", "").split(",") if key.strip()]
     model = os.getenv("GEMINI_MODEL", "").strip()

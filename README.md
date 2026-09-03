@@ -1,15 +1,15 @@
 # ViSoLexNorm
 
-ViSoLexNorm normalizes noisy Vietnamese social-media text into standard Vietnamese. It is based on the BARTpho-syllable model and includes a React web application backed by a FastAPI service.
+ViSoLexNorm normalizes noisy Vietnamese social-media text into standard Vietnamese. Its normalization models are fine-tuned from BARTpho-syllable and served through a React web application backed by FastAPI.
 
-```text
+~~~text
 hnay t đi hc
 → hôm nay tôi đi học
-```
+~~~
 
 ## Main pipeline
 
-```text
+~~~text
 Raw ViLexNorm / ViSoLex
         ↓
 Data preparation
@@ -24,24 +24,32 @@ Weak-label construction
         ↓
 Model B / Model C training
         ↓
-Evaluation and model selection
+Dev evaluation and model selection
+        ↓
+Selected Model C
         ↓
 Local BARTpho inference
         ↓
 FastAPI
         ↓
 React frontend
-```
+~~~
 
-Model C is the application checkpoint selected from common Dev metrics. Model B remains the verified fallback. Historical Phase 5 A/B evaluation selected Model B by F1; the later A/B/C benchmark is descriptive and does not change that historical decision.
+Additional research analyses: Controlled factorial · C-max20 · Post-hoc A/B/C benchmark
+
+- **Model A:** BARTpho-syllable fine-tuned on gold ViLexNorm training pairs.
+- **Model B:** Model A continued with 8,372 gold and 8,372 pseudo-label examples per epoch from the initial 18,970 reviewed weak-label pool.
+- **Model C:** Model A continued with the same per-epoch gold/pseudo balance using the expanded 64,813 reviewed weak-label pool.
+
+Model C is selected for the application from common Dev ERR. Model B is the verified fallback. Test metrics are not used for application selection.
 
 ## Repository structure
 
-```text
+~~~text
 frontend/        React + Vite web interface
 backend/         FastAPI launcher
 visolexnorm/
-  app/           inference, model loading, API, model selection, Gradio UI
+  app/           inference, model loading, API, and model selection
   common/        shared I/O, artifact, progress, and runtime utilities
   data/          dataset preparation and validation
   candidates/    Model A candidate generation and review manifests
@@ -55,26 +63,29 @@ specs/           runtime JSON schemas and contracts used by the pipeline
 notebooks/       Kaggle training and evaluation notebooks
 outputs/         experiment and evaluation artifacts
 prompts/         Gemini review prompts
-report/          report source and artifacts
-```
+report/          final project report and source
+~~~
 
 ## Installation
 
-Create a Python environment, then install the application dependencies:
+Create a Python environment, then install the app dependencies:
 
-```powershell
+~~~powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements-app.txt
-```
+~~~
 
-For the local Gemini review and weak-label workflow:
+Other dependency sets:
 
-```powershell
-pip install -r requirements-review.txt
-```
+- requirements-review.txt — local Gemini review and weak-label workflow.
+- requirements-dev.txt — combined local development dependencies for the app and Gemini review workflows.
+- requirements-kaggle.txt — Kaggle GPU training and evaluation notebooks.
+- requirements-kaggle-offline.txt — controlled offline Kaggle notebooks; Kaggle supplies PyTorch/CUDA.
 
-Kaggle training and evaluation notebooks use `requirements-kaggle.txt`. The controlled offline Kaggle notebooks also require `requirements-kaggle-offline.txt`.
+### Gemini review credentials
+
+For review workflows, copy .env.example to .env and set GEMINI_API_KEYS to one or more comma-separated Gemini API keys. GEMINI_MODEL selects the review model. The review CLI loads these values from .env; never commit real keys.
 
 ## Model weights
 
@@ -84,79 +95,98 @@ https://www.kaggle.com/datasets/dinhbaobao/visolexnorm-app-checkpoints-v1/versio
 
 After downloading and extracting it, the repository root must contain:
 
-```text
+~~~text
 checkpoints/
 ├── model_c/   # default application model
 └── model_b/   # verified fallback model
-```
+~~~
 
 ## Dataset
 
-Raw and processed datasets are not bundled in Git. They are required only for data preparation, training, and evaluation workflows.
+Raw and processed datasets are not bundled in Git. They are required for data preparation, training, and evaluation. Some historical experiment artifacts and large datasets/checkpoints are stored externally and are not tracked in Git.
 
-```text
+~~~text
 data/
 ├── raw/
 ├── intermediate/
 └── processed/
-```
+~~~
 
-TODO: add submission dataset link.
+Dataset download: TODO — add final submission link before submission.
 
 ## Run the application
 
-The primary web path is:
-
-```text
-React → FastAPI → visolexnorm.app inference → local BARTpho checkpoint
-```
+~~~text
+React → FastAPI → visolexnorm.app.inference → Model C / Model B fallback
+~~~
 
 Start the backend from the repository root:
 
-```powershell
+~~~powershell
 python backend/main.py
-```
+~~~
 
 Start the frontend in another terminal:
 
-```powershell
+~~~powershell
 cd frontend
 pnpm install --frozen-lockfile
 pnpm dev
-```
+~~~
 
-The frontend reads `VITE_API_BASE_URL` from `frontend/.env`; see `frontend/.env.example` for the default local API URL.
-
-The repository also retains a local Gradio interface:
-
-```powershell
-python -m visolexnorm.app.web
-```
+The frontend reads VITE_API_BASE_URL from frontend/.env; see frontend/.env.example for the default local API URL.
 
 ## Training and evaluation entrypoints
 
-```powershell
+~~~powershell
 python -m scripts.data --help
 python -m scripts.candidates --help
 python -m scripts.reviews --help
 python -m scripts.weak_labels --help
 python -m scripts.training --help
 python -m scripts.evaluation --help
-```
+~~~
 
-These workflows require the external datasets, checkpoints, and Kaggle resources described above.
+Some workflows require external datasets, checkpoints, Gemini credentials, or Kaggle artifacts.
 
 ## Results
 
-Historical Phase 5 frozen A/B Test results:
+### Dev model selection
+
+| Model | ERR | F1 | Exact Match |
+| --- | ---: | ---: | ---: |
+| Model A | 0.603960 | 0.714903 | 0.520952 |
+| Model B | 0.660891 | 0.753515 | 0.557143 |
+| **Model C** | **0.670380** | **0.759233** | **0.561905** |
+
+Model C ranks first on the common Dev split by ERR and is selected as the default application model. Model B is retained as the fallback. Test metrics are not used for application model selection.
+
+Metrics: outputs/evaluation_dev/model_metrics.json. Selection: outputs/app/model_selection.json.
+
+### Historical Phase 5 A/B Test evaluation
 
 | Model | ERR | F1 |
 | --- | ---: | ---: |
 | Model A | 0.600250 | 0.718184 |
 | Model B | 0.633111 | 0.742215 |
 
-The common A/B/C Test benchmark reports Model C at F1 0.764993 and Model B at F1 0.742215. Model C was selected for the application from common Dev metrics, not from Test metrics.
+In this historical Phase 5 A/B comparison, Model B achieved the higher Test F1 and was retained over Model A at that stage.
+
+### Post-hoc A/B/C Test benchmark
+
+The post-hoc descriptive A/B/C benchmark was run after Model C existed, on a previously observed Test split. It is not promotion eligible, does not select Model C, and does not change the historical Phase 5 A/B decision.
+
+| Model | ERR | F1 |
+| --- | ---: | ---: |
+| Model A | 0.600250 | 0.718184 |
+| Model B | 0.633111 | 0.742215 |
+| Model C | 0.664725 | 0.764993 |
+
+### Additional analyses
+
+- **Controlled factorial:** a Dev-only 2×2 follow-up crossed initial/expanded reviewed pools with 3/8-epoch horizons across three paired seeds. Under the frozen lowest-Dev-loss checkpoint rule, L8 was the strongest evaluated configuration.
+- **C-max20:** an exploratory expanded-pool run with a 20-epoch maximum and early stopping selected epoch 9 and stopped at epoch 13. It did not improve the frozen L8 selected-checkpoint reference and is not promotion eligible.
 
 ## Report
 
-The project report source and rendered PDF are retained in `report/`. Additional submitted PDF artifacts remain at the repository root.
+The final project report and its source are available in report/.

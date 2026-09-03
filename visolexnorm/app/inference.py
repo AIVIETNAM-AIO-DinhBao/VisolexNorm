@@ -65,7 +65,7 @@ def normalize(text: str, *, config_path: Path = Path("configs/app_inference_conf
         import torch
     except ImportError as error:
         raise RuntimeError(
-            "Chưa cài đủ thư viện suy luận. Hãy cài requirements-inference.txt rồi thử lại."
+            "Chưa cài đủ thư viện suy luận. Hãy cài requirements-app.txt rồi thử lại."
         ) from error
     with torch.inference_mode():
         generated = load_model(str(runtime.checkpoint)).generate(

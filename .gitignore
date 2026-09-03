@@ -14,7 +14,6 @@ outputs/*
 !outputs/app/
 outputs/app/*
 !outputs/app/model_selection.json
-!outputs/app/model_c_promotion_smoke_test.json
 !outputs/evaluation/
 outputs/evaluation/*
 !outputs/evaluation/best_model.json
