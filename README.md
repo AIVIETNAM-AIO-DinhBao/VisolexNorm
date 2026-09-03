@@ -89,9 +89,9 @@ For review workflows, copy .env.example to .env and set GEMINI_API_KEYS to one o
 
 ## Model weights
 
-Model weights are distributed separately because of file size. The verified application checkpoint bundle is available from:
+Model weights and datasets are distributed separately because of file size. Download the required checkpoints and datasets from the shared Google Drive folder:
 
-https://www.kaggle.com/datasets/dinhbaobao/visolexnorm-app-checkpoints-v1/versions/1
+https://drive.google.com/drive/u/1/folders/1xJF9HTuBm0Na2yJsgRLgoc0BjaESe9BK
 
 After downloading and extracting it, the repository root must contain:
 
@@ -112,7 +112,7 @@ data/
 └── processed/
 ~~~
 
-Dataset download: TODO — add final submission link before submission.
+Dataset download: use the shared [Google Drive folder](https://drive.google.com/drive/u/1/folders/1xJF9HTuBm0Na2yJsgRLgoc0BjaESe9BK).
 
 ## Run the application
 

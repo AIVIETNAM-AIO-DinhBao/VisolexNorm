@@ -57,6 +57,9 @@ phase8_training_input.zip
 
 .env
 
+# Local final-report workspace and generated LaTeX artifacts.
+report-final/
+
 # LaTeX build intermediates; report source, bibliography, and PDF remain distributable.
 *.aux
 *.bbl
