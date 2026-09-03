@@ -3,6 +3,7 @@ __pycache__/
 .pytest_cache/
 .venv/
 .tmp/
+archive/
 
 # Raw and processed datasets can be large or have redistribution restrictions.
 data/raw/
