@@ -1,6 +1,2 @@
-# Local Phase 3/8 review and weak-label preparation. This file does not install
-# BARTpho inference, Kaggle GPU, or test dependencies.
-google-genai==2.19.0
-python-dotenv==1.2.3
-jsonschema==4.26.0
-tenacity==9.1.4
+# Backward-compatible alias for source messages and existing local workflows.
+-r requirements-review.txt

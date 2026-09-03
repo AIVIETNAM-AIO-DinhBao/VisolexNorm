@@ -1,7 +1,0 @@
-[
-  {"id": "canonical-keep", "source": "Giao hành nhanh, sp tốt", "candidate": "Giao hành nhanh, sp tốt", "decision": "KEEP", "corrected_text": null, "expected_decision": "EDIT", "expected_target": "Giao hàng nhanh, sản phẩm tốt"},
-  {"id": "target-regression", "source": "nhma đt tốt", "candidate": "nhưng mà điện thoại tốt", "decision": "EDIT", "corrected_text": "nhma đt tốt", "expected_decision": "EDIT", "expected_target": "nhưng mà điện thoại tốt"},
-  {"id": "opaque", "source": "xkqztrplmnbvcxzq", "candidate": "xkqztrplmnbvcxzq", "decision": "KEEP", "corrected_text": null, "expected_decision": "REJECT", "expected_target": null},
-  {"id": "ambiguous", "source": "mưa rồi rất hối hận", "candidate": "mưa rồi rất hối hận", "decision": "EDIT", "corrected_text": "mua rồi rất hối hận", "expected_decision": "REJECT", "expected_target": null},
-  {"id": "emoji-loss", "source": "hàng tốt 😍", "candidate": "hàng tốt", "decision": "KEEP", "corrected_text": null, "expected_error": "source_symbol_removed"}
-]

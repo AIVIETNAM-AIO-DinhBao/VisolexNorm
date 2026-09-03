@@ -1,166 +1,162 @@
 # ViSoLexNorm
 
-ViSoLexNorm là hệ thống chuẩn hóa từ vựng tiếng Việt mạng xã hội bằng BARTpho. Hệ thống xử lý viết tắt, teencode, slang, thiếu dấu và lỗi chính tả từ vựng; không được thiết kế để paraphrase, đổi sắc thái, tự kiểm duyệt hoặc thêm thông tin.
-
-## Trạng thái release
-
-- **Ứng dụng hiện tại:** Model C.
-- **Rollback:** Model B.
-- **Kết quả khoa học lịch sử Phase 5:** Model B thắng Model A trên ViLexNorm Test đóng băng.
-- **Lưu ý Phase 9:** Model C dẫn đầu ở benchmark A/B/C hậu kiểm trên Test đã quan sát; đây không phải independent holdout và không thay đổi kết luận Phase 5.
-- **Training closure:** factorial ba seed freeze L8 là cấu hình mạnh nhất theo protocol chọn checkpoint bằng Dev loss; C-max20 là exploratory và không thay đổi checkpoint app.
-
-Phase 6 local app và Phase 7 release đã hoàn thành. Checkpoint Kaggle Dataset version 1 đã được tải lại, checksum đã verify và strict release verification pass; release được đánh dấu bằng tag `v1.0.0`.
-
-## Pipeline thực tế
+ViSoLexNorm normalizes noisy Vietnamese social-media text into standard Vietnamese. It is based on the BARTpho-syllable model and includes a React web application backed by a FastAPI service.
 
 ```text
-ViLexNorm + ViSoLex
-  → Model A trên Kaggle
-  → candidate cho ViSoLex
-  → Gemini review: KEEP / EDIT / REJECT
-  → Model B trên Kaggle
-  → A/B evaluation Phase 5 đóng băng
-  ├→ review phần còn lại → Model C Dev-only → A/B/C hậu kiểm → app selection
-  └→ local inference + Gradio
-  → release
+hnay t đi hc
+→ hôm nay tôi đi học
 ```
 
-Xem [`docs/reproducibility.md`](docs/reproducibility.md) để biết lệnh và artifact của Phase 1–10.
-
-## Dữ liệu và weak labels
-
-### Phase 1
-
-| Artifact/source | Số câu giữ lại |
-|---|---:|
-| ViLexNorm Train | 8.372 |
-| ViLexNorm Dev | 1.050 |
-| ViLexNorm Test | 1.045 |
-| ViSoLex / ViHSD | 30.579 |
-| ViSoLex / UIT-VSMEC | 6.916 |
-| ViSoLex / ViHOS | 0 |
-| ViSoLex / ViSpamReviews | 19.805 |
-| ViSoLex / UIT-ViSFD | 11.111 |
-| **ViSoLex canonical** | **68.411** |
-
-ViHOS trùng exact với ViHSD đã được nạp trước nên global deduplication giữ provenance ViHSD và ViHOS có quota 0. Raw data, processed data và review cache bị ignore khỏi Git để bảo vệ quyền phân phối và dữ liệu nhạy cảm.
-
-### Review và training
-
-| Giai đoạn | Phạm vi | Kết quả |
-|---|---:|---:|
-| Phase 3 | 20.000 candidate | 18.970 LLM-reviewed weak labels accepted |
-| Phase 8 | 48.411 candidate còn lại | 45.843 LLM-reviewed weak labels accepted |
-| Pool Model C | union Phase 3 + 8 | 64.813 LLM-reviewed weak labels |
-
-Mỗi candidate phải qua một trong ba quyết định: **KEEP** dùng candidate, **EDIT** dùng corrected text tối thiểu, **REJECT** bị loại khỏi training.
-Reviewer là `gemini-3.5-flash-lite`, prompt `lexical_norm_review_v1`, temperature 0 và structured JSON schema. Đây không phải nhãn đã được con người xác minh toàn bộ.
-
-## Kết quả
-
-### Phase 5 — A/B trên Test đóng băng
-
-| Model | ERR | Precision | Recall | F1 |
-|---|---:|---:|---:|---:|
-| Model A | 0.600250 | 0.733999 | 0.703037 | 0.718184 |
-| Model B | 0.633111 | 0.761538 | 0.723847 | 0.742215 |
-
-Model B là historical winner theo F1 cao hơn. Artifact bất biến là `outputs/evaluation/best_model.json`.
-
-### A/B/C trên common Test
-
-| Model | ERR | F1 |
-|---|---:|---:|
-| Model A | 0.600250 | 0.718184 |
-| Model B | 0.633111 | 0.742215 |
-| Model C | 0.664725 | 0.764993 |
-
-Model C được chọn trước bằng common Dev ERR (`0.670380`), Dev F1 (`0.759233`) và Dev exact match (`0.561905`). Test không tham gia model selection. Trên Test, Model C cao hơn Model B `+0.022778` F1, bootstrap CI95 `[0.012063, 0.033228]`. Model C là checkpoint app mặc định và Model B là fallback.
-
-### Controlled factorial closure
-
-Factorial Dev-only ba seed giữ cố định protocol chọn checkpoint bằng Dev loss trong mỗi horizon:
-
-| Cell | ERR | F1 | Exact match |
-|---|---:|---:|---:|
-| S3 | 0.652778 | 0.747295 | 0.548889 |
-| S8 | 0.662679 | 0.754182 | 0.553651 |
-| L3 | 0.649065 | 0.744360 | 0.543175 |
-| L8 | **0.670380** | **0.761249** | **0.563175** |
-
-L8 là cấu hình factorial mạnh nhất theo protocol này. Sensitivity terminal checkpoint làm chênh L8--S8 gần về 0, nên kết luận không phải một claim pool-size causal vô điều kiện. Xem artifact `FCT-CONCLUSION` trong `release/TRAINING_CLOSURE.md`; C-max20 chỉ là exploratory optimization và không promotion app.
-
-## Cài đặt theo môi trường
-
-| Mục đích | Lệnh |
-|---|---|
-| Review/weak label local | `pip install -r requirements.txt` |
-| App offline Model C/B | `pip install -r requirements-inference.txt` |
-| Test/verifier | `pip install -r requirements-dev.txt` |
-| Notebook Kaggle GPU | `pip install -r requirements-kaggle.txt` |
-
-Tạo `.env` từ `.env.example` chỉ khi chạy Gemini review. File `.env` không được commit; inference và web app không đọc API key hay gọi Gemini.
-
-## Chạy app local/offline
-
-1. Tải Kaggle Dataset checkpoint version được ghi trong `release/manifest.json`.
-2. Giải nén để có `checkpoints/model_c/` và `checkpoints/model_b/`.
-3. Verify release:
-
-```powershell
-python scripts/verify_release.py --manifest release/manifest.json
-```
-
-4. Chạy CLI:
-
-```powershell
-python -m visolexnorm.app.inference --smoke
-python -m visolexnorm.app.inference --text "mik ko bt hnay đi hc ko"
-```
-
-Kết quả smoke đã xác nhận:
+## Main pipeline
 
 ```text
-mình không biết hôm nay đi học không
+Raw ViLexNorm / ViSoLex
+        ↓
+Data preparation
+        ↓
+Gold-only Model A
+        ↓
+Candidate generation
+        ↓
+Gemini review
+        ↓
+Weak-label construction
+        ↓
+Model B / Model C training
+        ↓
+Evaluation and model selection
+        ↓
+Local BARTpho inference
+        ↓
+FastAPI
+        ↓
+React frontend
 ```
 
-5. Chạy Gradio local:
+Model C is the application checkpoint selected from common Dev metrics. Model B remains the verified fallback. Historical Phase 5 A/B evaluation selected Model B by F1; the later A/B/C benchmark is descriptive and does not change that historical decision.
+
+## Repository structure
+
+```text
+frontend/        React + Vite web interface
+backend/         FastAPI launcher
+visolexnorm/
+  app/           inference, model loading, API, model selection, Gradio UI
+  common/        shared I/O, artifact, progress, and runtime utilities
+  data/          dataset preparation and validation
+  candidates/    Model A candidate generation and review manifests
+  review/        Gemini-assisted review, policy, and cache
+  weak_labels/   weak-label construction and audit
+  training/      Model A/B/C and controlled-training utilities
+  evaluation/    metrics, evaluation, and model selection
+configs/         project configurations
+scripts/         command-line entrypoints
+specs/           runtime JSON schemas and contracts used by the pipeline
+notebooks/       Kaggle training and evaluation notebooks
+outputs/         experiment and evaluation artifacts
+prompts/         Gemini review prompts
+report/          report source and artifacts
+```
+
+## Installation
+
+Create a Python environment, then install the application dependencies:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements-app.txt
+```
+
+For the local Gemini review and weak-label workflow:
+
+```powershell
+pip install -r requirements-review.txt
+```
+
+Kaggle training and evaluation notebooks use `requirements-kaggle.txt`. The controlled offline Kaggle notebooks also require `requirements-kaggle-offline.txt`.
+
+## Model weights
+
+Model weights are distributed separately because of file size. The verified application checkpoint bundle is available from:
+
+https://www.kaggle.com/datasets/dinhbaobao/visolexnorm-app-checkpoints-v1/versions/1
+
+After downloading and extracting it, the repository root must contain:
+
+```text
+checkpoints/
+├── model_c/   # default application model
+└── model_b/   # verified fallback model
+```
+
+## Dataset
+
+Raw and processed datasets are not bundled in Git. They are required only for data preparation, training, and evaluation workflows.
+
+```text
+data/
+├── raw/
+├── intermediate/
+└── processed/
+```
+
+TODO: add submission dataset link.
+
+## Run the application
+
+The primary web path is:
+
+```text
+React → FastAPI → visolexnorm.app inference → local BARTpho checkpoint
+```
+
+Start the backend from the repository root:
+
+```powershell
+python backend/main.py
+```
+
+Start the frontend in another terminal:
+
+```powershell
+cd frontend
+pnpm install --frozen-lockfile
+pnpm dev
+```
+
+The frontend reads `VITE_API_BASE_URL` from `frontend/.env`; see `frontend/.env.example` for the default local API URL.
+
+The repository also retains a local Gradio interface:
 
 ```powershell
 python -m visolexnorm.app.web
 ```
 
-App bind `127.0.0.1`, không public share. Sau khi dependency/checkpoint đã local, đặt `HF_HUB_OFFLINE=1` và `TRANSFORMERS_OFFLINE=1` để diễn tập offline.
-
-## Tái lập pipeline
-
-- Chuẩn bị data: `python -m scripts.data ...`
-- Candidate: `python -m scripts.candidates ...`
-- Review: `python -m scripts.reviews ...`
-- Weak labels: `python -m scripts.weak_labels ...`
-- Train: `python -m scripts.training ...`
-- Controlled factorial/optimization: `python -m scripts.controlled_experiments ...`
-- Evaluation: `python -m scripts.evaluation ...`
-
-Notebook Kaggle nằm trong [`notebooks/`](notebooks/). Các checkpoint lớn không nằm trong Git; xem [`docs/artifact-catalog.md`](docs/artifact-catalog.md) và [`docs/artifact-retention.json`](docs/artifact-retention.json).
-
-## Verify release và demo
+## Training and evaluation entrypoints
 
 ```powershell
-python scripts/verify_release.py --manifest release/manifest.json --report release/verification-report.json
-python -m scripts.verify_training_closure
-python -m pytest -q
+python -m scripts.data --help
+python -m scripts.candidates --help
+python -m scripts.reviews --help
+python -m scripts.weak_labels --help
+python -m scripts.training --help
+python -m scripts.evaluation --help
 ```
 
-`release/manifest.json` verifies the historical `v1.0.0` snapshot. On the current training-closure
-branch, use `verify_training_closure.py`; run historical strict release verification from tag
-`v1.0.0` after restoring its checkpoint Dataset.
+These workflows require the external datasets, checkpoints, and Kaggle resources described above.
 
-Sau khi Kaggle Dataset có URL version cố định, chạy thêm:
+## Results
 
-```powershell
-python scripts/verify_release.py --manifest release/manifest.json --strict-distribution
-```
+Historical Phase 5 frozen A/B Test results:
 
-Kịch bản trình diễn offline nằm tại [`docs/demo-script.md`](docs/demo-script.md).
+| Model | ERR | F1 |
+| --- | ---: | ---: |
+| Model A | 0.600250 | 0.718184 |
+| Model B | 0.633111 | 0.742215 |
+
+The common A/B/C Test benchmark reports Model C at F1 0.764993 and Model B at F1 0.742215. Model C was selected for the application from common Dev metrics, not from Test metrics.
+
+## Report
+
+The project report source and rendered PDF are retained in `report/`. Additional submitted PDF artifacts remain at the repository root.
