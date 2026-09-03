@@ -180,6 +180,13 @@ def test_smoke_and_optimization_selection_metadata_use_dev_loss() -> None:
     assert smoke_selection["selection_metric"] == optimization_selection["selection_metric"] == "dev_loss"
 
 
+def test_cmax_selected_and_terminal_artifact_names_are_distinct() -> None:
+    selected = Path("c_max20_es/dev_predictions.jsonl")
+    terminal = Path("c_max20_es/terminal_dev_predictions.jsonl")
+    assert selected != terminal
+    assert selected.with_name("dev_metrics.json") != terminal.with_name("terminal_dev_metrics.json")
+
+
 def _completed_factorial_run(root: Path) -> Path:
     run = root / "seed_2026" / "small"
     run.mkdir(parents=True)

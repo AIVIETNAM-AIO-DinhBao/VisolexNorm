@@ -102,6 +102,14 @@ def test_factorial_notebook_is_non_interactive_save_version_workflow() -> None:
     assert "Controlled factorial failed at {run_id}" in text
 
 
+def test_cmax_notebook_requires_selected_and_terminal_dev_artifacts() -> None:
+    root = Path(__file__).parents[2]
+    text = (root / "notebooks" / "c_max20_early_stopping_kaggle.ipynb").read_text(encoding="utf-8")
+    assert "terminal_dev_predictions.jsonl" in text
+    assert "terminal_dev_metrics.json" in text
+    assert "C-max20 missing selected/terminal Dev artifacts" in text
+
+
 def test_offline_builder_covers_sentencepiece_and_legacy_manylinux_tags() -> None:
     assert DEFAULT_PLATFORMS == (
         "manylinux_2_27_x86_64",

@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "experiment": "controlled_factorial_2x2",
+  "status": "frozen_before_c_max20_es",
+  "evaluation_split": "dev",
+  "source_revision": "4b2285cd9a1af5722ff99ff2927f652cd01aa82b",
+  "artifacts": {
+    "protocol": {
+      "path": "outputs/controlled_factorial/controlled_factorial_protocol.json",
+      "sha256": "709ccafeef9498a9b5079ae8fb313f77a450eb3c65078faac6495fddf78b10f7"
+    },
+    "summary": {
+      "path": "outputs/controlled_factorial/controlled_factorial_summary.json",
+      "sha256": "614f47f4e7637a550a5a9fb157fbb1cb47321f3d7446015d7d6dc3544a1d485a"
+    },
+    "run_artifacts": {
+      "path": "outputs/controlled_factorial/controlled_factorial_artifacts.zip",
+      "sha256": "5657a83657c83beac0659fe954cb22ad38fa5198942441e4091a840fb1adb5dd"
+    }
+  },
+  "primary_protocol": {
+    "checkpoint_selection": "lowest Dev loss within each frozen horizon",
+    "primary_comparison_metric": "ERR",
+    "seeds": [2026, 2126, 2226],
+    "test_metrics_used": false
+  },
+  "selected_checkpoint_mean_metrics": {
+    "S3": {"ERR": 0.6527777777777778, "f1": 0.7472954929066672, "exact_sentence_match": 0.5488888888888889},
+    "S8": {"ERR": 0.6626787678767877, "f1": 0.7541824728252577, "exact_sentence_match": 0.5536507936507936},
+    "L3": {"ERR": 0.6490649064906491, "f1": 0.7443598734542495, "exact_sentence_match": 0.5431746031746032},
+    "L8": {"ERR": 0.6703795379537953, "f1": 0.7612489946554746, "exact_sentence_match": 0.5631746031746032}
+  },
+  "frozen_conclusion": "Under the frozen Dev-loss checkpoint-selection protocol, L8 was the strongest evaluated factorial configuration on Dev across the three seeds. The expanded pool did not improve selected performance at the three-epoch horizon, while its duration gain was larger than the small pool's, yielding a positive pool-by-duration interaction.",
+  "terminal_checkpoint_sensitivity": "At the terminal epoch-8 checkpoint, the L8-S8 mean difference was near zero (ERR -0.000138; F1 +0.000316; exact match -0.001905). Therefore the L8 result is frozen as an advantage under the selected-checkpoint protocol, not as a large unconditional terminal-epoch pool effect.",
+  "scope_limitations": [
+    "Dev was used for checkpoint selection and reporting.",
+    "The previously observed ViLexNorm Test is not an independent confirmatory holdout.",
+    "C-max20-ES is exploratory optimization and cannot revise this factorial conclusion."
+  ]
+}
