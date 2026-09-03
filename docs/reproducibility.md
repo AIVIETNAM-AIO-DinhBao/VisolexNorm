@@ -82,7 +82,7 @@ Test metrics không tham gia selection. Test predictions sau đó chỉ dùng b�
 The historical Model B/C artifacts remain immutable. The controlled follow-up uses a separate
 namespace and never receives ViLexNorm Test or `outputs/evaluation/` as an input.
 
-1. Create a private Kaggle Dataset (or `controlled_training_input.zip`) with exactly:
+1. Create an unpacked private Kaggle Dataset with exactly:
 
    ```text
    checkpoints/model_a/
@@ -111,13 +111,23 @@ namespace and never receives ViLexNorm Test or `outputs/evaluation/` as an input
    stops only after four non-improving Dev-loss epochs with `min_delta=1e-4`. It is not a
    factorial cell and must not be used to revise the causal factorial conclusion.
 
-The factorial notebook uses disk-safe `--no-resume-state`: it runs one trajectory at a time,
-exports the required Dev artifacts, then safely removes its large checkpoint and AdamW state.
+The completed training boundary is recorded in `release/training-closure.json`. Verify it after
+restoring local checkpoints and research handoff archives:
+
+```powershell
+python -m scripts.verify_training_closure
+```
+
+The closure keeps Model C as the application default, Model B as fallback, and C-max20 as
+non-promotional exploratory evidence.
+
+The factorial notebook uses disk-safe `--no-resume-state`: one Save Version runs all six
+trajectories sequentially, exports the required Dev artifacts, then safely removes each large
+checkpoint and AdamW state before the next trajectory.
 Attach the Kaggle Dataset as an unpacked directory rather than a ZIP, so Model A and data remain
 under `/kaggle/input` and are never duplicated into `/kaggle/working`. If a disk-safe trajectory
-is interrupted, reset only that incomplete trajectory and restart it from epoch 1; do not use
-`--resume`. The C-max20 notebook retains resumable state by default because it is a single run;
-if disk is constrained, use the same no-resume trade-off deliberately.
+is interrupted, start a new Save Version from epoch 1; do not use `--resume`. C-max20 also uses
+the no-resume trade-off and exports both selected and terminal Dev artifacts.
 
 #### RTX Pro 6000 offline runtime Dataset
 

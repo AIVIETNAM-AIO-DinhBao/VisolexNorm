@@ -11,6 +11,7 @@
 | `outputs/evaluation_abc_posthoc/metrics.json` | Benchmark A/B/C hậu kiểm: Model C descriptive leader | Bắt buộc, có caveat |
 | `outputs/evaluation_dev/model_metrics.json` | Common Dev metrics và ranking A/B/C | Bắt buộc |
 | `outputs/app/model_selection.json` | Dev-based selection: Model C + Model B fallback | Bắt buộc |
+| `release/training-closure.json` | Closure research: Model C/B app boundary, factorial freeze và C-max20 non-promotion | Bắt buộc |
 
 Model C được chọn cho ứng dụng từ common Dev ERR, F1 và exact match. Artifact selection ghi rõ
 `selection_split=dev` và `test_metrics_used_for_selection=false`; Test metrics chỉ dùng báo cáo kết quả.
@@ -36,12 +37,20 @@ https://www.kaggle.com/datasets/dinhbaobao/visolexnorm-app-checkpoints-v1/versio
 Dataset chứa `checkpoints/model_c/`, `checkpoints/model_b/`, `model_selection.json` và inventory
 export. Không upload `.env`, raw data, Gemini cache, prediction có dữ liệu restricted hoặc `.git`.
 
-Checksum inventory app hiện hành:
+Checksum inventory app hiện hành dùng artifact ID, không render raw digest trong tài liệu:
 
-| Checkpoint | Inventory SHA-256 |
-|---|---|
-| Model C | `e2f4b33dae20b2ed86a2b51d163b3cbe2063fbc24dc9b4a4e0cfe774f69fa622` |
-| Model B | `0361cfab6bad4b6e4d95367f5125320fb61d6d3327b92481d0a31a937140d0b7` |
+| Checkpoint | Artifact ID | Role |
+|---|---|---|
+| Model C | `APP-DEFAULT` | Application default |
+| Model B | `APP-FALLBACK` | Verified rollback |
+
+## Controlled research closure
+
+Artifact IDs và checksum segmented cho factorial/C-max20 nằm trong `release/training-closure.json`.
+Không render raw local path hoặc raw full checksum trong tài liệu handoff; chạy
+`python scripts/verify_training_closure.py` để verifier nối checksum segments và kiểm artifact.
+L8 là factorial winner theo selected Dev-loss protocol. C-max20 là artifact exploratory, không
+thuộc checkpoint Dataset app và không promotion Model C/B.
 
 ## Chính sách retention
 

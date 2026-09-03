@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-08-30T01:52:22.831753+00:00",
-  "source_revision": "d14058fee882befc45fb7fee8a62040b4902e041",
+  "generated_at_utc": "2026-09-03T00:00:00+00:00",
+  "source_revision": "3abe7065e8780791a54f970470964a74764f5b91",
   "policy": {
     "external_destination_configured": false,
     "large_artifacts_externalized": false,
@@ -9,7 +9,9 @@
     "model_b_required_as_phase10_rollback": true,
     "model_c_required_as_phase10_application_checkpoint": true,
     "phase5_selected_model": "model_b",
-    "cleanup_candidate_bytes": 33728217
+    "cleanup_candidate_bytes": 33728217,
+    "training_closure": "training-closed-v1",
+    "cmax20_promotion_eligible": false
   },
   "verification_before_cleanup": {
     "pytest_baseline": "110 passed",
@@ -415,6 +417,26 @@
       "retention": "delete-temp",
       "referenced_by": [],
       "external_location": null
+    },
+    {
+      "path": "outputs/controlled_factorial/controlled_factorial_artifacts.zip",
+      "kind": "file",
+      "bytes": 7980208,
+      "sha256": "5657a83657c83beac0659fe954cb22ad38fa5198942441e4091a840fb1adb5dd",
+      "authority": "training-closed-v1",
+      "retention": "externalize-pending",
+      "referenced_by": ["release/training-closure.json"],
+      "external_location": null
+    },
+    {
+      "path": "outputs/c_max20/c_max20_es_artifacts.zip",
+      "kind": "file",
+      "bytes": 1722588044,
+      "sha256": "77a212ddc2b310c81c6540a06c64093c9b1e0c463c7fe335140b4dac6310cbeb",
+      "authority": "training-closed-v1",
+      "retention": "externalize-pending",
+      "referenced_by": ["release/training-closure.json", "outputs/c_max20/c_max20_analysis.json"],
+      "external_location": null
     }
   ],
   "cleanup_result": {
@@ -442,6 +464,8 @@
       "outputs/pilot_review_report_v6.json",
       "outputs/pilot_review_audit_v6.csv",
       "outputs/pilot_prompt_revision_v6.md"
+      ,"outputs/controlled_factorial/controlled_factorial_artifacts.zip"
+      ,"outputs/c_max20/c_max20_es_artifacts.zip"
     ],
     "externalization_status": "pending-no-destination-configured",
     "large_artifacts_removed": false

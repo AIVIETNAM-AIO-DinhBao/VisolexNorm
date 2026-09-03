@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "artifact_id": "OPT-CMAX20",
+  "experiment": "c_max20_es_exploratory",
+  "scope": {
+    "promotion_eligible": false,
+    "test_metrics_used": false,
+    "factorial_conclusion_revisable": false
+  },
+  "protocol": {
+    "seed": 2026,
+    "max_epochs": 20,
+    "min_epochs": 8,
+    "patience": 4,
+    "min_delta": 0.0001,
+    "selection_metric": "dev_loss"
+  },
+  "outcome": {
+    "selected_epoch": 9,
+    "stopped_epoch": 13,
+    "selected": {"ERR": 0.6687293729372937, "f1": 0.7595518529158288, "exact_sentence_match": 0.560952380952381},
+    "terminal": {"ERR": 0.6695544554455446, "f1": 0.7659084365102217, "exact_sentence_match": 0.5676190476190476}
+  },
+  "interpretation": "The selected checkpoint did not improve the frozen L8 selected-checkpoint reference. The terminal result is sensitivity evidence only and does not replace the Dev-loss-selected checkpoint.",
+  "archive": {
+    "path": "outputs/c_max20/c_max20_es_artifacts.zip",
+    "sha256_segments": ["77a212ddc2b310c8", "1c6540a06c64093c", "9b1e0c463c7fe335", "140b4dac6310cbeb"]
+  }
+}

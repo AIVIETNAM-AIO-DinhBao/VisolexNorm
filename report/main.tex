@@ -44,7 +44,7 @@
 \setcounter{page}{1}
 
 \begin{abstract}
-Vietnamese social media text frequently contains abbreviations, informal spellings, omitted diacritics, and other non-standard lexical forms. This study formulates their normalization as a sequence-to-sequence task and compares three BARTpho-syllable configurations. Model~A was fine-tuned on 8,372 human-annotated ViLexNorm training pairs. Model~B was initialized from Model~A and trained with a balanced mixture of gold data and an initial pool of 18,970 LLM-reviewed weak labels. Model~C was also initialized from Model~A but used an expanded pool of 64,813 LLM-reviewed weak labels. Candidate normalizations for ViSoLex were reviewed by Gemini under a \textsc{Keep}, \textsc{Edit}, or \textsc{Reject} protocol and then subjected to deterministic validation. A common Dev evaluation selected Model~C before final Test scoring. On the 1,045-sentence ViLexNorm Test split, Models~A, B, and C obtained F1 scores of 0.7182, 0.7422, and 0.7650, and Error Reduction Rates of 0.6002, 0.6331, and 0.6647, respectively. Model~C was used for a local Gradio application, with Model~B retained as a fallback checkpoint. The application performs BARTpho inference locally and does not use the review model at runtime.
+Vietnamese social media text frequently contains abbreviations, informal spellings, omitted diacritics, and other non-standard lexical forms. This study formulates their normalization as a sequence-to-sequence task and compares three BARTpho-syllable configurations. Model~A was fine-tuned on 8,372 human-annotated ViLexNorm training pairs. Model~B was initialized from Model~A and trained with a balanced mixture of gold data and an initial pool of 18,970 LLM-reviewed weak labels. Model~C was also initialized from Model~A but used an expanded pool of 64,813 LLM-reviewed weak labels. Candidate normalizations for ViSoLex were reviewed by Gemini under a \textsc{Keep}, \textsc{Edit}, or \textsc{Reject} protocol and then subjected to deterministic validation. A common Dev evaluation selected Model~C before final Test scoring. On the 1,045-sentence ViLexNorm Test split, Models~A, B, and C obtained F1 scores of 0.7182, 0.7422, and 0.7650, and Error Reduction Rates of 0.6002, 0.6331, and 0.6647, respectively. A later three-seed factorial follow-up identified L8 as strongest under its frozen Dev-loss selection protocol; a maximum-20-epoch run remained exploratory. Model~C is the local Gradio default and Model~B the fallback. The application performs BARTpho inference locally and does not use the review model at runtime.
 \end{abstract}
 
 \section{Introduction}
@@ -89,6 +89,24 @@ The output length $n$ need not equal the input length $m$. This property permits
 The experimental variable is the reviewed weak-label data available during training. Model~A receives only human-annotated ViLexNorm pairs. Models~B and C are initialized from Model~A and receive balanced mixtures of the same gold training data with reviewed ViSoLex weak labels. Model~B uses the initial accepted pool, whereas Model~C uses the expanded accepted pool. The three configurations share the same BARTpho-syllable architecture, tokenizer family, maximum sequence lengths, decoding configuration, and validation set.
 
 The comparison should not be read as a perfect isolation of weak-label count. Model~A begins from the public BARTpho checkpoint, whereas Models~B and C continue from Model~A. Models~B and C also use different training durations because their weak-label pools have different sizes. The results consequently compare complete training configurations: initial checkpoint, data composition, sampling schedule, and number of epochs. This qualification is retained throughout the analysis.
+
+\subsection{Controlled pool-by-duration follow-up}
+
+To separate weak-label pool availability from training duration, a later Dev-only factorial follow-up crossed the initial 18,970-label pool and the expanded 64,813-label pool with training horizons of three and eight epochs. The four cells are denoted S3, S8, L3, and L8, where S and L indicate the small and expanded pools. Three paired seeds were used. Each epoch retained 8,372 gold and 8,372 pseudo examples, the gold-to-pseudo ratio, Model~A initialization, tokenizer, sequence limits, batch configuration, learning rate, warmup ratio, and generation settings. Within each horizon, the checkpoint with the lowest Dev loss was selected; ERR was the primary comparison metric. Terminal checkpoints were retained only for sensitivity analysis. ViLexNorm Test was not loaded for this follow-up.
+
+\begin{table}[t]
+\centering
+\caption{Controlled factorial design.}
+\label{tab:factorial-design}
+\begin{tabular}{lrr}
+\toprule
+Weak-label pool & 3-epoch horizon & 8-epoch horizon \\
+\midrule
+Initial: 18,970 & S3 & S8 \\
+Expanded: 64,813 & L3 & L8 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \begin{figure}[t]
 \centering
@@ -295,6 +313,58 @@ Model C & 0.193742 & 0.561905 \\
 
 This pattern is consistent with the view that reviewed social-media examples add useful lexical variation beyond the gold training split. It does not establish weak-label pool size as the sole cause of improvement. Model~A differs from Models~B and C in initialization, while Models~B and C differ in both weak-label coverage and training duration. The development evidence should therefore be read as a comparison of complete configurations rather than a single-variable ablation.
 
+\subsection{Controlled factorial follow-up}
+
+Table~\ref{tab:factorial-results} reports means over the three paired seeds using the frozen lowest-Dev-loss checkpoint rule. L8 is the strongest cell under this protocol. In contrast, the expanded pool does not improve the selected checkpoint at the three-epoch horizon. Its duration gain is larger than the small pool's, yielding a positive pool-by-duration interaction.
+
+\begin{table*}[t]
+\centering
+\caption{Dev-only controlled factorial results, averaged over three seeds. Checkpoints are selected by lowest Dev loss within each frozen horizon.}
+\label{tab:factorial-results}
+\begin{tabular}{lrrr}
+\toprule
+Cell & ERR & F1 & Exact match \\
+\midrule
+S3 & 0.652778 & 0.747295 & 0.548889 \\
+S8 & 0.662679 & 0.754182 & 0.553651 \\
+L3 & 0.649065 & 0.744360 & 0.543175 \\
+L8 & \textbf{0.670380} & \textbf{0.761249} & \textbf{0.563175} \\
+\bottomrule
+\end{tabular}
+\qquad
+\begin{tabular}{lrrr}
+\toprule
+Effect & ERR & F1 & Exact match \\
+\midrule
+Pool at 3 epochs & -0.003713 & -0.002936 & -0.005714 \\
+Pool at 8 epochs & +0.007701 & +0.007067 & +0.009524 \\
+Duration, initial pool & +0.009901 & +0.006887 & +0.004762 \\
+Duration, expanded pool & +0.021315 & +0.016889 & +0.020000 \\
+Interaction & +0.011414 & +0.010002 & +0.015238 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+Terminal-checkpoint sensitivity attenuates the L8--S8 difference to near zero. Thus, L8 is strongest under the frozen Dev-loss checkpoint-selection protocol, rather than evidence of a large unconditional terminal-epoch pool effect. The factorial conclusion is recorded as artifact FCT-CONCLUSION.
+
+\subsection{Exploratory maximum-20-epoch optimization}
+
+After the factorial conclusion was frozen, an expanded-pool exploratory run used seed 2026, a maximum budget of 20 epochs, a minimum of 8 epochs, Dev-loss patience 4, and minimum improvement 0.0001. It stopped at epoch 13 and selected epoch 9 by Dev loss. The selected checkpoint did not improve the L8 selected-checkpoint mean. The terminal checkpoint has higher F1 and exact match, but it is not selected by the frozen Dev-loss rule and is sensitivity evidence only. This run is artifact OPT-CMAX20 and is not promotion eligible.
+
+\begin{table}[t]
+\centering
+\caption{Exploratory C-max20-ES Dev-only result for seed 2026.}
+\label{tab:cmax20-results}
+\begin{tabular}{lrrrr}
+\toprule
+Checkpoint & Epoch & ERR & F1 & Exact match \\
+\midrule
+Selected by Dev loss & 9 & 0.668729 & 0.759552 & 0.560952 \\
+Terminal at stop & 13 & 0.669554 & 0.765908 & 0.567619 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \subsection{Common benchmark comparison}
 
 Table~\ref{tab:benchmark-results} presents the three models under the same 1,045-sentence benchmark and generation configuration. Model~A produced 1,250 correct edits from 1,703 predicted edits. Model~B produced 1,287 correct edits from 1,690 predicted edits, increasing both precision and recall. Model~C produced 1,333 correct edits from 1,707 predicted edits and obtained the highest value for every reported edit-based metric as well as the highest exact sentence match.
@@ -315,9 +385,9 @@ Model C & 1,778 & 1,707 & 1,333 & 0.664725 & 0.780902 & 0.764993 & 0.566507 \\
 \end{tabular}}
 \end{table*}
 
-Relative to Model~A, Model~B increased F1 by 0.024030. Relative to Model~B, Model~C increased F1 by 0.022778 and increased ERR by 0.031614. For the Model~C--Model~B comparison, the bootstrap 95\% interval for the F1 difference is $[0.012063, 0.033228]$, while the corresponding ERR interval is $[0.015893, 0.046803]$. These intervals are positive under the stated resampling procedure and support the higher performance of Model~C in the common evaluation.
+Relative to Model~A, Model~B increased F1 by 0.024030. Relative to Model~B, Model~C increased F1 by 0.022778 and increased ERR by 0.031614. For the Model~C--Model~B comparison, the bootstrap 95\% interval for the F1 difference is $[0.012063, 0.033228]$, while the corresponding ERR interval is $[0.015893, 0.046803]$. This is a descriptive benchmark because the Test split had already been observed before the later factorial and C-max20 follow-ups.
 
-The common Test results show a progressive increase in performance across the three configurations. Model~B improves on the gold-only configuration in precision, recall, ERR, F1, and exact sentence match. Model~C records the highest value for each reported metric, indicating that the expanded reviewed weak-label configuration is the strongest of the three evaluated settings. The application therefore uses Model~C as its default checkpoint.
+The common Test results descriptively rank Model~C highest among the historical A/B/C configurations. They were not used for the later factorial conclusion, C-max20 stopping rule, checkpoint selection, or application-promotion decision. The application continues to use the previously Dev-selected Model~C checkpoint with Model~B as fallback.
 
 \subsection{Error Analysis}
 
@@ -382,15 +452,17 @@ The application is started with \texttt{python -m visolexnorm.app.web -{}-port 7
 
 The LLM-reviewed weak labels are not equivalent to human annotations and were not human-verified at full scale. Temperature 0, a fixed prompt, structured schema validation, and deterministic filters improve reproducibility and reduce identifiable problems, but they do not guarantee that every accepted target is semantically optimal. Some lexical variants are context-dependent, and the LLM reviewer may select a plausible target that differs from the preferred annotation in ViLexNorm-style evaluation.
 
-The comparison also changes more than one factor at a time. Model~A begins from the public BARTpho checkpoint, whereas Models~B and C begin from Model~A. Model~B and Model~C further differ in the size of their weak-label pools and in their number of epochs. The observed differences should therefore be described as properties of the three complete training configurations, not as a causal estimate of weak-label count alone.
+The historical B/C comparison changes pool size and training duration simultaneously. The later factorial follow-up reduces this particular confounding, but does not make pool size the only difference: the expanded pool also changes source, domain, and reviewed-label composition. Moreover, Dev is used both for checkpoint selection and reporting, selected and terminal checkpoints can differ, and three seeds provide limited precision for seed-level variation.
+
+The C-max20 run is exploratory and uses one seed with a different maximum-horizon learning-rate schedule. Its selected and terminal metrics therefore do not justify an application promotion or a revision of the frozen factorial conclusion. Finally, the previously observed Test split is not an independent confirmatory holdout; a newly frozen holdout is required for a stronger final scientific claim.
 
 The edit-based metric implementation is a deterministic project scorer rather than an independently validated official ViLexNorm evaluator. In addition, the 128-token truncation limit and CPU model-loading time may affect long inputs and interactive deployment settings.
 
 \section{Conclusion}
 
-This study compared three BARTpho-syllable configurations for Vietnamese social media lexical normalization. Model~A used only human-annotated ViLexNorm data, Model~B added an initial pool of 18,970 LLM-reviewed weak labels, and Model~C used an expanded pool of 64,813 LLM-reviewed weak labels. The common Test evaluation produced F1 values of 0.718184, 0.742215, and 0.764993 and ERR values of 0.600250, 0.633111, and 0.664725 for Models~A, B, and C, respectively. The results are consistent with LLM-reviewed social-media examples providing useful additional training variation.
+This study compared BARTpho-syllable configurations for Vietnamese social media lexical normalization. Historical A/B/C benchmarking ranks Model~C highest descriptively on the previously observed Test split. The later three-seed factorial follow-up identifies L8 as the strongest configuration under the frozen Dev-loss checkpoint-selection protocol and indicates that the expanded pool benefits more from a longer training horizon than the initial pool.
 
-Model~C was selected using the common Dev evaluation and is used as the default local application checkpoint, while Model~B remains available as a fallback. It subsequently achieved the highest values in the common Test evaluation. Future work should expand human auditing of accepted weak labels and separate the effects of training duration, initialization, and weak-label coverage more directly.
+Model~C remains the default local application checkpoint, while Model~B remains the verified fallback. The exploratory C-max20 run did not justify a promotion. Future work should expand human auditing and evaluate the frozen application checkpoint on a newly frozen independent holdout.
 
 \bibliographystyle{plainnat}
 \bibliography{references}

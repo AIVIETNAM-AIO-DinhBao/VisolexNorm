@@ -8,6 +8,7 @@ ViSoLexNorm là hệ thống chuẩn hóa từ vựng tiếng Việt mạng xã 
 - **Rollback:** Model B.
 - **Kết quả khoa học lịch sử Phase 5:** Model B thắng Model A trên ViLexNorm Test đóng băng.
 - **Lưu ý Phase 9:** Model C dẫn đầu ở benchmark A/B/C hậu kiểm trên Test đã quan sát; đây không phải independent holdout và không thay đổi kết luận Phase 5.
+- **Training closure:** factorial ba seed freeze L8 là cấu hình mạnh nhất theo protocol chọn checkpoint bằng Dev loss; C-max20 là exploratory và không thay đổi checkpoint app.
 
 Phase 6 local app và Phase 7 release đã hoàn thành. Checkpoint Kaggle Dataset version 1 đã được tải lại, checksum đã verify và strict release verification pass; release được đánh dấu bằng tag `v1.0.0`.
 
@@ -77,6 +78,19 @@ Model B là historical winner theo F1 cao hơn. Artifact bất biến là `outpu
 
 Model C được chọn trước bằng common Dev ERR (`0.670380`), Dev F1 (`0.759233`) và Dev exact match (`0.561905`). Test không tham gia model selection. Trên Test, Model C cao hơn Model B `+0.022778` F1, bootstrap CI95 `[0.012063, 0.033228]`. Model C là checkpoint app mặc định và Model B là fallback.
 
+### Controlled factorial closure
+
+Factorial Dev-only ba seed giữ cố định protocol chọn checkpoint bằng Dev loss trong mỗi horizon:
+
+| Cell | ERR | F1 | Exact match |
+|---|---:|---:|---:|
+| S3 | 0.652778 | 0.747295 | 0.548889 |
+| S8 | 0.662679 | 0.754182 | 0.553651 |
+| L3 | 0.649065 | 0.744360 | 0.543175 |
+| L8 | **0.670380** | **0.761249** | **0.563175** |
+
+L8 là cấu hình factorial mạnh nhất theo protocol này. Sensitivity terminal checkpoint làm chênh L8--S8 gần về 0, nên kết luận không phải một claim pool-size causal vô điều kiện. Xem artifact `FCT-CONCLUSION` trong `release/TRAINING_CLOSURE.md`; C-max20 chỉ là exploratory optimization và không promotion app.
+
 ## Cài đặt theo môi trường
 
 | Mục đích | Lệnh |
@@ -135,8 +149,13 @@ Notebook Kaggle nằm trong [`notebooks/`](notebooks/). Các checkpoint lớn kh
 
 ```powershell
 python scripts/verify_release.py --manifest release/manifest.json --report release/verification-report.json
+python -m scripts.verify_training_closure
 python -m pytest -q
 ```
+
+`release/manifest.json` verifies the historical `v1.0.0` snapshot. On the current training-closure
+branch, use `verify_training_closure.py`; run historical strict release verification from tag
+`v1.0.0` after restoring its checkpoint Dataset.
 
 Sau khi Kaggle Dataset có URL version cố định, chạy thêm:
 

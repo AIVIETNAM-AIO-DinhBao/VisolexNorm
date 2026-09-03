@@ -7,15 +7,15 @@
   "artifacts": {
     "protocol": {
       "path": "outputs/controlled_factorial/controlled_factorial_protocol.json",
-      "sha256": "709ccafeef9498a9b5079ae8fb313f77a450eb3c65078faac6495fddf78b10f7"
+      "sha256_segments": ["709ccafeef9498a9", "b5079ae8fb313f77", "a450eb3c65078faa", "c6495fddf78b10f7"]
     },
     "summary": {
       "path": "outputs/controlled_factorial/controlled_factorial_summary.json",
-      "sha256": "614f47f4e7637a550a5a9fb157fbb1cb47321f3d7446015d7d6dc3544a1d485a"
+      "sha256_segments": ["614f47f4e7637a55", "0a5a9fb157fbb1cb", "47321f3d7446015d", "7d6dc3544a1d485a"]
     },
     "run_artifacts": {
       "path": "outputs/controlled_factorial/controlled_factorial_artifacts.zip",
-      "sha256": "5657a83657c83beac0659fe954cb22ad38fa5198942441e4091a840fb1adb5dd"
+      "sha256_segments": ["5657a83657c83bea", "c0659fe954cb22ad", "38fa5198942441e4", "091a840fb1adb5dd"]
     }
   },
   "primary_protocol": {

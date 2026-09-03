@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "experiment": "controlled_factorial_2x2",
+  "created_at_utc": "2026-09-02T17:55:52.977660+00:00",
+  "source_revision": "4b2285cd9a1af5722ff99ff2927f652cd01aa82b",
+  "factor_levels": {
+    "pool": {
+      "small": 18970,
+      "expanded": 64813
+    },
+    "horizon_epochs": [
+      3,
+      8
+    ]
+  },
+  "seeds": [
+    2026,
+    2126,
+    2226
+  ],
+  "selection": {
+    "checkpoint_metric": "dev_loss",
+    "comparison_primary_metric": "ERR",
+    "test_metrics_used": false
+  },
+  "scheduler": {
+    "type": "linear",
+    "warmup_ratio": 0.1,
+    "factorial_total_epochs": 8
+  },
+  "input_checksums": {
+    "gold": "78116d3b91363b80bb33c05403f00483800939db8abbacf32a862c78d1fee343",
+    "dev": "5eceb9952f0a156a2dc658f28290d4a51116229b1b79c0a88348578997ce254b",
+    "initial": "6fa48185038ece7bfdaa3f60d733a1147d2be2dc82f64dbfd1186e9320d184e2",
+    "expanded": "8d0d7fda61fef5805d1d79c3ec9a7a09bf38c875123f21bdd1dad8d120d79386"
+  },
+  "model_a_inventory_sha256": "31b3337870a0a8acb6e63f2dfb4aeaac67e86451e2a8fb18c5dbd6aba86432e5",
+  "config_sha256": "df0c2fd8a0648c9f1ca9725df5b94b02963faf0c742edb6952e480e529a98b35",
+  "c_max20_es": {
+    "max_epochs": 20,
+    "min_epochs": 8,
+    "patience": 4,
+    "min_delta": 0.0001,
+    "monitor": "dev_loss"
+  },
+  "c_max20_config_sha256": "369efcf822b65125a5aef0b07ef49288d47b2ca7dfc5b084ed35d963f0f2f65f",
+  "test_inputs_loaded": false,
+  "protocol_content_sha256": "217d36acf3f415022cdbabc894e5a0b6ecd6b00d719ff741b2f1a3b0b5fe08be"
+}
