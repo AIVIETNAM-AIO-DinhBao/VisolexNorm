@@ -1,6 +1,6 @@
 # Training closure
 
-`training-closed-v1` closes the research-training phase without changing the historical
+`training-closed-v2` closes the research-training phase without changing the historical
 `v1.0.0` application release.
 
 | Artifact ID | Role |

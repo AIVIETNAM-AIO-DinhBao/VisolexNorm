@@ -349,7 +349,7 @@ Terminal-checkpoint sensitivity attenuates the L8--S8 difference to near zero. T
 
 \subsection{Exploratory maximum-20-epoch optimization}
 
-After the factorial conclusion was frozen, an expanded-pool exploratory run used seed 2026, a maximum budget of 20 epochs, a minimum of 8 epochs, Dev-loss patience 4, and minimum improvement 0.0001. It stopped at epoch 13 and selected epoch 9 by Dev loss. The selected checkpoint did not improve the L8 selected-checkpoint mean. The terminal checkpoint has higher F1 and exact match, but it is not selected by the frozen Dev-loss rule and is sensitivity evidence only. This run is artifact OPT-CMAX20 and is not promotion eligible.
+After identifying Model~C/L8, trained with the expanded pool for eight epochs, as the strongest configuration under the frozen checkpoint-selection protocol, the group conducted an additional exploratory run to examine the performance attainable under a larger training budget. This run used the expanded pool with seed 2026, a maximum of 20 epochs, a minimum of 8 epochs, Dev-loss patience 4, and minimum improvement 0.0001. It stopped at epoch 13 and selected epoch 9 by Dev loss. The selected checkpoint did not improve the L8 selected-checkpoint mean. The terminal checkpoint has higher F1 and exact match, but it is not selected by the frozen Dev-loss rule and is sensitivity evidence only. This run is artifact OPT-CMAX20 and is not promotion eligible.
 
 \begin{table}[t]
 \centering

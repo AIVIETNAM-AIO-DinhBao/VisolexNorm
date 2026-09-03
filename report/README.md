@@ -1,10 +1,8 @@
-# Report artifacts
+# Final report
 
-- `main.tex` is the current report source, including the controlled factorial and C-max20 closure.
-- `main.pdf` is retained as the historical `v1.0.0` release PDF referenced by the immutable
-  release manifest.
-- `training-closure.pdf` is the rebuilt closure PDF produced from the current `main.tex`.
+- `main.tex` is the complete final report source.
+- `main.pdf` is the complete final report PDF.
 
-The current report source is verified and built separately so that updating research discussion
-does not mutate the historical `v1.0.0` release manifest. See `release/TRAINING_CLOSURE.md` for
-the app and research artifact boundary.
+The report includes the historical A/B/C benchmark, the three-seed controlled factorial follow-up,
+and the exploratory C-max20 analysis. The historical `v1.0.0` application release remains available
+through its Git tag; see `release/TRAINING_CLOSURE.md` for the app and research artifact boundary.
